@@ -276,7 +276,7 @@ export default function App() {
 
           {/* Main Hero Image */}
           <img 
-            src="/Media/A_3D_commercial_product_photography_202605252017-removebg-preview.png" 
+            src="https://res.cloudinary.com/ddarldtbb/image/upload/f_auto,q_auto/A_3D_commercial_product_photography_202605252017-removebg-preview_qtiikr" 
             alt="Electronics Collection" 
             className="w-[90%] max-w-[320px] sm:max-w-[450px] md:max-w-[620px] lg:max-w-[720px] xl:max-w-[760px] 2xl:max-w-[980px] h-auto object-contain relative z-10 -mt-2 2xl:-mt-6"
           />
