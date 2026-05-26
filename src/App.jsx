@@ -4,9 +4,10 @@ import {
   Search, Heart, ShoppingCart, Bell, MapPin, Truck, 
   Sparkles, RotateCcw, HeadphonesIcon, Zap, ChevronDown,
   Smartphone, Laptop, Gamepad2, Home, Watch, Headphones,
-  Camera, Cable, Mic, X, CheckCircle2, User, Play,
+  Camera, Cable, Mic, Menu, X, CheckCircle2, User, Play,
   ShoppingBag, ShieldCheck, ArrowRight
 } from 'lucide-react';
+import { useAiServiceStatus } from './hooks/useAiServiceStatus';
 
 /* ── Smooth floating wrapper ─────────────────────────────── */
 const FloatingElement = ({ children, className, delay = 0, yOffset = 15 }) => (
@@ -58,6 +59,20 @@ const AnimatedStat = ({ target, suffix = '' }) => {
 };
 
 export default function App() {
+  const aiServiceStatus = useAiServiceStatus();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const closeMenuOnDesktop = () => {
+      if (window.innerWidth >= 1280) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', closeMenuOnDesktop);
+    return () => window.removeEventListener('resize', closeMenuOnDesktop);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#f8faff] font-sans overflow-x-hidden text-slate-800">
       {/* 1. Top Navbar */}
@@ -118,8 +133,53 @@ export default function App() {
             <button className="border border-yellow-400 text-yellow-400 text-xs sm:text-sm font-semibold px-3 xl:px-4 py-1.5 sm:py-2 rounded-md hover:bg-yellow-400 hover:text-[#0b1021] transition-colors whitespace-nowrap">
               Become Seller
             </button>
+
+            <button
+              className="xl:hidden inline-flex items-center justify-center w-9 h-9 rounded-md border border-white/15 text-slate-300 hover:text-white hover:border-white/40 transition-colors"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              aria-label="Toggle mobile menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
+
+        {isMobileMenuOpen && (
+          <motion.div
+            className="xl:hidden border-t border-white/10 mt-2 px-4 pt-3 pb-3"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <div className="grid grid-cols-2 gap-2 text-sm font-medium text-slate-200">
+              {['Home', 'Categories', 'Deals', 'Vendors', 'AI Assistant', 'Support', 'About'].map((item) => (
+                <a
+                  key={item}
+                  href="#"
+                  className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item}
+                </a>
+              ))}
+            </div>
+
+            <div className="mt-3 bg-white rounded-md flex items-center overflow-hidden h-10">
+              <button className="px-3 text-slate-600 border-r border-slate-200 text-sm font-medium flex items-center gap-1 hover:bg-slate-50 h-full">
+                All <ChevronDown className="w-4 h-4" />
+              </button>
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="flex-1 px-3 text-sm text-slate-800 focus:outline-none"
+              />
+              <button className="bg-blue-600 h-full px-4 hover:bg-blue-700 transition-colors">
+                <Search className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </motion.div>
+        )}
       </nav>
 
       {/* 2. Sub header features */}
@@ -168,19 +228,15 @@ export default function App() {
       </div>
 
       {/* 3. Hero Section — full-width background, constrained content */}
-      <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#eef3ff] via-[#f4f7ff] to-[#e8f0ff] min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-126px)] flex">
+      <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#eef3ff] via-[#f4f7ff] to-[#e8f0ff] flex xl:min-h-[calc(100vh-126px)]">
         {/* Full-width decorative background blobs */}
         <div className="absolute top-0 right-0 w-[55%] h-full bg-gradient-to-bl from-blue-100/70 via-blue-50/40 to-transparent pointer-events-none"></div>
         <div className="absolute top-1/3 left-[30%] w-[500px] h-[500px] bg-blue-200/30 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <main className="relative max-w-[1720px] mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-8 2xl:px-12 pt-2 sm:pt-4 xl:pt-6 pb-4 sm:pb-6 xl:pb-4 2xl:pb-8 flex flex-col xl:grid xl:grid-cols-[minmax(300px,360px)_minmax(560px,1fr)_minmax(220px,250px)] 2xl:grid-cols-[minmax(360px,430px)_minmax(760px,1fr)_minmax(280px,320px)] items-center xl:items-center justify-center xl:content-center gap-3 sm:gap-5 xl:gap-5 2xl:gap-10 min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-126px)]">
+        <main className="relative max-w-[1720px] mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-8 2xl:px-12 pt-2 sm:pt-4 xl:pt-6 pb-4 sm:pb-6 xl:pb-4 2xl:pb-8 flex flex-col xl:grid xl:grid-cols-[minmax(300px,360px)_minmax(560px,1fr)_minmax(250px,280px)] 2xl:grid-cols-[minmax(360px,430px)_minmax(760px,1fr)_minmax(280px,320px)] items-center xl:items-center justify-start xl:justify-center gap-3 sm:gap-5 xl:gap-5 2xl:gap-10 xl:min-h-[calc(100vh-126px)]">
         
         {/* Left Column - Content */}
-        <div className="w-full xl:w-auto xl:max-w-[390px] 2xl:max-w-[430px] z-20 flex flex-col items-center xl:items-start justify-center shrink-0 text-center xl:text-left mt-2 xl:mt-0">
-          <div className="inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm mb-3 xl:mb-4 relative z-10">
-            <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-            AI-Powered Electronics Marketplace
-          </div>
+        <div className="order-1 w-full xl:w-auto xl:max-w-[390px] 2xl:max-w-[430px] z-20 flex flex-col items-center xl:items-start justify-center shrink-0 text-center xl:text-left mt-2 xl:mt-0">
           
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] 2xl:text-[56px] leading-[1.1] font-bold text-slate-900 mb-2 xl:mb-4 tracking-tight relative z-10">
             Shop Smarter with <br className="hidden sm:block" />
@@ -235,7 +291,7 @@ export default function App() {
         </div>
 
         {/* Middle Column - Hero Visual & Pedestal */}
-        <div className="w-full xl:w-auto relative z-10 flex items-center justify-center min-h-[180px] sm:min-h-[260px] md:min-h-[340px] lg:min-h-[420px] xl:min-h-[520px] 2xl:min-h-[680px] mt-1 sm:mt-2 xl:mt-0">
+        <div className="order-3 xl:order-2 w-full xl:w-auto relative z-10 flex items-center justify-center min-h-[160px] sm:min-h-[240px] md:min-h-[320px] lg:min-h-[400px] xl:min-h-[500px] 2xl:min-h-[660px] mt-1 sm:mt-2 xl:mt-0">
           
           {/* ── Circular ring pattern (concentric rings behind image) ── */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden 2xl:overflow-visible">
@@ -368,15 +424,67 @@ export default function App() {
 
         </div>
 
+        {/* Mobile/Tablet Voice Assistant Card */}
+        <div className="order-2 xl:hidden w-full max-w-[560px] mt-2 mb-1 relative z-20">
+          <div className="rounded-[28px] p-[1.5px] bg-[conic-gradient(from_0deg_at_50%_50%,#1e40af_0%,#3b82f6_35%,#0ea5e9_65%,#1e40af_100%)] shadow-[0_20px_45px_rgba(30,64,175,0.25)]">
+            <div className="rounded-[27px] bg-gradient-to-b from-[#101d3f] via-[#13295f] to-[#1a2d62] px-4 py-4 sm:px-5 sm:py-5 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Voice Shop Assistant</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`w-2 h-2 rounded-full ${aiServiceStatus.indicatorClass}`}></span>
+                    <span className="text-[11px] text-slate-300">{aiServiceStatus.label}</span>
+                  </div>
+                </div>
+                <Sparkles className="w-4 h-4 text-blue-200" />
+              </div>
+
+              <div className="mt-4 flex items-center gap-3 sm:gap-4">
+                <div className="w-[90px] h-[90px] sm:w-[96px] sm:h-[96px] rounded-2xl bg-gradient-to-b from-[#2a3f78] to-[#1a2f64] border border-white/10 overflow-hidden shrink-0 shadow-[0_10px_20px_rgba(15,23,42,0.35)]">
+                  <img
+                    src="https://res.cloudinary.com/ddarldtbb/image/upload/v1779814719/i_need_this_girl_alone_202605262138-removebg-preview_czgnx1.png"
+                    alt="AI assistant avatar"
+                    className="w-full h-full object-cover scale-[1.15]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[13px] text-slate-100 leading-relaxed">Hi, I am Mia. I can find best deals and compare products instantly.</p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Deals</span>
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Compare</span>
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Tracking</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-center gap-[3px] h-9">
+                {[35, 55, 25, 80, 45, 95, 100, 70, 45, 85, 50, 75, 30, 55, 40].map((h, i) => (
+                  <VisualizerBar key={`mobile-viz-${i}`} baseHeight={h} delay={i * 0.08} />
+                ))}
+              </div>
+
+              <div className="mt-2 flex items-center justify-center">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  className="relative w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.6)]"
+                >
+                  <Mic className="text-white w-6 h-6" />
+                </motion.button>
+              </div>
+              <p className="text-center text-[11px] text-blue-100 font-medium mt-1">Tap to speak</p>
+            </div>
+          </div>
+        </div>
+
         {/* Right Column - Voice Panel with Magic Animated Border */}
-        <div className="hidden xl:flex shrink-0 w-[240px] 2xl:w-[300px] h-[420px] 2xl:h-[560px] rounded-[32px] shadow-2xl relative overflow-hidden z-20">
-          
+        <div className="order-4 xl:order-3 hidden xl:flex shrink-0 self-center w-[276px] 2xl:w-[308px] h-[470px] 2xl:h-[540px] rounded-[32px] shadow-2xl relative overflow-hidden z-20 xl:mt-0">
+
           {/* Spinning conic gradient creates the glowing border — clipped to panel bounds by overflow-hidden */}
           <div className="absolute inset-[-100%] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0%,#3b82f6_40%,#818cf8_50%,transparent_60%)] animate-spin-slow"></div>
 
           {/* Inner panel — 1.5px inset reveals the spinning border edge */}
-          <div className="absolute inset-[1.5px] bg-gradient-to-b from-[#0e1732] to-[#16234b] rounded-[30px] overflow-hidden flex flex-col items-center justify-between py-7 px-6">
-            
+          <div className="absolute inset-[1.5px] bg-gradient-to-b from-[#0e1732] to-[#16234b] rounded-[30px] overflow-hidden flex flex-col items-center justify-between py-5 2xl:py-7 px-5 2xl:px-6">
+
             {/* Glow blobs */}
             <div className="absolute bottom-[-10%] right-[-20%] w-64 h-64 bg-blue-600/20 rounded-full blur-[60px] pointer-events-none"></div>
             <div className="absolute top-[20%] left-[-20%] w-40 h-40 bg-indigo-500/20 rounded-full blur-[40px] pointer-events-none"></div>
@@ -386,57 +494,102 @@ export default function App() {
               <div>
                 <p className="font-semibold text-sm">Voice Shop Assistant</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                  <span className="text-[11px] text-slate-400">Online</span>
+                  <span className={`w-2 h-2 rounded-full ${aiServiceStatus.indicatorClass}`}></span>
+                  <span className="text-[11px] text-slate-400">{aiServiceStatus.label}</span>
                 </div>
               </div>
               <X className="w-4 h-4 text-slate-400 hover:text-white cursor-pointer" />
             </div>
 
-            {/* Visualizer + message */}
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 w-full relative z-10">
-            {/* Animated Visualizer */}
-            <div className="flex items-center gap-[3px] h-16 w-full justify-center px-4">
-              {[35, 55, 25, 80, 45, 95, 100, 70, 45, 85, 50, 75, 30, 55, 40].map((h, i) => (
-                <VisualizerBar key={i} baseHeight={h} delay={i * 0.08} />
-              ))}
-            </div>
-            <div className="text-center text-slate-300 text-sm space-y-1 font-medium">
-              <p>Hi! I'm your AI voice assistant.</p>
-              <p>How can I help you shop today?</p>
-            </div>
+            {/* Avatar + visualizer + message */}
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 w-full relative z-10">
+              <div className="absolute inset-x-4 top-[12%] h-24 bg-blue-500/10 blur-2xl pointer-events-none"></div>
+
+              <motion.div
+                className="relative mt-1"
+                animate={{ y: [0, -4, 0] }}
+                transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+              >
+                <motion.div
+                  className="absolute -inset-1 rounded-[30px] bg-gradient-to-r from-cyan-400/20 via-blue-500/20 to-indigo-400/20 blur-md"
+                  animate={{ opacity: [0.45, 0.85, 0.45], scale: [0.98, 1.02, 0.98] }}
+                  transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+                />
+
+                <motion.div
+                  className="absolute inset-0 rounded-[28px] border border-blue-300/40"
+                  animate={{
+                    boxShadow: [
+                      "0 0 0 rgba(59,130,246,0.1)",
+                      "0 0 20px rgba(59,130,246,0.35)",
+                      "0 0 0 rgba(59,130,246,0.1)",
+                    ],
+                  }}
+                  transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                />
+
+                <div className="relative w-[136px] 2xl:w-[176px] h-[136px] 2xl:h-[176px] rounded-[24px] 2xl:rounded-[28px] bg-gradient-to-b from-[#21366d]/90 via-[#1a2c5e]/95 to-[#13224a] border border-white/10 overflow-hidden flex items-end justify-center shadow-[0_20px_40px_rgba(2,6,23,0.45)]">
+                  <img
+                    src="/Media/i_need_this_girl_alone_202605262138-removebg-preview.png"
+                    alt="AI assistant avatar"
+                    className="w-[124%] h-[124%] object-contain -mb-1 2xl:-mb-2 drop-shadow-[0_12px_26px_rgba(59,130,246,0.45)]"
+                  />
+                </div>
+
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-2.5 2xl:px-3 py-1 rounded-full bg-blue-500/20 border border-blue-300/30 backdrop-blur-md whitespace-nowrap flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-blue-200" />
+                  <p className="text-[9px] 2xl:text-[10px] font-semibold text-blue-100 tracking-wide">Mia • Smart Concierge</p>
+                </div>
+              </motion.div>
+
+              <div className="flex items-center gap-[3px] h-9 2xl:h-11 w-full justify-center px-2 2xl:px-3 opacity-90 mt-1">
+                {[35, 55, 25, 80, 45, 95, 100, 70, 45, 85, 50, 75, 30, 55, 40].map((h, i) => (
+                  <VisualizerBar key={i} baseHeight={h} delay={i * 0.08} />
+                ))}
+              </div>
+
+              <p className="text-[11px] 2xl:text-xs text-slate-200 font-medium leading-relaxed text-center px-2">Ask for deals, specs, and best product match.</p>
+
+              <div className="flex items-center justify-center gap-1.5 text-[9px] 2xl:text-[10px] text-blue-100">
+                <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Deals</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Compare</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Track</span>
+              </div>
             </div>
 
             {/* Animated Mic Button */}
-            <div className="flex flex-col items-center gap-3 relative z-10">
-              <div className="relative flex items-center justify-center">
-                {/* Outer pulse ring 1 */}
+            <div className="flex flex-col items-center gap-1.5 relative z-10 pb-0.5">
+              <div className="relative flex items-center justify-center w-full">
+                <div className="absolute w-24 h-12 2xl:w-36 2xl:h-16 rounded-full bg-blue-500/15 blur-xl"></div>
+
                 <motion.div
-                  className="absolute w-28 h-28 rounded-full border border-blue-400/30"
+                  className="absolute w-14 h-14 2xl:w-20 2xl:h-20 rounded-full border border-blue-400/30"
                   animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
                   transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0 }}
                 />
-                {/* Outer pulse ring 2 */}
+
                 <motion.div
-                  className="absolute w-28 h-28 rounded-full border border-blue-400/20"
+                  className="absolute w-14 h-14 2xl:w-20 2xl:h-20 rounded-full border border-blue-400/20"
                   animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
                   transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0.5 }}
                 />
-                {/* Inner glowing ring */}
+
                 <motion.div
-                  className="absolute w-24 h-24 rounded-full border-2 border-blue-500/50"
+                  className="absolute w-12 h-12 2xl:w-16 2xl:h-16 rounded-full border-2 border-blue-500/50"
                   animate={{ scale: [1, 1.15, 1], opacity: [1, 0.3, 1] }}
                   transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
                 />
+
                 <motion.button
                   whileHover={{ scale: 1.08 }}
                   whileTap={{ scale: 0.95 }}
-                  className="relative w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_50px_rgba(37,99,235,0.7)]"
+                  className="relative w-11 h-11 2xl:w-14 2xl:h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.65)]"
                 >
-                  <Mic className="text-white w-8 h-8" />
+                  <Mic className="text-white w-4 h-4 2xl:w-6 2xl:h-6" />
                 </motion.button>
               </div>
-              <p className="text-white text-xs font-semibold tracking-wide">Tap to speak</p>
+
+              <p className="text-blue-100 text-[10px] 2xl:text-[11px] font-semibold tracking-wide">Tap to speak</p>
             </div>
           </div>
         </div>
