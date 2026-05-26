@@ -530,7 +530,7 @@ export default function App() {
 
                 <div className="relative w-[136px] 2xl:w-[176px] h-[136px] 2xl:h-[176px] rounded-[24px] 2xl:rounded-[28px] bg-gradient-to-b from-[#21366d]/90 via-[#1a2c5e]/95 to-[#13224a] border border-white/10 overflow-hidden flex items-end justify-center shadow-[0_20px_40px_rgba(2,6,23,0.45)]">
                   <img
-                    src="/Media/i_need_this_girl_alone_202605262138-removebg-preview.png"
+                    src="https://res.cloudinary.com/ddarldtbb/image/upload/v1779814719/i_need_this_girl_alone_202605262138-removebg-preview_czgnx1.png"
                     alt="AI assistant avatar"
                     className="w-[124%] h-[124%] object-contain -mb-1 2xl:-mb-2 drop-shadow-[0_12px_26px_rgba(59,130,246,0.45)]"
                   />
