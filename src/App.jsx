@@ -3,8 +3,7 @@ import { motion, useInView, animate } from 'framer-motion';
 import { 
   Search, Heart, ShoppingCart, Bell, MapPin, Truck, 
   Sparkles, RotateCcw, HeadphonesIcon, Zap, ChevronDown,
-  Smartphone, Laptop, Gamepad2, Home, Watch, Headphones,
-  Camera, Cable, Mic, Menu, X, CheckCircle2, User, Play,
+  Mic, Menu, X, CheckCircle2, User, Play,
   ShoppingBag, ShieldCheck, ArrowRight
 } from 'lucide-react';
 import { useAiServiceStatus } from './hooks/useAiServiceStatus';
@@ -73,8 +72,129 @@ export default function App() {
     return () => window.removeEventListener('resize', closeMenuOnDesktop);
   }, []);
 
+  const curatedCategories = [
+    {
+      name: 'Stands & Holders',
+      count: '3,248',
+      image: new URL('../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-1.jpg', import.meta.url).href,
+    },
+    {
+      name: 'Desk Organizers',
+      count: '2,186',
+      image: new URL('../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png', import.meta.url).href,
+    },
+    {
+      name: 'Desk Mats',
+      count: '4,702',
+      image: new URL('../Media/product_images/simplist-desk-mat-pro-plus/image-1.png', import.meta.url).href,
+    },
+    {
+      name: 'Lighting',
+      count: '1,944',
+      image: new URL('../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-1.webp', import.meta.url).href,
+    },
+    {
+      name: 'Clocks & Timers',
+      count: '1,325',
+      image: new URL('../Media/product_images/baseus-heyo-rotation-countdown-timer/image-1.jpg', import.meta.url).href,
+    },
+    {
+      name: 'Charging Stations',
+      count: '2,497',
+      image: new URL('../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-1.png', import.meta.url).href,
+    },
+    {
+      name: 'Monitor Raisers',
+      count: '1,807',
+      image: new URL('../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+    },
+    {
+      name: 'Standing Desks',
+      count: '1,152',
+      image: new URL('../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-1.png', import.meta.url).href,
+    },
+    {
+      name: 'Ergonomic Chairs',
+      count: '968',
+      image: new URL('../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-1.jpeg', import.meta.url).href,
+    },
+    {
+      name: 'Stress Reliever',
+      count: '864',
+      image: new URL('../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-1.webp', import.meta.url).href,
+    },
+    {
+      name: 'Cable Managers',
+      count: '1,143',
+      image: new URL('../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-1.webp', import.meta.url).href,
+    },
+  ];
+
+  const flashDeals = [
+    {
+      id: 'stand-foldable',
+      title: 'Baseus Foldable Desktop Phone Stand',
+      image: new URL('../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-2.jpeg', import.meta.url).href,
+      discount: '-21%',
+      price: 'LKR 24.90',
+      oldPrice: 'LKR 31.50',
+      rating: '4.8',
+      live: '34 watching',
+    },
+    {
+      id: 'desk-organizer',
+      title: 'Premium Walnut Desk Organizer',
+      image: new URL('../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-2.jpg', import.meta.url).href,
+      discount: '-18%',
+      price: 'LKR 39.00',
+      oldPrice: 'LKR 47.90',
+      rating: '4.8',
+      live: '19 carts',
+    },
+    {
+      id: 'desk-mat',
+      title: 'Simplist Desk Mat Pro Plus',
+      image: new URL('../Media/product_images/simplist-desk-mat-pro-plus/image-2.png', import.meta.url).href,
+      discount: '-30%',
+      price: 'LKR 21.90',
+      oldPrice: 'LKR 31.30',
+      rating: '4.7',
+      live: '42 sold today',
+    },
+    {
+      id: 'desk-lamp',
+      title: 'Baseus Smart Eye Foldable Desk Lamp',
+      image: new URL('../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-2.webp', import.meta.url).href,
+      discount: '-25%',
+      price: 'LKR 44.00',
+      oldPrice: 'LKR 58.80',
+      rating: '4.8',
+      live: '11 on checkout',
+    },
+    {
+      id: 'charging-station',
+      title: 'Baseus MagPro 3-in-1 Charging Station',
+      image: new URL('../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-2.jpg', import.meta.url).href,
+      discount: '-20%',
+      price: 'LKR 69.00',
+      oldPrice: 'LKR 86.50',
+      rating: '4.8',
+      live: '36 wishlisted',
+    },
+    {
+      id: 'monitor-raiser',
+      title: 'Ugreen Aluminum Monitor Raiser Stand',
+      image: new URL('../Media/product_images/ugreen-monitor-raiser-stand/image-2.jpg', import.meta.url).href,
+      discount: '-30%',
+      price: 'LKR 58.00',
+      oldPrice: 'LKR 82.90',
+      rating: '4.7',
+      live: '8 left',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f8faff] font-sans overflow-x-hidden text-slate-800">
+    <div className="min-h-screen bg-[#eef2f8] font-sans overflow-x-hidden text-slate-800">
       {/* 1. Top Navbar */}
       <nav className="bg-[#0b1021] text-white py-2 lg:py-3 z-50 relative w-full">
         <div className="max-w-[1720px] mx-auto w-full px-4 lg:px-8 2xl:px-12 flex items-center justify-between gap-3 lg:gap-5 xl:gap-7">
@@ -228,10 +348,13 @@ export default function App() {
       </div>
 
       {/* 3. Hero Section — full-width background, constrained content */}
-      <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#eef3ff] via-[#f4f7ff] to-[#e8f0ff] flex xl:min-h-[calc(100vh-126px)]">
+      <section className="relative w-full overflow-hidden bg-[linear-gradient(128deg,#dde9ff_0%,#eaf2ff_42%,#d7e6ff_100%)] flex xl:min-h-[calc(100vh-126px)]">
         {/* Full-width decorative background blobs */}
-        <div className="absolute top-0 right-0 w-[55%] h-full bg-gradient-to-bl from-blue-100/70 via-blue-50/40 to-transparent pointer-events-none"></div>
-        <div className="absolute top-1/3 left-[30%] w-[500px] h-[500px] bg-blue-200/30 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_15%_25%,rgba(59,130,246,0.16),transparent_36%),radial-gradient(circle_at_80%_72%,rgba(14,165,233,0.12),transparent_34%)]"></div>
+        <div className="absolute top-0 right-0 w-[55%] h-full bg-gradient-to-bl from-blue-200/50 via-blue-100/30 to-transparent pointer-events-none"></div>
+        <div className="absolute top-1/3 left-[30%] w-[520px] h-[520px] bg-blue-300/20 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute inset-0 pointer-events-none opacity-[0.1] bg-[linear-gradient(90deg,rgba(59,130,246,0.08)_1px,transparent_1px),linear-gradient(0deg,rgba(59,130,246,0.08)_1px,transparent_1px)] bg-[size:44px_44px]"></div>
+        <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-b from-transparent to-[#eef2f8] pointer-events-none"></div>
 
         <main className="relative max-w-[1720px] mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-8 2xl:px-12 pt-2 sm:pt-4 xl:pt-6 pb-4 sm:pb-6 xl:pb-4 2xl:pb-8 flex flex-col xl:grid xl:grid-cols-[minmax(300px,360px)_minmax(560px,1fr)_minmax(250px,280px)] 2xl:grid-cols-[minmax(360px,430px)_minmax(760px,1fr)_minmax(280px,320px)] items-center xl:items-center justify-start xl:justify-center gap-3 sm:gap-5 xl:gap-5 2xl:gap-10 xl:min-h-[calc(100vh-126px)]">
         
@@ -594,6 +717,126 @@ export default function App() {
           </div>
         </div>
       </main>
+      </section>
+
+      {/* 4. Categories + Flash Deals Section */}
+      <section className="relative bg-[#eef2f8] overflow-hidden pt-4 sm:pt-5 pb-10 sm:pb-12 border-t border-slate-200/80">
+        <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
+          <div className="rounded-[22px] border border-slate-200/90 bg-white px-2 sm:px-3 py-3 sm:py-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
+            <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="grid min-w-max grid-flow-col auto-cols-[112px] sm:auto-cols-[120px] lg:auto-cols-[126px]">
+                {curatedCategories.map((category, index) => (
+                  <motion.button
+                    key={category.name}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    transition={{ duration: 0.35, delay: index * 0.04 }}
+                    whileHover={{ y: -2 }}
+                    className="group px-2.5 sm:px-3 py-2 text-center border-r border-slate-200 last:border-r-0"
+                  >
+                    <div className="h-[78px] w-full rounded-xl bg-white p-1 flex items-center justify-center">
+                      <img
+                        src={category.image}
+                        alt={category.name}
+                        className="h-full w-full rounded-lg object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                      />
+                    </div>
+                    <p className="mt-3 text-[12px] sm:text-[13px] font-semibold leading-tight text-slate-900">{category.name}</p>
+                  </motion.button>
+                ))}
+
+                <motion.button
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.35, delay: 0.38 }}
+                  whileHover={{ y: -2 }}
+                  className="px-3 py-2 text-center"
+                >
+                  <div className="h-[78px] w-full flex items-center justify-center">
+                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg shadow-black/20">
+                      <ArrowRight className="h-7 w-7" />
+                    </span>
+                  </div>
+                  <p className="mt-3 text-[12px] sm:text-[13px] font-semibold text-slate-900">More Categories</p>
+                </motion.button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[28px] border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-7 shadow-[0_20px_45px_rgba(15,23,42,0.06)]">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <h3 className="text-[26px] leading-none font-bold text-slate-900">
+                  Today's Flash Deals
+                </h3>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-500">
+                  {["05", "42", "18"].map((unit) => (
+                    <span key={unit} className="rounded-md border border-rose-100 bg-rose-50 px-2 py-1 leading-none">{unit}</span>
+                  ))}
+                </div>
+              </div>
+              <a href="#" className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-800">
+                View All Deals
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
+              {flashDeals.map((deal, index) => (
+                <motion.article
+                  key={deal.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.22 }}
+                  transition={{ duration: 0.42, delay: index * 0.05 }}
+                  whileHover={{ y: -8 }}
+                  className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
+                >
+                  <div className="absolute left-3 top-3 rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    {deal.discount}
+                  </div>
+                  <button className="absolute right-3 top-3 rounded-full border border-slate-200 bg-white/90 p-1 text-slate-400 hover:text-rose-500 transition-colors">
+                    <Heart className="h-3.5 w-3.5" />
+                  </button>
+
+                  <div className="h-28 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white p-2">
+                    <img src={deal.image} alt={deal.title} className="h-full w-full rounded-lg object-cover" />
+                  </div>
+
+                  <h4 className="mt-2.5 text-[12px] font-semibold leading-snug text-slate-800 min-h-[38px]">{deal.title}</h4>
+
+                  <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-500">
+                    <Sparkles className="h-3.5 w-3.5 fill-amber-300 text-amber-500" />
+                    <span className="font-semibold text-slate-700">{deal.rating}</span>
+                    <span className="text-slate-400">({deal.live})</span>
+                  </div>
+
+                  <div className="mt-2 flex items-end gap-2">
+                    <p className="text-base font-extrabold text-rose-600">{deal.price}</p>
+                    <p className="pb-0.5 text-[11px] text-slate-400 line-through">{deal.oldPrice}</p>
+                  </div>
+
+                  <button className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-xl border border-blue-100 bg-blue-50 px-2 py-2 text-[11px] font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white">
+                    <ShoppingCart className="h-3.5 w-3.5" />
+                    Quick add
+                  </button>
+                </motion.article>
+              ))}
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+              <p className="text-xs sm:text-sm text-slate-600">
+                312 deals were updated in the last hour. Prices can shift in real-time.
+              </p>
+              <a href="#" className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700 hover:text-blue-800">
+                See all live deals
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </div>
       </section>
 
 
