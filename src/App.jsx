@@ -5,7 +5,7 @@ import {
   Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown,
   Mic, Menu, X, CheckCircle2, User, Play,
   ShoppingBag, ShieldCheck, ArrowRight, Brain, Flame, Terminal,
-  Check, Activity
+  Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink
 } from 'lucide-react';
 import { useAiServiceStatus } from './hooks/useAiServiceStatus';
 
@@ -233,9 +233,288 @@ const VIBE_DATASETS = {
   }
 };
 
+const VENDORS_DATA = [
+  {
+    id: 'apple',
+    name: 'Apple Store',
+    tagline: 'Official premium computing & mobile ecosystems.',
+    rating: 4.9,
+    reviews: 2408,
+    productsCount: 142,
+    baseFollowers: 15400,
+    cardBg: 'from-slate-50/70 via-slate-50/20 to-white hover:border-slate-300',
+    hoverGlow: 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.04)]',
+    stageBg: 'from-slate-950 via-slate-900 to-black border-slate-800/80',
+    glowGrad: 'from-slate-400 to-slate-200',
+    logoSvg: (
+      <svg className="w-8 h-8 text-slate-800" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.92 1.49-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.28-.58 2.94-1.39z" />
+      </svg>
+    ),
+    products: [
+      {
+        title: 'Qi2 2-in-1 Charging Dock',
+        price: 'LKR 18,900.00',
+        spec: '15W Fast Wireless',
+        image: new URL('../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-1.png', import.meta.url).href
+      },
+      {
+        title: 'Tablet iPad Dock Stand',
+        price: 'LKR 14,500.00',
+        spec: '360° Riser Base',
+        image: new URL('../Media/product_images/upergo-tablet-ipad-dock-stand-aluminium-silver/image-1.jpg', import.meta.url).href
+      },
+      {
+        title: 'MagPro 3-in-1 Charger',
+        price: 'LKR 21,900.00',
+        spec: 'Qi2 MagSafe Mount',
+        image: new URL('../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-1.png', import.meta.url).href
+      }
+    ]
+  },
+  {
+    id: 'samsung',
+    name: 'Samsung Official',
+    tagline: 'Industry-leading premium displays and visual hardware.',
+    rating: 4.8,
+    reviews: 1954,
+    productsCount: 96,
+    baseFollowers: 12800,
+    cardBg: 'from-blue-50/30 via-blue-50/5 to-white hover:border-blue-300/80',
+    hoverGlow: 'hover:shadow-[0_20px_50px_rgba(7,76,161,0.05)]',
+    stageBg: 'from-slate-950 via-blue-950/40 to-slate-950 border-blue-900/30',
+    glowGrad: 'from-blue-600 to-indigo-500',
+    logoSvg: (
+      <svg className="w-16 h-8 text-[#074CA1]" viewBox="0 0 100 30" fill="currentColor">
+        <ellipse cx="50" cy="15" rx="48" ry="14" transform="rotate(-10 50 15)" fill="#074CA1" />
+        <text x="50" y="19" fontFamily="Impact, Arial Black, sans-serif" fontSize="10" fill="white" textAnchor="middle" letterSpacing="0.4">SAMSUNG</text>
+      </svg>
+    ),
+    products: [
+      {
+        title: 'Kaloc Premium Monitor Arm',
+        price: 'LKR 16,500.00',
+        spec: 'Heavy Duty Gas Spring',
+        image: new URL('../Media/product_images/kaloc-xs100g-premium-aluminum-monitor-arm/image-1.png', import.meta.url).href
+      },
+      {
+        title: 'Monitor Raiser Stand',
+        price: 'LKR 18,900.00',
+        spec: 'Walnut Wood Drawer',
+        image: new URL('../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href
+      },
+      {
+        title: 'Premium Dual Monitor Stand',
+        price: 'LKR 35,000.00',
+        spec: 'Desk Space Optimizer',
+        image: new URL('../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-1.png', import.meta.url).href
+      }
+    ]
+  },
+  {
+    id: 'dell',
+    name: 'Dell Partner',
+    tagline: 'Professional performance laptop mounts and docking.',
+    rating: 4.7,
+    reviews: 1102,
+    productsCount: 64,
+    baseFollowers: 9500,
+    cardBg: 'from-cyan-50/30 via-cyan-50/5 to-white hover:border-cyan-300/80',
+    hoverGlow: 'hover:shadow-[0_20px_50px_rgba(0,107,206,0.05)]',
+    stageBg: 'from-slate-950 via-cyan-950/40 to-slate-950 border-cyan-900/30',
+    glowGrad: 'from-cyan-500 to-blue-500',
+    logoSvg: (
+      <svg className="w-9 h-9 text-[#006BCE]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="10.5" />
+        <path d="M7.5 9h1.5c.8 0 1.2.4 1.2 1.2v1.6c0 .8-.4 1.2-1.2 1.2H7.5V9zm.8 3.2h.7c.3 0 .4-.1.4-.4V10.2c0-.3-.1-.4-.4-.4h-.7v2.4z" fill="currentColor" stroke="none" />
+        <g transform="translate(10.2, 10.8) rotate(-22) translate(-1, -1)">
+          <path d="M0 0h2v.7H.7v.5h1v.6h-1v.6h1.3v.7H0V0z" fill="currentColor" stroke="none" />
+        </g>
+        <path d="M13.4 9v4H15v.8h-2.4V9h.8z" fill="currentColor" stroke="none" />
+        <path d="M15.8 9v4H17.4v.8h-2.4V9h.8z" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+    products: [
+      {
+        title: 'N3 Laptop Stand',
+        price: 'LKR 9,500.00',
+        spec: 'Foldable Riser Bracket',
+        image: new URL('../Media/product_images/n3-laptop-stand/image-1.jpg', import.meta.url).href
+      },
+      {
+        title: 'Ugreen Vertical Laptop Stand',
+        price: 'LKR 7,500.00',
+        spec: 'Gravity Lock Spacer',
+        image: new URL('../Media/product_images/ugreen-vertical-laptop-stand-adjustable-laptop-holder/image-1.jpg', import.meta.url).href
+      },
+      {
+        title: 'Portable Adjustable Laptop Stand',
+        price: 'LKR 11,900.00',
+        spec: 'Ergonomic Aluminium Base',
+        image: new URL('../Media/product_images/upergo-portable-laptop-stand/image-1.jpeg', import.meta.url).href
+      }
+    ]
+  },
+  {
+    id: 'sony',
+    name: 'Sony Store',
+    tagline: 'Premium studio monitoring audio and soundscapes.',
+    rating: 4.8,
+    reviews: 1304,
+    productsCount: 58,
+    baseFollowers: 11200,
+    cardBg: 'from-slate-100/40 via-slate-50/10 to-white hover:border-slate-400/80',
+    hoverGlow: 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.06)]',
+    stageBg: 'from-zinc-950 via-zinc-900 to-slate-950 border-zinc-800/80',
+    glowGrad: 'from-slate-900 to-slate-600',
+    logoSvg: (
+      <svg className="w-16 h-4 text-slate-800" viewBox="0 0 100 24" fill="currentColor">
+        <path d="M19.3 5.4c-.1-1.3-1.1-2.1-3-2.1-2.2 0-3.3 1.1-3.3 2.3 0 3.3 7 2.9 7 7.7 0 2.8-2.2 4.6-5.8 4.6-3.8 0-5.7-1.5-5.9-4.2h2.2c.2 1.6 1.5 2.4 3.7 2.4 2.3 0 3.6-1.1 3.6-2.5 0-3.6-7-3-7-7.7 0-2.5 2.1-4.4 5.5-4.4 3.4 0 5.4 1.4 5.6 3.8l-2.6.4z"/>
+        <path d="M34.7 17.7c-3.8 0-6.2-2.7-6.2-6.5s2.4-6.5 6.2-6.5 6.2 2.7 6.2 6.5-2.4 6.5-6.2 6.5zm0-10.7c-2.3 0-3.7 1.8-3.7 4.2s1.4 4.2 3.7 4.2 3.7-1.8 3.7-4.2-1.4-4.2-3.7-4.2z"/>
+        <path d="M46.7 5.1v12.2h2.3V7.9l7.7 9.4h2.1V5.1h-2.3v9.4l-7.7-9.4h-2.1z"/>
+        <path d="M69.8 11.2V5.1h-2.3v6.1l-4.7-6.1h-2.4l5.9 7.4v5.2h2.3v-5.2l5.9-7.4h-2.4l-4.7 6.1z"/>
+      </svg>
+    ),
+    products: [
+      {
+        title: 'Edifier Studio Monitors',
+        price: 'LKR 55,000.00',
+        spec: 'Studio Acoustic Audio',
+        image: new URL('../Media/product_images/edifier-mr4-studio-monitors/image-1.png', import.meta.url).href
+      },
+      {
+        title: 'Divoom Retro Speaker',
+        price: 'LKR 31,500.00',
+        spec: 'Pixel Art Smart Alarm',
+        image: new URL('../Media/product_images/divoom-ditoo-pro-retro-pixel-art-bluetooth-speaker/image-1.jpeg', import.meta.url).href
+      },
+      {
+        title: 'Divoom Tiivoo Speaker',
+        price: 'LKR 29,900.00',
+        spec: 'Retro Cabinet Design',
+        image: new URL('../Media/product_images/divoom-tiivoo-2-photo-album-bluetooth-speaker/image-1.jpeg', import.meta.url).href
+      }
+    ]
+  },
+  {
+    id: 'xiaomi',
+    name: 'Xiaomi Store',
+    tagline: 'Smart IoT home widgets, office lights, and workspace utilities.',
+    rating: 4.7,
+    reviews: 1482,
+    productsCount: 110,
+    baseFollowers: 13700,
+    cardBg: 'from-orange-50/20 via-orange-50/5 to-white hover:border-orange-300/80',
+    hoverGlow: 'hover:shadow-[0_20px_50px_rgba(255,103,0,0.05)]',
+    stageBg: 'from-slate-950 via-orange-950/30 to-slate-950 border-orange-900/30',
+    glowGrad: 'from-orange-500 to-amber-500',
+    logoSvg: (
+      <svg className="w-8 h-8 rounded-xl overflow-hidden" viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="7" fill="#FF6700" />
+        <path d="M7.2 8.5h1.5v5.8H7.2zm2.5 0h3c1.2 0 2.2.8 2.2 2.1v3.7h-1.5v-3.7c0-.5-.4-.9-.9-.9h-1.3v4.6H9.7zm6.2 0h1.5V11H19v1.2h-1.6v2.1h-1.5z" fill="white" />
+      </svg>
+    ),
+    products: [
+      {
+        title: 'Mi Monitor Light Bar',
+        price: 'LKR 15,900.00',
+        spec: 'Asymmetric Eye Protection',
+        image: new URL('../Media/product_images/mi-computer-monitor-light-bar-black/image-1.jpg', import.meta.url).href
+      },
+      {
+        title: 'Mi Smart Desk Lamp',
+        price: 'LKR 19,900.00',
+        spec: 'Wi-Fi Intelligent Control',
+        image: new URL('../Media/product_images/mi-1s-smart-led-desk-lamp/image-1.png', import.meta.url).href
+      },
+      {
+        title: 'Baseus Countdown Timer',
+        price: 'LKR 4,900.00',
+        spec: 'Heyo Rotary Control Dial',
+        image: new URL('../Media/product_images/baseus-heyo-rotation-countdown-timer/image-1.jpg', import.meta.url).href
+      }
+    ]
+  },
+  {
+    id: 'beats',
+    name: 'Beats Official',
+    tagline: 'Signature acoustic headphone stands and audiophile mounts.',
+    rating: 4.6,
+    reviews: 820,
+    productsCount: 42,
+    baseFollowers: 8900,
+    cardBg: 'from-red-50/15 via-red-50/5 to-white hover:border-red-300/80',
+    hoverGlow: 'hover:shadow-[0_20px_50px_rgba(224,34,41,0.05)]',
+    stageBg: 'from-slate-950 via-red-950/30 to-slate-950 border-red-900/30',
+    glowGrad: 'from-red-600 to-rose-500',
+    logoSvg: (
+      <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="#E02229" />
+        <path d="M12 4.5a7.5 7.5 0 0 0-7.5 7.5V12a7.5 7.5 0 0 0 12.8 5.3l-1.4-1.4A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 5.5 5.5V12a5.5 5.5 0 0 1-5.5 5.5c-3 0-5.5-2.5-5.5-5.5h-2a7.5 7.5 0 0 0 7.5 7.5 7.5 7.5 0 0 0 7.5-7.5v-.5a7.5 7.5 0 0 0-7.5-7.5z" fill="white" />
+      </svg>
+    ),
+    products: [
+      {
+        title: 'Walnut Headphone Stand',
+        price: 'LKR 9,500.00',
+        spec: 'Solid Walnut Base',
+        image: new URL('../Media/product_images/walnut-luxe-headphone-stand/image-1.jpeg', import.meta.url).href
+      },
+      {
+        title: 'Apex Solid Walnut Stand',
+        price: 'LKR 12,900.00',
+        spec: 'Premium Wood Hanger',
+        image: new URL('../Media/product_images/the-apex-stand-solid-walnut-wood-headphone-holder-stand-for-minimalist-desk-setups/image-1.png', import.meta.url).href
+      },
+      {
+        title: 'Solo Headset Stand',
+        price: 'LKR 8,500.00',
+        spec: 'Universal Metal Bracket',
+        image: new URL('../Media/product_images/simplist-solo-headset-holder-detachable-aluminum-alloy-portable-headphone-stand/image-1.jpg', import.meta.url).href
+      }
+    ]
+  }
+];
+
+const formatNumber = (num) => num.toLocaleString();
+
 export default function App() {
   const aiServiceStatus = useAiServiceStatus();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [followedVendors, setFollowedVendors] = useState({});
+  const [openDropdownVendor, setOpenDropdownVendor] = useState(null);
+  const [activeVendorId, setActiveVendorId] = useState('apple');
+  const [toastMessage, setToastMessage] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  const showToast = (msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(msg);
+    toastTimerRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
+
+  const handleToggleFollowVendor = (vendorId, vendorName) => {
+    setFollowedVendors(prev => {
+      const updated = { ...prev, [vendorId]: !prev[vendorId] };
+      showToast(updated[vendorId] ? `You are now following ${vendorName}` : `Unfollowed ${vendorName}`);
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    const handleGlobalClick = (e) => {
+      if (!e.target.closest('.vendor-dropdown-container')) {
+        setOpenDropdownVendor(null);
+      }
+    };
+    document.addEventListener('click', handleGlobalClick);
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   // Workspace Curation Theme State
   const [workspaceVibe, setWorkspaceVibe] = useState('walnut');
@@ -1391,7 +1670,264 @@ export default function App() {
         </div>
       </section>
 
-      {/* 6. Why Shop with Tech-Hub AI Values Section */}
+      {/* 6. Featured Vendors Section */}
+      <section className="relative bg-[#f8fafc] py-16 border-t border-slate-200/80">
+        {/* Soft Ambient glow behind the split console */}
+        <div className="absolute top-[10%] left-[5%] w-[450px] h-[450px] bg-blue-500/5 rounded-full blur-[90px] pointer-events-none" />
+        <div className="absolute bottom-[10%] right-[5%] w-[450px] h-[450px] bg-indigo-500/5 rounded-full blur-[90px] pointer-events-none" />
+
+        <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12 relative z-10">
+          
+          {/* Header */}
+          <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
+                  Featured Vendors
+                </h3>
+                <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200/80 px-3.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm">
+                  <Activity className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+                  Ecosystem Hub
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-2.5">
+                Connect and browse official vendor storefronts integrated into unified workspace setups.
+              </p>
+            </div>
+            <a href="#" className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700 hover:text-blue-800 group shrink-0 self-start sm:self-center">
+              View All Partners
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </a>
+          </div>
+
+          {/* Interactive Split-Pane Console */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Sidebar: Brand selector buttons (4 columns on lg) */}
+            <div className="lg:col-span-4 flex flex-col gap-3.5 w-full">
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1 pl-1">Partner Directory</p>
+              
+              {VENDORS_DATA.map((vendor) => {
+                const isActive = activeVendorId === vendor.id;
+                const isFollowed = !!followedVendors[vendor.id];
+                return (
+                  <button
+                    key={vendor.id}
+                    onClick={() => setActiveVendorId(vendor.id)}
+                    className={`relative w-full text-left p-4 rounded-3xl border transition-all duration-300 flex items-center justify-between group overflow-hidden ${
+                      isActive
+                        ? 'bg-white border-slate-300 shadow-[0_12px_24px_rgba(15,23,42,0.04)] -translate-x-1 lg:-translate-x-2'
+                        : 'bg-white/60 border-slate-200/70 hover:bg-white hover:border-slate-300 hover:shadow-[0_8px_16px_rgba(15,23,42,0.02)]'
+                    }`}
+                  >
+                    {/* Active highlight line indicator */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeIndicator"
+                        className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600 rounded-r-md"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
+                    )}
+
+                    <div className="flex items-center gap-3.5">
+                      {/* Logo Ring */}
+                      <div className={`w-12 h-12 rounded-xl bg-slate-50 border flex items-center justify-center p-1.5 transition-all duration-300 shrink-0 ${
+                        isActive ? 'border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]' : 'border-slate-200/60'
+                      }`}>
+                        {vendor.logoSvg}
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900 leading-tight flex items-center gap-1.5">
+                          {vendor.name}
+                          {isFollowed && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" title="Following" />
+                          )}
+                        </h4>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-500 stroke-[1.5]" />
+                          <span className="text-[11px] font-bold text-slate-700">{vendor.rating}</span>
+                          <span className="text-[9px] text-slate-400">({vendor.reviews})</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Followers count compact badge */}
+                    <div className="text-right shrink-0">
+                      <p className="text-[9px] font-bold text-slate-400">Followers</p>
+                      <p className="text-xs font-black text-slate-800 mt-0.5">
+                        {formatNumber(vendor.baseFollowers + (isFollowed ? 1 : 0))}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right Panel: Dynamic Dark Showcase Stage (8 columns on lg) */}
+            <div className="lg:col-span-8 w-full h-full">
+              {VENDORS_DATA.map((vendor) => {
+                if (vendor.id !== activeVendorId) return null;
+                const isFollowed = !!followedVendors[vendor.id];
+                return (
+                  <motion.div
+                    key={vendor.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className={`w-full bg-gradient-to-br rounded-[40px] border p-8 flex flex-col justify-between shadow-[0_24px_50px_rgba(15,23,42,0.1)] relative overflow-hidden backdrop-blur-md h-[610px] ${vendor.stageBg}`}
+                  >
+                    {/* Glowing Accent Ambient Blob */}
+                    <div className={`absolute -top-24 -right-24 w-64 h-64 bg-gradient-to-br ${vendor.glowGrad} opacity-[0.08] rounded-full blur-[50px] pointer-events-none`} />
+                    <div className={`absolute -bottom-24 -left-24 w-64 h-64 bg-gradient-to-br ${vendor.glowGrad} opacity-[0.08] rounded-full blur-[50px] pointer-events-none`} />
+
+                    <div className="relative z-10">
+                      
+                      {/* Stage Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100/95 flex items-center justify-center p-2 shadow-md shrink-0">
+                            {vendor.logoSvg}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-xl font-black text-white">{vendor.name}</h3>
+                              <span className="text-[8px] tracking-wider uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md font-black">
+                                Verified Partner
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1">{vendor.tagline}</p>
+                          </div>
+                        </div>
+
+                        {/* Stage Follow Action */}
+                        <button
+                          onClick={() => handleToggleFollowVendor(vendor.id, vendor.name)}
+                          className={`px-5 py-2.5 rounded-full text-xs font-black transition-all flex items-center gap-1.5 self-start sm:self-center shrink-0 ${
+                            isFollowed
+                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-md'
+                              : 'bg-white text-slate-900 hover:bg-slate-100 hover:scale-[1.02] active:scale-98 shadow-sm'
+                          }`}
+                        >
+                          {isFollowed ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>Following Partner</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>Follow Brand</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Partners Catalog Shelf title */}
+                      <div className="mt-6 flex justify-between items-center mb-4">
+                        <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Featured Partner Catalog</p>
+                        <p className="text-[10px] text-slate-500 font-bold">Showing 3 of {vendor.productsCount} items</p>
+                      </div>
+
+                      {/* Product Shelf Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {vendor.products.map((product, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-white/5 border border-white/10 rounded-3xl p-3.5 flex flex-col justify-between h-[230px] transition-all duration-300 hover:bg-white/10 hover:border-white/20 group/item relative"
+                          >
+                            <div className="h-24 w-full bg-white rounded-2xl flex items-center justify-center p-2 border border-white/5 overflow-hidden shadow-inner">
+                              <img
+                                src={product.image}
+                                alt={product.title}
+                                className="max-h-full max-w-full object-contain mix-blend-multiply group-hover/item:scale-110 transition-transform duration-500"
+                              />
+                            </div>
+                            
+                            <div className="mt-3">
+                              <h5 className="text-[11px] font-extrabold text-white leading-snug truncate" title={product.title}>
+                                {product.title}
+                              </h5>
+                              <p className="text-[9px] font-black text-blue-400 tracking-wide uppercase mt-0.5 leading-none">
+                                {product.spec}
+                              </p>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-2.5">
+                              <span className="text-xs font-black text-white">{product.price || 'LKR 12,900'}</span>
+                              <button
+                                onClick={() => showToast(`Added ${product.title} to your workspace setup!`)}
+                                className="w-7 h-7 rounded-xl bg-white/10 hover:bg-blue-600 text-white flex items-center justify-center border border-white/10 transition-all hover:scale-105 active:scale-95"
+                                title="Add to Workspace Setup"
+                              >
+                                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                    </div>
+
+                    {/* Visit Store Action Row */}
+                    <div className="relative flex items-center vendor-dropdown-container mt-6">
+                      <button
+                        onClick={() => showToast(`Opening storepage for ${vendor.name}...`)}
+                        className="flex-1 bg-white hover:bg-slate-100 text-slate-900 active:scale-99 py-3 px-5 rounded-l-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-md"
+                      >
+                        <ShoppingBag className="w-4 h-4 text-slate-800" />
+                        Visit Official Store
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdownVendor(openDropdownVendor === vendor.id ? null : vendor.id);
+                        }}
+                        className={`px-4 py-3 rounded-r-2xl border-l border-slate-200 text-slate-800 transition-all flex items-center justify-center shadow-md ${
+                          openDropdownVendor === vendor.id
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white hover:bg-slate-100'
+                        }`}
+                      >
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${openDropdownVendor === vendor.id ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {openDropdownVendor === vendor.id && (
+                        <div className="absolute right-0 bottom-full mb-3 w-56 rounded-2xl bg-white border border-slate-200/80 p-2 shadow-[0_15px_30px_rgba(15,23,42,0.12)] z-40 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                          {[
+                            { label: 'Browse Catalog', icon: <ExternalLink className="w-3.5 h-3.5" /> },
+                            { label: 'Chat with Agent', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+                            { label: 'Certificates', icon: <Award className="w-3.5 h-3.5" /> },
+                            { label: 'Write Review', icon: <FileText className="w-3.5 h-3.5" /> }
+                          ].map((opt, oIdx) => (
+                            <button
+                              key={oIdx}
+                              onClick={() => {
+                                showToast(`${opt.label} clicked for ${vendor.name}`);
+                                setOpenDropdownVendor(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors group"
+                            >
+                              <span className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0">{opt.icon}</span>
+                              <span>{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                  </motion.div>
+                );
+              })}
+            </div>
+
+          </div>
+          
+        </div>
+      </section>
+
+      {/* 7. Why Shop with Tech-Hub AI Values Section */}
       <section className="relative bg-gradient-to-b from-[#eef2f8] to-[#f4f7fc] pb-16 pt-10 border-t border-slate-200/80">
         <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
           
@@ -1467,6 +2003,20 @@ export default function App() {
 
         </div>
       </section>
+
+      {/* Global Toast Notification */}
+      {toastMessage && (
+        <motion.div 
+          initial={{ opacity: 0, y: 50, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.95 }}
+          transition={{ duration: 0.25 }}
+          className="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 z-50 border border-slate-800/80"
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="text-xs font-bold">{toastMessage}</span>
+        </motion.div>
+      )}
 
     </div>
   );
