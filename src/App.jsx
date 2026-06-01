@@ -2,9 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, useInView, animate } from 'framer-motion';
 import { 
   Search, Heart, ShoppingCart, Bell, MapPin, Truck, 
-  Sparkles, RotateCcw, HeadphonesIcon, Zap, ChevronDown,
+  Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown,
   Mic, Menu, X, CheckCircle2, User, Play,
-  ShoppingBag, ShieldCheck, ArrowRight
+  ShoppingBag, ShieldCheck, ArrowRight, Brain, Flame, Terminal,
+  Check, Activity
 } from 'lucide-react';
 import { useAiServiceStatus } from './hooks/useAiServiceStatus';
 
@@ -57,9 +58,226 @@ const AnimatedStat = ({ target, suffix = '' }) => {
   return <span ref={ref}>{count}{suffix}</span>;
 };
 
+const VIBE_DATASETS = {
+  walnut: {
+    name: 'Walnut & Organic',
+    description: 'A warm, organic aesthetic featuring solid walnut wood organizers, rich leather textures, and premium acoustic stands.',
+    recentlyViewed: {
+      title: 'Ugreen Walnut Monitor Raiser Stand',
+      image: new URL('../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+      price: 'LKR 18,900.00',
+      category: 'Monitor Raiser',
+      timeText: 'Viewed 2h ago'
+    },
+    handpicked: {
+      title: 'Premium Walnut Desk Organizer',
+      image: new URL('../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png', import.meta.url).href,
+      price: 'LKR 12,900.00',
+      tip: 'Solid walnut wood grains look best when placed directly on a matte black or dark grey felt desk mat.'
+    },
+    bundle: [
+      {
+        id: 'walnut-organizer',
+        title: 'Premium Walnut Desk Organizer',
+        price: 12900,
+        image: new URL('../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png', import.meta.url).href,
+      },
+      {
+        id: 'walnut-raiser',
+        title: 'Ugreen Walnut Monitor Raiser Stand',
+        price: 18900,
+        image: new URL('../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+      },
+      {
+        id: 'walnut-headphone',
+        title: 'Walnut Luxe Headphone Stand',
+        price: 9500,
+        image: new URL('../Media/product_images/walnut-luxe-headphone-stand/image-1.jpeg', import.meta.url).href,
+      }
+    ],
+    trending: {
+      title: 'FlexiSpot E7 Ergonomic standing desk',
+      image: new URL('../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-1.png', import.meta.url).href,
+      price: 'LKR 185,000.00',
+      socialText: '42 users styled this desk this week'
+    }
+  },
+  minimalist: {
+    name: 'Cream Minimalist',
+    description: 'A bright, clean space focused on warm cream desk mats, white matte charging docks, and smart lighting to reduce mental clutter.',
+    recentlyViewed: {
+      title: 'Baseus Smart Eye Foldable Desk Lamp',
+      image: new URL('../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-1.webp', import.meta.url).href,
+      price: 'LKR 12,800.00',
+      category: 'Desk Lamp',
+      timeText: 'Viewed 4h ago'
+    },
+    handpicked: {
+      title: 'Simplist Desk Mat Pro Plus',
+      image: new URL('../Media/product_images/simplist-desk-mat-pro-plus/image-1.png', import.meta.url).href,
+      price: 'LKR 6,400.00',
+      tip: 'Cream and grey desk mat textures add visual warmth while keeping mouse movement smooth and precise.'
+    },
+    bundle: [
+      {
+        id: 'min-desk-mat',
+        title: 'Simplist Desk Mat Pro Plus',
+        price: 6400,
+        image: new URL('../Media/product_images/simplist-desk-mat-pro-plus/image-1.png', import.meta.url).href,
+      },
+      {
+        id: 'min-charger',
+        title: 'Baseus MagPro 3-in-1 Charging Station',
+        price: 21900,
+        image: new URL('../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-1.png', import.meta.url).href,
+      },
+      {
+        id: 'min-cable-box',
+        title: 'Fasola Cable Management Box (White)',
+        price: 4500,
+        image: new URL('../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-1.webp', import.meta.url).href,
+      }
+    ],
+    trending: {
+      title: 'FlexiSpot C7 Premium Ergonomic Chair',
+      image: new URL('../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-1.jpeg', import.meta.url).href,
+      price: 'LKR 98,500.00',
+      socialText: '84 minimalists added this to their setup today'
+    }
+  },
+  black: {
+    name: 'Stealth Matte Black',
+    description: 'A stealthy, high-focus productivity look composed of black anodized metals, matte cable managers, and clean direct task lights.',
+    recentlyViewed: {
+      title: 'Ugreen Aluminum Monitor Raiser (Black)',
+      image: new URL('../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+      price: 'LKR 18,900.00',
+      category: 'Monitor Raiser',
+      timeText: 'Viewed 1d ago'
+    },
+    handpicked: {
+      title: 'Baseus Smart Eye Desk Lamp (Black)',
+      image: new URL('../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-2.webp', import.meta.url).href,
+      price: 'LKR 12,800.00',
+      tip: 'Task lights create targeted illumination on dark desk pads, keeping the surrounding room stealthy and relaxed.'
+    },
+    bundle: [
+      {
+        id: 'black-lamp',
+        title: 'Baseus Smart Eye Desk Lamp (Black)',
+        price: 12800,
+        image: new URL('../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-2.webp', import.meta.url).href,
+      },
+      {
+        id: 'black-raiser',
+        title: 'Ugreen Aluminum Monitor Raiser (Black)',
+        price: 18900,
+        image: new URL('../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+      },
+      {
+        id: 'black-cable-box',
+        title: 'Fasola Cable Management Box (Black)',
+        price: 4500,
+        image: new URL('../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-1.webp', import.meta.url).href,
+      }
+    ],
+    trending: {
+      title: 'Ugreen Qi2 2-in-1 Robot Charging Dock',
+      image: new URL('../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-1.png', import.meta.url).href,
+      price: 'LKR 18,900.00',
+      socialText: '112 programmers bought this setup accent item'
+    }
+  },
+  cyberpunk: {
+    name: 'Cyberpunk RGB',
+    description: 'A high-energy, retro-futuristic style with customizable pixel displays, colorful speakers, and vibrant glowing widgets.',
+    recentlyViewed: {
+      title: 'Divoom Times Gate Digital Clock',
+      image: new URL('../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-1.jpeg', import.meta.url).href,
+      price: 'LKR 42,900.00',
+      category: 'Smart Clock',
+      timeText: 'Viewed 10m ago'
+    },
+    handpicked: {
+      title: 'Divoom Ditoo Retro Pixel Speaker',
+      image: new URL('../Media/product_images/divoom-ditoo-pro-retro-pixel-art-bluetooth-speaker/image-1.jpeg', import.meta.url).href,
+      price: 'LKR 31,500.00',
+      tip: 'The retro screen matches perfectly with secondary ambient RGB backlighting for maximum desktop energy.'
+    },
+    bundle: [
+      {
+        id: 'cyber-speaker',
+        title: 'Divoom Ditoo Retro Speaker',
+        price: 31500,
+        image: new URL('../Media/product_images/divoom-ditoo-pro-retro-pixel-art-bluetooth-speaker/image-1.jpeg', import.meta.url).href,
+      },
+      {
+        id: 'cyber-clock',
+        title: 'Divoom Times Gate Digital Clock',
+        price: 42900,
+        image: new URL('../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-1.jpeg', import.meta.url).href,
+      },
+      {
+        id: 'cyber-toy',
+        title: 'Kinetic Roller Coaster Perpetual Motion',
+        price: 14500,
+        image: new URL('../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-1.webp', import.meta.url).href,
+      }
+    ],
+    trending: {
+      title: 'Baseus rotation Countdown Timer',
+      image: new URL('../Media/product_images/baseus-heyo-rotation-countdown-timer/image-1.jpg', import.meta.url).href,
+      price: 'LKR 4,900.00',
+      socialText: '72 collectors wishlisted this countdown widget'
+    }
+  }
+};
+
 export default function App() {
   const aiServiceStatus = useAiServiceStatus();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Workspace Curation Theme State
+  const [workspaceVibe, setWorkspaceVibe] = useState('walnut');
+  const [isCurationLoading, setIsCurationLoading] = useState(false);
+  const activeVibe = VIBE_DATASETS[workspaceVibe];
+
+  const [selectedBundleItems, setSelectedBundleItems] = useState([]);
+  const [isBundleAdded, setIsBundleAdded] = useState(false);
+
+  // Sync selected bundle items when vibe changes
+  useEffect(() => {
+    if (activeVibe && activeVibe.bundle) {
+      setSelectedBundleItems(activeVibe.bundle.map(item => item.id));
+    }
+    setIsBundleAdded(false);
+  }, [workspaceVibe]);
+
+  const currentBundleItems = activeVibe ? activeVibe.bundle : [];
+  const rawBundleTotal = currentBundleItems
+    .filter(item => selectedBundleItems.includes(item.id))
+    .reduce((sum, item) => sum + item.price, 0);
+
+  const bundleDiscountPercent = selectedBundleItems.length === 3 ? 15 : selectedBundleItems.length === 2 ? 5 : 0;
+  const bundleSavings = rawBundleTotal * (bundleDiscountPercent / 100);
+  const bundleFinalTotal = rawBundleTotal - bundleSavings;
+
+  const handleToggleBundleItem = (itemId) => {
+    if (selectedBundleItems.includes(itemId)) {
+      setSelectedBundleItems(selectedBundleItems.filter(id => id !== itemId));
+    } else {
+      setSelectedBundleItems([...selectedBundleItems, itemId]);
+    }
+    setIsBundleAdded(false);
+  };
+
+  const handleVibeChange = (vibeId) => {
+    setIsCurationLoading(true);
+    setWorkspaceVibe(vibeId);
+    setTimeout(() => {
+      setIsCurationLoading(false);
+    }, 450);
+  };
 
   useEffect(() => {
     const closeMenuOnDesktop = () => {
@@ -322,7 +540,7 @@ export default function App() {
           </div>
 
           <div className="hidden lg:flex items-center gap-2 border-l border-r border-slate-200 px-6">
-            <div className="bg-blue-50 p-1.5 rounded-full"><Sparkles className="w-4 h-4 text-blue-600" /></div>
+            <div className="bg-blue-50 p-1.5 rounded-full"><Brain className="w-4 h-4 text-blue-600" /></div>
             <div>
               <p className="font-semibold text-slate-800">AI-Powered Recommendations</p>
               <p className="text-slate-500 text-xs text-left">Personalized for you</p>
@@ -348,12 +566,7 @@ export default function App() {
       </div>
 
       {/* 3. Hero Section — full-width background, constrained content */}
-      <section className="relative w-full overflow-hidden bg-[linear-gradient(128deg,#dde9ff_0%,#eaf2ff_42%,#d7e6ff_100%)] flex xl:min-h-[calc(100vh-126px)]">
-        {/* Full-width decorative background blobs */}
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_15%_25%,rgba(59,130,246,0.16),transparent_36%),radial-gradient(circle_at_80%_72%,rgba(14,165,233,0.12),transparent_34%)]"></div>
-        <div className="absolute top-0 right-0 w-[55%] h-full bg-gradient-to-bl from-blue-200/50 via-blue-100/30 to-transparent pointer-events-none"></div>
-        <div className="absolute top-1/3 left-[30%] w-[520px] h-[520px] bg-blue-300/20 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute inset-0 pointer-events-none opacity-[0.1] bg-[linear-gradient(90deg,rgba(59,130,246,0.08)_1px,transparent_1px),linear-gradient(0deg,rgba(59,130,246,0.08)_1px,transparent_1px)] bg-[size:44px_44px]"></div>
+      <section className="relative w-full overflow-hidden bg-[#eef2f8] flex xl:min-h-[calc(100vh-126px)]">
         <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-b from-transparent to-[#eef2f8] pointer-events-none"></div>
 
         <main className="relative max-w-[1720px] mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-8 2xl:px-12 pt-2 sm:pt-4 xl:pt-6 pb-4 sm:pb-6 xl:pb-4 2xl:pb-8 flex flex-col xl:grid xl:grid-cols-[minmax(300px,360px)_minmax(560px,1fr)_minmax(250px,280px)] 2xl:grid-cols-[minmax(360px,430px)_minmax(760px,1fr)_minmax(280px,320px)] items-center xl:items-center justify-start xl:justify-center gap-3 sm:gap-5 xl:gap-5 2xl:gap-10 xl:min-h-[calc(100vh-126px)]">
@@ -415,6 +628,9 @@ export default function App() {
 
         {/* Middle Column - Hero Visual & Pedestal */}
         <div className="order-3 xl:order-2 w-full xl:w-auto relative z-10 flex items-center justify-center min-h-[160px] sm:min-h-[240px] md:min-h-[320px] lg:min-h-[400px] xl:min-h-[500px] 2xl:min-h-[660px] mt-1 sm:mt-2 xl:mt-0">
+          <div className="absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-300/22 blur-[55px] pointer-events-none sm:h-[360px] sm:w-[360px] sm:blur-[80px] xl:h-[440px] xl:w-[440px] xl:blur-[100px]"></div>
+          <div className="absolute left-1/2 top-[48%] h-[180px] w-[82%] max-w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(191,219,254,0.85)_0%,rgba(219,234,254,0.45)_42%,rgba(238,242,248,0)_74%)] pointer-events-none sm:h-[220px] xl:h-[280px]"></div>
+          <div className="absolute left-1/2 bottom-[8%] h-[120px] w-[72%] max-w-[560px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(96,165,250,0.22)_0%,rgba(191,219,254,0.12)_48%,rgba(238,242,248,0)_76%)] blur-[18px] pointer-events-none"></div>
           
           {/* ── Circular ring pattern (concentric rings behind image) ── */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden 2xl:overflow-visible">
@@ -559,7 +775,7 @@ export default function App() {
                     <span className="text-[11px] text-slate-300">{aiServiceStatus.label}</span>
                   </div>
                 </div>
-                <Sparkles className="w-4 h-4 text-blue-200" />
+                <Cpu className="w-4 h-4 text-blue-200" />
               </div>
 
               <div className="mt-4 flex items-center gap-3 sm:gap-4">
@@ -660,7 +876,7 @@ export default function App() {
                 </div>
 
                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-2.5 2xl:px-3 py-1 rounded-full bg-blue-500/20 border border-blue-300/30 backdrop-blur-md whitespace-nowrap flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-blue-200" />
+                  <Cpu className="w-3 h-3 text-blue-200" />
                   <p className="text-[9px] 2xl:text-[10px] font-semibold text-blue-100 tracking-wide">Mia • Smart Concierge</p>
                 </div>
               </motion.div>
@@ -722,9 +938,18 @@ export default function App() {
       {/* 4. Categories + Flash Deals Section */}
       <section className="relative bg-[#eef2f8] overflow-hidden pt-4 sm:pt-5 pb-10 sm:pb-12 border-t border-slate-200/80">
         <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
-          <div className="rounded-[22px] border border-slate-200/90 bg-white px-2 sm:px-3 py-3 sm:py-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)]">
-            <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="grid min-w-max grid-flow-col auto-cols-[112px] sm:auto-cols-[120px] lg:auto-cols-[126px]">
+          <div className="mb-3 flex items-center justify-end">
+            <a
+              href="#"
+              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
+            >
+              View More Categories
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+
+          <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="grid min-w-max grid-flow-col auto-cols-[126px] sm:auto-cols-[138px] lg:auto-cols-[146px]">
                 {curatedCategories.map((category, index) => (
                   <motion.button
                     key={category.name}
@@ -733,9 +958,9 @@ export default function App() {
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.35, delay: index * 0.04 }}
                     whileHover={{ y: -2 }}
-                    className="group px-2.5 sm:px-3 py-2 text-center border-r border-slate-200 last:border-r-0"
+                    className="group px-3 sm:px-3.5 py-2 text-center border-r border-slate-300/80 last:border-r-0"
                   >
-                    <div className="h-[78px] w-full rounded-xl bg-white p-1 flex items-center justify-center">
+                    <div className="h-[96px] sm:h-[104px] w-full rounded-xl bg-white/80 p-1 flex items-center justify-center shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
                       <img
                         src={category.image}
                         alt={category.name}
@@ -754,7 +979,7 @@ export default function App() {
                   whileHover={{ y: -2 }}
                   className="px-3 py-2 text-center"
                 >
-                  <div className="h-[78px] w-full flex items-center justify-center">
+                  <div className="h-[96px] sm:h-[104px] w-full flex items-center justify-center">
                     <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg shadow-black/20">
                       <ArrowRight className="h-7 w-7" />
                     </span>
@@ -762,10 +987,9 @@ export default function App() {
                   <p className="mt-3 text-[12px] sm:text-[13px] font-semibold text-slate-900">More Categories</p>
                 </motion.button>
               </div>
-            </div>
           </div>
 
-          <div className="mt-6 rounded-[28px] border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-7 shadow-[0_20px_45px_rgba(15,23,42,0.06)]">
+          <div className="mt-6 p-1 sm:p-0">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-[26px] leading-none font-bold text-slate-900">
@@ -792,7 +1016,7 @@ export default function App() {
                   viewport={{ once: true, amount: 0.22 }}
                   transition={{ duration: 0.42, delay: index * 0.05 }}
                   whileHover={{ y: -8 }}
-                  className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
+                  className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/88 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-sm"
                 >
                   <div className="absolute left-3 top-3 rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                     {deal.discount}
@@ -808,7 +1032,7 @@ export default function App() {
                   <h4 className="mt-2.5 text-[12px] font-semibold leading-snug text-slate-800 min-h-[38px]">{deal.title}</h4>
 
                   <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-500">
-                    <Sparkles className="h-3.5 w-3.5 fill-amber-300 text-amber-500" />
+                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
                     <span className="font-semibold text-slate-700">{deal.rating}</span>
                     <span className="text-slate-400">({deal.live})</span>
                   </div>
@@ -825,8 +1049,7 @@ export default function App() {
                 </motion.article>
               ))}
             </div>
-
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/60 bg-white/45 px-4 py-3 backdrop-blur-sm">
               <p className="text-xs sm:text-sm text-slate-600">
                 312 deals were updated in the last hour. Prices can shift in real-time.
               </p>
@@ -839,7 +1062,411 @@ export default function App() {
         </div>
       </section>
 
+      {/* 5. Curate Your Workspace — Setup Curation Hub */}
+      <section className="relative bg-[#eef2f8] pb-16 pt-12 border-t border-slate-200/80">
+        
+        {/* Soft Radial Ambient Glow */}
+        <div className="absolute top-[10%] left-[-10%] w-[400px] h-[400px] bg-blue-400/5 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute bottom-[10%] right-[-10%] w-[450px] h-[450px] bg-indigo-400/5 rounded-full blur-[100px] pointer-events-none" />
 
+        <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12 relative z-10">
+          
+          {/* Header */}
+          <div className="mb-10 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
+                Curate Your Workspace
+              </h3>
+              <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200/80 px-3.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm">
+                <Brain className="w-3.5 h-3.5 text-blue-600" />
+                Concierge picks
+              </span>
+            </div>
+            <span className="h-6 w-[1px] bg-slate-300 hidden sm:block"></span>
+            <p className="text-xs sm:text-sm font-semibold text-slate-500">
+              Pick a theme below and watch our desk stylists handpick the perfect gear for your setup.
+            </p>
+          </div>
+
+          {/* 5-Column Grid Layout: Beautiful cover image cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+            
+            {/* Card 1: Recently Viewed */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.42, delay: 0.05 }}
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+            >
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[9px] uppercase font-black tracking-widest text-slate-400">Your Activity</span>
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">Recently Viewed</span>
+                  </div>
+                  <h4 className="text-base font-extrabold text-slate-900 mb-3 leading-snug">Still thinking about this?</h4>
+                </div>
+
+                <div className="my-2 relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50/60 p-2 flex flex-col items-center justify-center">
+                  <div className="h-36 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center relative">
+                    <img src={activeVibe.recentlyViewed.image} alt={activeVibe.recentlyViewed.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
+                    <span className="absolute bottom-2 left-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-900/80 text-white backdrop-blur-sm">
+                      {activeVibe.recentlyViewed.timeText}
+                    </span>
+                  </div>
+                  <div className="w-full mt-3 text-left">
+                    <p className="text-[9px] font-bold text-slate-400 leading-none uppercase tracking-wider">{activeVibe.recentlyViewed.category}</p>
+                    <h5 className="text-[13px] font-bold text-slate-800 truncate mt-1">{activeVibe.recentlyViewed.title}</h5>
+                    <p className="text-[13px] font-black text-blue-600 mt-0.5">{activeVibe.recentlyViewed.price}</p>
+                  </div>
+                </div>
+
+                <div className="mt-2 bg-blue-50/40 border border-blue-100/50 rounded-xl p-2.5 text-[10px] text-slate-500 italic leading-relaxed">
+                  "You viewed this item recently. It complements your current {activeVibe.name} space configuration perfectly."
+                </div>
+              </div>
+
+              <button className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                View Specs
+              </button>
+            </motion.div>
+
+            {/* Card 2: Handpicked For You */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.42, delay: 0.1 }}
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+            >
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[9px] uppercase font-black tracking-widest text-slate-400">Stylist's Selection</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                      <Zap className="w-2.5 h-2.5 fill-indigo-100 text-indigo-600" />
+                      Handpicked For You
+                    </span>
+                  </div>
+                  <h4 className="text-base font-extrabold text-slate-900 mb-3 leading-snug">Matches your aesthetic vibe</h4>
+                </div>
+
+                <div className="my-2 relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50/60 p-2 flex flex-col items-center justify-center">
+                  <div className="h-36 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center">
+                    <img src={activeVibe.handpicked.image} alt={activeVibe.handpicked.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
+                  </div>
+                  <div className="w-full mt-3 text-left">
+                    <h5 className="text-[13px] font-bold text-slate-800 truncate">{activeVibe.handpicked.title}</h5>
+                    <p className="text-[13px] font-black text-indigo-600 mt-0.5">{activeVibe.handpicked.price}</p>
+                  </div>
+                </div>
+
+                <div className="mt-2 bg-indigo-50/30 border border-indigo-100/50 rounded-xl p-2.5 text-[10px] text-slate-600 leading-relaxed">
+                  <strong>Stylist Tip:</strong> {activeVibe.handpicked.tip}
+                </div>
+              </div>
+
+              <button className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-indigo-100 bg-indigo-50/50 py-2.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors">
+                <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart
+              </button>
+            </motion.div>
+
+            {/* Card 3: Frequently Bought Together */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.42, delay: 0.15 }}
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+            >
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[9px] uppercase font-black tracking-widest text-slate-400">Workspace Set</span>
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">Perfect Desk Bundle</span>
+                </div>
+                <h4 className="text-base font-extrabold text-slate-900 mb-2.5 leading-snug">Bundle setup and save 15%</h4>
+                
+                {/* Connected list of items */}
+                <div className="space-y-2 relative">
+                  {currentBundleItems.map((item) => {
+                    const isChecked = selectedBundleItems.includes(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all ${
+                          isChecked 
+                            ? 'border-amber-400/40 bg-amber-50/30' 
+                            : 'border-slate-100 opacity-60 hover:opacity-85'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-white border border-slate-200/80 overflow-hidden shrink-0 flex items-center justify-center p-1">
+                          <img src={item.image} alt={item.title} className="max-h-full max-w-full object-contain" />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-[11px] font-bold text-slate-800 truncate leading-tight">{item.title}</h5>
+                          <p className="text-[10px] font-semibold text-slate-500 mt-0.5">LKR {item.price.toLocaleString()}</p>
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleBundleItem(item.id)}
+                          className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0 ${
+                            isChecked 
+                              ? 'bg-amber-500 border-amber-400 text-white' 
+                              : 'border-slate-300 bg-white hover:border-slate-400'
+                          }`}
+                        >
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Price Details */}
+              <div className="mt-2 bg-slate-50 border border-slate-100 rounded-2xl p-2.5">
+                <div className="space-y-1 text-[10px] font-semibold text-slate-500">
+                  <div className="flex justify-between">
+                    <span>Items Checked ({selectedBundleItems.length}):</span>
+                    <span>LKR {rawBundleTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Desk Set Discount (15%):</span>
+                    <span>- LKR {bundleSavings.toLocaleString()}</span>
+                  </div>
+                  <hr className="border-slate-200 my-1" />
+                  <div className="flex justify-between items-end text-slate-800">
+                    <span className="font-extrabold">Total Setup Price:</span>
+                    <span className="text-[13px] font-black text-slate-900 leading-none">
+                      LKR {bundleFinalTotal.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  disabled={selectedBundleItems.length === 0}
+                  onClick={() => {
+                    setIsBundleAdded(true);
+                    setTimeout(() => setIsBundleAdded(false), 2200);
+                  }}
+                  className={`w-full mt-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                    isBundleAdded
+                      ? 'bg-emerald-600 text-white'
+                      : selectedBundleItems.length === 0
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-200/80'
+                        : 'bg-amber-500 hover:bg-amber-600 text-white active:scale-98 shadow-sm'
+                  }`}
+                >
+                  {isBundleAdded ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      Bundle Added!
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-4 h-4" />
+                      Buy Setup Set
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Card 4: Trending Now */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.42, delay: 0.2 }}
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+            >
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-[9px] uppercase font-black tracking-widest text-slate-400">Trending Choice</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-md">
+                      <Flame className="w-3 h-3 fill-rose-500 text-rose-500 animate-pulse" />
+                      Trending Setup Item
+                    </span>
+                  </div>
+                  <h4 className="text-base font-extrabold text-slate-900 mb-3 leading-snug">Popular in this setup style</h4>
+                </div>
+
+                <div className="my-2 relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50/60 p-2 flex flex-col items-center justify-center">
+                  <div className="h-36 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center">
+                    <img src={activeVibe.trending.image} alt={activeVibe.trending.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
+                  </div>
+                  <div className="w-full mt-3 text-left">
+                    <h5 className="text-[13px] font-bold text-slate-800 truncate">{activeVibe.trending.title}</h5>
+                    <p className="text-[13px] font-black text-rose-600 mt-0.5">{activeVibe.trending.price}</p>
+                  </div>
+                </div>
+
+                <div className="mt-2 bg-rose-50/30 border border-rose-100/50 rounded-xl p-2.5 text-[10px] text-slate-600 leading-relaxed flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                  <span>{activeVibe.trending.socialText}</span>
+                </div>
+              </div>
+
+              <button className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                Quick Look
+              </button>
+            </motion.div>
+
+            {/* Card 5: Vibe Selector */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.42, delay: 0.25 }}
+              className="rounded-3xl relative overflow-hidden bg-gradient-to-b from-blue-50/30 via-white to-white text-slate-800 p-4 shadow-[0_4px_24px_rgba(37,99,235,0.03)] border border-blue-100 flex flex-col justify-between h-[490px]"
+            >
+              {/* Decorative blobs */}
+              <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+              
+              <div className="relative z-10 w-full flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-blue-500/10 p-1.5 rounded-lg border border-blue-500/20">
+                        <Brain className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-xs tracking-wide text-slate-800">Workspace Stylist</h4>
+                        <p className="text-[9px] text-slate-500">Interactive Curation</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                      <span className="text-[8px] font-bold text-emerald-600 tracking-wider">ACTIVE</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11.5px] text-slate-500 leading-normal my-2.5">
+                    Pick your preferred setup theme. Our visual catalog will automatically filter and update setup items in real-time.
+                  </p>
+
+                  {/* Curation Buttons */}
+                  <div className="space-y-2 mt-3">
+                    {[
+                      { id: 'walnut', name: '🌿 Walnut & Organic' },
+                      { id: 'minimalist', name: '☁️ Cream Minimalist' },
+                      { id: 'black', name: '🖤 Stealth Matte Black' },
+                      { id: 'cyberpunk', name: '🌈 Cyberpunk RGB' }
+                    ].map((theme) => {
+                      const isSelected = workspaceVibe === theme.id;
+                      return (
+                        <button
+                          key={theme.id}
+                          onClick={() => handleVibeChange(theme.id)}
+                          className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-[0_4px_12px_rgba(37,99,235,0.2)]'
+                              : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-xs font-bold">{theme.name}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Styled explanation box */}
+                <div className="mt-4 bg-slate-50 border border-slate-100 rounded-2xl p-3 text-[10px] text-slate-500 leading-normal min-h-[96px] flex items-center">
+                  {isCurationLoading ? (
+                    <span className="text-slate-400 italic animate-pulse w-full text-center">Loading setup options...</span>
+                  ) : (
+                    <span>{activeVibe.description}</span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 6. Why Shop with Tech-Hub AI Values Section */}
+      <section className="relative bg-gradient-to-b from-[#eef2f8] to-[#f4f7fc] pb-16 pt-10 border-t border-slate-200/80">
+        <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
+          
+          {/* Header */}
+          <div className="text-center max-w-xl mx-auto mb-12">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Why Shop with <span className="text-blue-600">Tech-Hub AI</span>
+            </h3>
+            <p className="text-sm text-slate-500 mt-2.5 leading-relaxed">
+              We integrate state-of-the-art artificial intelligence at every step of your buying cycle, ensuring the ultimate security, delivery, and personalization.
+            </p>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {[
+              {
+                title: 'AI Product Discovery',
+                desc: 'Mia, our smart neural recommendation engine, parses your workspace aesthetic and parameters to curate perfect gadget sets.',
+                icon: <Brain className="w-6 h-6 text-blue-500" />,
+                bgGrad: 'from-blue-500/5 to-cyan-500/5 hover:border-blue-500/20'
+              },
+              {
+                title: 'Smart Returns',
+                desc: 'Hassle-free automated return flows. Get instant returns validation, label generation, and refund approvals in seconds.',
+                icon: <RotateCcw className="w-6 h-6 text-indigo-500" />,
+                bgGrad: 'from-indigo-500/5 to-purple-500/5 hover:border-indigo-500/20'
+              },
+              {
+                title: 'Verified Vendors',
+                desc: 'Every merchant undergoes strict KYC verification. Buy with absolute confidence knowing all items are 100% genuine.',
+                icon: <ShieldCheck className="w-6 h-6 text-emerald-500" />,
+                bgGrad: 'from-emerald-500/5 to-teal-500/5 hover:border-emerald-500/20'
+              },
+              {
+                title: 'Fast Delivery',
+                desc: 'Intelligent route optimization and shipping partnerships mean we guarantee exact delivery windows and tracking updates.',
+                icon: <Truck className="w-6 h-6 text-amber-500" />,
+                bgGrad: 'from-amber-500/5 to-orange-500/5 hover:border-amber-500/20'
+              },
+              {
+                title: 'Warranty Protection',
+                desc: 'Tech-Hub certified extended coverage plans. Hassle-free repairs & replacements with quick vendor coordination.',
+                icon: <CheckCircle2 className="w-6 h-6 text-rose-500" />,
+                bgGrad: 'from-rose-500/5 to-pink-500/5 hover:border-rose-500/20'
+              },
+              {
+                title: '24/7 AI Support',
+                desc: 'Instant text & voice assistance to resolve queries, compare device specifications, or assist in tracking your packages.',
+                icon: <HeadphonesIcon className="w-6 h-6 text-violet-500" />,
+                bgGrad: 'from-violet-500/5 to-fuchsia-500/5 hover:border-violet-500/20'
+              }
+            ].map((feature, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: idx * 0.06 }}
+                whileHover={{ y: -6 }}
+                className={`bg-white rounded-3xl border border-slate-200/60 p-6 flex gap-4 transition-all duration-300 hover:shadow-lg shadow-sm bg-gradient-to-br ${feature.bgGrad}`}
+              >
+                <div className="bg-white rounded-2xl p-3 shadow-md border border-slate-100 flex items-center justify-center h-12 w-12 shrink-0 group-hover:scale-105 transition-transform">
+                  {feature.icon}
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-slate-800 text-base">{feature.title}</h4>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">{feature.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+        </div>
+      </section>
 
     </div>
   );
