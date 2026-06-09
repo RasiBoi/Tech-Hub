@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { requestJson } from '../services/httpClient';
+import { serviceRegistry } from '../config/serviceRegistry';
 
 const AuthContext = createContext(null);
 
@@ -24,113 +26,102 @@ export const MOCK_ACCOUNTS = {
   }
 };
 
+const formatUser = (user) => {
+  if (!user) return null;
+  return {
+    ...user,
+    storeName: user.store_name || user.storeName,
+    avatarBg: user.avatar_bg || user.avatarBg,
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from localStorage on init
+  // Load user from localStorage on init and fetch current profile from API
   useEffect(() => {
-    const savedUser = localStorage.getItem('techhub_session');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error('Error parsing session data', e);
+    const initAuth = async () => {
+      const token = localStorage.getItem('techhub_token');
+      const savedUser = localStorage.getItem('techhub_session');
+
+      if (token) {
+        try {
+          const profile = await requestJson(`${serviceRegistry.catalog}/me`);
+          const formatted = formatUser(profile);
+          setUser(formatted);
+          localStorage.setItem('techhub_session', JSON.stringify(formatted));
+        } catch (e) {
+          console.error('Session verification failed, logging out', e);
+          setUser(null);
+          localStorage.removeItem('techhub_token');
+          localStorage.removeItem('techhub_session');
+        }
+      } else if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          setUser(null);
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (email, password) => {
     setIsLoading(true);
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    // Check mock accounts first
-    const matchedRole = Object.keys(MOCK_ACCOUNTS).find(
-      (key) => MOCK_ACCOUNTS[key].email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (matchedRole) {
-      const loggedUser = MOCK_ACCOUNTS[matchedRole];
-      setUser(loggedUser);
-      localStorage.setItem('techhub_session', JSON.stringify(loggedUser));
+    try {
+      const data = await requestJson(`${serviceRegistry.catalog}/login`, {
+        method: 'POST',
+        body: { email, password }
+      });
+      const formatted = formatUser(data.user);
+      setUser(formatted);
+      localStorage.setItem('techhub_token', data.token);
+      localStorage.setItem('techhub_session', JSON.stringify(formatted));
       setIsLoading(false);
-      return loggedUser;
-    }
-
-    // Check dynamic users registered in localStorage
-    const savedUsers = JSON.parse(localStorage.getItem('techhub_registered_users') || '[]');
-    const registeredUser = savedUsers.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (registeredUser) {
-      const { password, ...safeUser } = registeredUser;
-      const avatarColors = ['bg-blue-600', 'bg-indigo-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600'];
-      const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
-      
-      const loggedUser = {
-        ...safeUser,
-        avatarBg: `${randomColor} text-white`
-      };
-      setUser(loggedUser);
-      localStorage.setItem('techhub_session', JSON.stringify(loggedUser));
+      return formatted;
+    } catch (e) {
       setIsLoading(false);
-      return loggedUser;
+      throw new Error(e.message || 'Invalid email or password.');
     }
-
-    setIsLoading(false);
-    throw new Error('Invalid email or password. Use demo accounts for testing.');
   };
 
   const register = async (name, email, password, role, storeName = '') => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    // Check if email already exists in mock accounts
-    const isMockReserved = Object.keys(MOCK_ACCOUNTS).some(
-      (key) => MOCK_ACCOUNTS[key].email.toLowerCase() === email.toLowerCase()
-    );
-
-    const savedUsers = JSON.parse(localStorage.getItem('techhub_registered_users') || '[]');
-    const isDynamicTaken = savedUsers.some((u) => u.email.toLowerCase() === email.toLowerCase());
-
-    if (isMockReserved || isDynamicTaken) {
+    try {
+      const data = await requestJson(`${serviceRegistry.catalog}/register`, {
+        method: 'POST',
+        body: { 
+          name, 
+          email, 
+          password, 
+          role, 
+          store_name: storeName 
+        }
+      });
+      const formatted = formatUser(data.user);
+      setUser(formatted);
+      localStorage.setItem('techhub_token', data.token);
+      localStorage.setItem('techhub_session', JSON.stringify(formatted));
       setIsLoading(false);
-      throw new Error('Email address is already registered.');
+      return formatted;
+    } catch (e) {
+      setIsLoading(false);
+      throw new Error(e.message || 'Registration failed.');
     }
-
-    const newUser = {
-      id: `usr_${Date.now()}`,
-      name,
-      email,
-      password, // in a mock scenario we store plain text
-      role,
-      storeName: role === 'vendor' ? storeName : undefined
-    };
-
-    savedUsers.push(newUser);
-    localStorage.setItem('techhub_registered_users', JSON.stringify(savedUsers));
-
-    // Automatically login after registration
-    const { password: _, ...safeUser } = newUser;
-    const avatarColors = ['bg-blue-600', 'bg-indigo-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600'];
-    const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
-    
-    const loggedUser = {
-      ...safeUser,
-      avatarBg: `${randomColor} text-white`
-    };
-
-    setUser(loggedUser);
-    localStorage.setItem('techhub_session', JSON.stringify(loggedUser));
-    setIsLoading(false);
-    return loggedUser;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await requestJson(`${serviceRegistry.catalog}/logout`, { method: 'POST' });
+    } catch (e) {
+      console.error('Logout error on server', e);
+    }
     setUser(null);
+    localStorage.removeItem('techhub_token');
     localStorage.removeItem('techhub_session');
   };
 

@@ -32,12 +32,16 @@ export const requestJson = async (
 ) => {
   const { controller, timeoutId } = withTimeout(timeoutMs);
 
+  const token = localStorage.getItem('techhub_token');
+  const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
   try {
     const response = await fetch(url, {
       method,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...headers,
       },
       body: body ? JSON.stringify(body) : undefined,

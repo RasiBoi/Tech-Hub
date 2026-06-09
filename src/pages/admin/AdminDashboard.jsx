@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef2f8] font-sans text-slate-800">
+    <div className="min-h-screen bg-white font-sans text-slate-800">
       {/* Admin Navbar */}
       <nav className="bg-slate-900 text-white py-4 px-6 sm:px-10 flex items-center justify-between border-b border-slate-800 shadow-md">
         <div className="flex items-center gap-2.5">

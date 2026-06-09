@@ -69,7 +69,7 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+          className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
         />
 
         {/* Modal Container */}
@@ -78,12 +78,15 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-          className="bg-white/80 backdrop-blur-2xl border border-white/60 w-full max-w-[500px] rounded-[32px] overflow-hidden shadow-2xl relative z-10 p-6 sm:p-8 text-slate-800"
+          className="bg-white/95 border border-slate-200/80 w-full max-w-[480px] rounded-[32px] overflow-hidden shadow-2xl relative z-10 p-6 sm:p-8 text-slate-800"
         >
+          {/* Top colored brand accent bar */}
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600" />
+
           {/* Header Row */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 rounded-xl p-2 flex items-center justify-center shadow-md shadow-blue-600/10">
+          <div className="flex items-center justify-between mb-6 mt-1">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-blue-600 rounded-xl p-2.5 flex items-center justify-center shadow-md shadow-blue-600/10">
                 <Cpu className="w-5 h-5 text-white" />
               </div>
               <span className="text-lg font-black text-slate-900 tracking-tight">
@@ -98,24 +101,26 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
             </button>
           </div>
 
-          {/* Dual Tabs selector */}
-          <div className="flex border-b border-slate-100 mb-6">
+          {/* Segmented Control Tabs */}
+          <div className="flex bg-slate-100/80 p-1 rounded-2xl mb-6 border border-slate-200/30">
             <button
+              type="button"
               onClick={() => handleTabChange('login')}
-              className={`flex-1 pb-3 text-sm font-extrabold text-center border-b-2 transition-all ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold text-center transition-all ${
                 activeTab === 'login'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Log In
             </button>
             <button
+              type="button"
               onClick={() => handleTabChange('signup')}
-              className={`flex-1 pb-3 text-sm font-extrabold text-center border-b-2 transition-all ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold text-center transition-all ${
                 activeTab === 'signup'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Sign Up
@@ -134,7 +139,7 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
             {/* SIGNUP: Role Selection Cards */}
             {activeTab === 'signup' && (
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
+                <label className="text-[11px] font-bold text-slate-600 tracking-wide block mb-1.5">
                   Choose Account Type
                 </label>
                 <div className="grid grid-cols-3 gap-2.5">
@@ -147,17 +152,17 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
                       key={card.id}
                       type="button"
                       onClick={() => setRole(card.id)}
-                      className={`p-3 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between h-[84px] ${
+                      className={`p-3.5 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between h-[92px] ${
                         role === card.id
-                          ? 'border-blue-600 bg-blue-50/40 text-blue-900 shadow-sm'
-                          : 'border-slate-200/60 bg-white/50 text-slate-500 hover:border-slate-300'
+                          ? 'border-blue-500 bg-blue-50/30 text-blue-900 shadow-[0_4px_12px_rgba(37,99,235,0.04)]'
+                          : 'border-slate-200 bg-slate-50/40 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-center justify-between w-full">
                         <div className={`p-1.5 rounded-lg border ${
                           role === card.id 
                             ? 'bg-blue-600 border-blue-500 text-white' 
-                            : 'bg-slate-50 border-slate-100 text-slate-400'
+                            : 'bg-white border-slate-200 text-slate-400'
                         }`}>
                           {card.icon}
                         </div>
@@ -179,7 +184,7 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
             <div className="space-y-3.5">
               {activeTab === 'signup' && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                  <label className="text-[11px] font-bold text-slate-600 tracking-wide block mb-1">
                     Full Name
                   </label>
                   <div className="relative">
@@ -190,7 +195,7 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
                       placeholder="e.g. John Doe"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-white border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-slate-800"
+                      className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-slate-800"
                     />
                   </div>
                 </div>
@@ -198,7 +203,7 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
 
               {activeTab === 'signup' && role === 'vendor' && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                  <label className="text-[11px] font-bold text-slate-600 tracking-wide block mb-1">
                     Store Name
                   </label>
                   <div className="relative">
@@ -209,14 +214,14 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
                       placeholder="e.g. Apple Official"
                       value={storeName}
                       onChange={(e) => setStoreName(e.target.value)}
-                      className="w-full bg-white border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-slate-800"
+                      className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-slate-800"
                     />
                   </div>
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                <label className="text-[11px] font-bold text-slate-600 tracking-wide block mb-1">
                   Email Address
                 </label>
                 <div className="relative">
@@ -227,18 +232,18 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
                     placeholder="e.g. you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-slate-800"
+                    className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-slate-800"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[11px] font-bold text-slate-600 tracking-wide block">
                     Password
                   </label>
                   {activeTab === 'login' && (
-                    <a href="#" className="text-[10px] font-extrabold text-blue-600 hover:underline">
+                    <a href="#" className="text-[10.5px] font-extrabold text-blue-600 hover:underline">
                       Forgot?
                     </a>
                   )}
@@ -251,7 +256,7 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-slate-800"
+                    className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-slate-800"
                   />
                 </div>
               </div>
@@ -276,27 +281,30 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
             </button>
           </form>
 
-          {/* Quick Demo Credentials shortcut (highly relevant to show pilot features) */}
+          {/* Quick Demo Credentials shortcut */}
           {activeTab === 'login' && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">
-                Quick Demo Accounts (Click to test roles)
+            <div className="mt-6 border-t border-slate-100 pt-5">
+              <p className="text-[11px] font-bold text-slate-500 tracking-wide mb-3">
+                Quick Demo Personas (Click to test roles)
               </p>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 {[
-                  { key: 'customer', label: 'Alex (Customer)', color: 'border-blue-200 text-blue-600 hover:bg-blue-50/20' },
-                  { key: 'vendor', label: 'Apple Store (Vendor)', color: 'border-slate-200 text-slate-700 hover:bg-slate-50/40' },
-                  { key: 'admin', label: 'Sarah (Admin)', color: 'border-rose-200 text-rose-600 hover:bg-rose-50/20' }
+                  { key: 'customer', label: 'Alex (Customer)', icon: <User className="w-3.5 h-3.5" />, color: 'border-blue-100 bg-blue-50/30 text-blue-700 hover:bg-blue-50/60 hover:border-blue-200 shadow-sm shadow-blue-500/5' },
+                  { key: 'vendor', label: 'Apple Store (Vendor)', icon: <Store className="w-3.5 h-3.5" />, color: 'border-slate-200/60 bg-slate-50 text-slate-700 hover:bg-slate-100/50 hover:border-slate-200 shadow-sm shadow-slate-500/5' },
+                  { key: 'admin', label: 'Sarah (Admin)', icon: <ShieldAlert className="w-3.5 h-3.5" />, color: 'border-rose-100 bg-rose-50/30 text-rose-700 hover:bg-rose-50/60 hover:border-rose-200 shadow-sm shadow-rose-500/5' }
                 ].map((demo) => (
                   <button
                     key={demo.key}
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => handleQuickLogin(demo.key)}
-                    className={`w-full py-2.5 px-3 rounded-xl border border-dashed text-left text-xs font-bold transition-all flex items-center justify-between ${demo.color}`}
+                    className={`w-full py-3 px-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between group ${demo.color}`}
                   >
-                    <span>Login as {demo.label}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2.5">
+                      <div className="shrink-0 opacity-70 group-hover:scale-105 transition-transform">{demo.icon}</div>
+                      <span>Login as {demo.label}</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                   </button>
                 ))}
               </div>

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, useInView, animate } from 'framer-motion';
+import { motion, useInView, animate, AnimatePresence } from 'framer-motion';
 import { 
   Search, Heart, ShoppingCart, Bell, MapPin, Truck, 
-  Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown,
+  Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown, ChevronLeft, ChevronRight,
   Mic, Menu, X, CheckCircle2, User, Play,
   ShoppingBag, ShieldCheck, ArrowRight, Brain, Flame, Terminal,
   Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink, LogOut, Store
@@ -11,6 +11,10 @@ import { useAiServiceStatus } from '../hooks/useAiServiceStatus';
 import { useAuth } from '../context/AuthContext';
 import { AuthModal } from '../components/AuthModal';
 import { Link } from 'react-router-dom';
+import { requestJson } from '../services/httpClient';
+import { serviceRegistry } from '../config/serviceRegistry';
+import { askAiAssistant } from '../services/aiService';
+import { Carousel, CarouselContent, CarouselItem } from '../components/ui/carousel';
 
 /* ── Smooth floating wrapper ─────────────────────────────── */
 const FloatingElement = ({ children, className, delay = 0, yOffset = 15 }) => (
@@ -247,7 +251,7 @@ const VENDORS_DATA = [
     baseFollowers: 15400,
     cardBg: 'from-slate-50/70 via-slate-50/20 to-white hover:border-slate-300',
     hoverGlow: 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.04)]',
-    stageBg: 'from-slate-950 via-slate-900 to-black border-slate-800/80',
+    stageBg: 'from-slate-50 via-slate-100/40 to-slate-200/10 border-slate-200/60',
     glowGrad: 'from-slate-400 to-slate-200',
     logoSvg: (
       <svg className="w-8 h-8 text-slate-800" viewBox="0 0 24 24" fill="currentColor">
@@ -285,7 +289,7 @@ const VENDORS_DATA = [
     baseFollowers: 12800,
     cardBg: 'from-blue-50/30 via-blue-50/5 to-white hover:border-blue-300/80',
     hoverGlow: 'hover:shadow-[0_20px_50px_rgba(7,76,161,0.05)]',
-    stageBg: 'from-slate-950 via-blue-950/40 to-slate-950 border-blue-900/30',
+    stageBg: 'from-blue-50/50 via-blue-50/20 to-white border-blue-100/60',
     glowGrad: 'from-blue-600 to-indigo-500',
     logoSvg: (
       <svg className="w-16 h-8 text-[#074CA1]" viewBox="0 0 100 30" fill="currentColor">
@@ -324,7 +328,7 @@ const VENDORS_DATA = [
     baseFollowers: 9500,
     cardBg: 'from-cyan-50/30 via-cyan-50/5 to-white hover:border-cyan-300/80',
     hoverGlow: 'hover:shadow-[0_20px_50px_rgba(0,107,206,0.05)]',
-    stageBg: 'from-slate-950 via-cyan-950/40 to-slate-950 border-cyan-900/30',
+    stageBg: 'from-cyan-50/50 via-cyan-50/20 to-white border-cyan-100/60',
     glowGrad: 'from-cyan-500 to-blue-500',
     logoSvg: (
       <svg className="w-9 h-9 text-[#006BCE]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -368,7 +372,7 @@ const VENDORS_DATA = [
     baseFollowers: 11200,
     cardBg: 'from-slate-100/40 via-slate-50/10 to-white hover:border-slate-400/80',
     hoverGlow: 'hover:shadow-[0_20px_50px_rgba(15,23,42,0.06)]',
-    stageBg: 'from-zinc-950 via-zinc-900 to-slate-950 border-zinc-800/80',
+    stageBg: 'from-slate-100/60 via-slate-50 to-white border-slate-200/80',
     glowGrad: 'from-slate-900 to-slate-600',
     logoSvg: (
       <svg className="w-16 h-4 text-slate-800" viewBox="0 0 100 24" fill="currentColor">
@@ -409,7 +413,7 @@ const VENDORS_DATA = [
     baseFollowers: 13700,
     cardBg: 'from-orange-50/20 via-orange-50/5 to-white hover:border-orange-300/80',
     hoverGlow: 'hover:shadow-[0_20px_50px_rgba(255,103,0,0.05)]',
-    stageBg: 'from-slate-950 via-orange-950/30 to-slate-950 border-orange-900/30',
+    stageBg: 'from-orange-50/40 via-orange-50/15 to-white border-orange-100/50',
     glowGrad: 'from-orange-500 to-amber-500',
     logoSvg: (
       <svg className="w-8 h-8 rounded-xl overflow-hidden" viewBox="0 0 24 24" fill="none">
@@ -448,7 +452,7 @@ const VENDORS_DATA = [
     baseFollowers: 8900,
     cardBg: 'from-red-50/15 via-red-50/5 to-white hover:border-red-300/80',
     hoverGlow: 'hover:shadow-[0_20px_50px_rgba(224,34,41,0.05)]',
-    stageBg: 'from-slate-950 via-red-950/30 to-slate-950 border-red-900/30',
+    stageBg: 'from-red-50/30 via-red-50/10 to-white border-red-100/40',
     glowGrad: 'from-red-600 to-rose-500',
     logoSvg: (
       <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
@@ -520,13 +524,263 @@ const TESTIMONIALS_DATA = [
   }
 ];
 
+const compileVibeData = (vibeName, productsList) => {
+  const fallback = VIBE_DATASETS[vibeName];
+  if (!productsList || productsList.length === 0) return fallback;
+
+  // Filter products by vibe
+  const vibeProducts = productsList.filter(p => p.vibe === vibeName);
+  if (vibeProducts.length === 0) return fallback;
+
+  const bundle = vibeProducts.slice(0, 3).map(p => ({
+    id: String(p.id),
+    title: p.title,
+    price: Number(p.price),
+    image: p.image
+  }));
+
+  const trendingProduct = vibeProducts.find(p => p.category?.name === 'Standing Desks' || p.category?.name === 'Ergonomic Chairs') || vibeProducts[3] || vibeProducts[0];
+  const handpickedProduct = vibeProducts.find(p => p.category?.name === 'Desk Organizers') || vibeProducts[1] || vibeProducts[0];
+  const recentlyViewedProduct = vibeProducts.find(p => p.category?.name === 'Monitor Raisers') || vibeProducts[2] || vibeProducts[0];
+
+  return {
+    name: fallback.name,
+    description: fallback.description,
+    recentlyViewed: {
+      title: recentlyViewedProduct.title,
+      image: recentlyViewedProduct.image,
+      price: `LKR ${Number(recentlyViewedProduct.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      category: recentlyViewedProduct.category?.name || 'Monitor Raiser',
+      timeText: 'Viewed recently'
+    },
+    handpicked: {
+      title: handpickedProduct.title,
+      image: handpickedProduct.image,
+      price: `LKR ${Number(handpickedProduct.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      tip: fallback.handpicked.tip
+    },
+    bundle: bundle,
+    trending: {
+      title: trendingProduct.title,
+      image: trendingProduct.image,
+      price: `LKR ${Number(trendingProduct.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      socialText: fallback.trending.socialText
+    }
+  };
+};
+
+const compileDeals = (productsList) => {
+  return productsList.slice(0, 6).map((p, idx) => {
+    const discounts = ['-20%', '-15%', '-25%', '-30%'];
+    const discountPercent = parseInt(discounts[idx % 4]);
+    const oldPrice = Number(p.price) / (1 - (discountPercent / -100));
+    return {
+      id: String(p.id),
+      title: p.title,
+      image: p.image,
+      discount: discounts[idx % 4],
+      price: `LKR ${Number(p.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      oldPrice: `LKR ${oldPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
+      rating: String(p.rating || '4.8'),
+      live: `${Math.floor(Math.random() * 40) + 10} watching`
+    };
+  });
+};
+
+const compileVendorsData = (staticVendors, dbProducts) => {
+  if (!dbProducts || dbProducts.length === 0) return staticVendors;
+  
+  return staticVendors.map(vendor => {
+    // Find products in dbProducts belonging to this vendor
+    const vendorProds = dbProducts.filter(p => p.vendor && p.vendor.name.toLowerCase().includes(vendor.name.toLowerCase().split(' ')[0]));
+    
+    if (vendorProds.length === 0) return vendor;
+    
+    return {
+      ...vendor,
+      products: vendorProds.slice(0, 3).map(p => ({
+        title: p.title,
+        price: `LKR ${Number(p.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+        spec: p.spec || 'Premium Accessory',
+        image: p.image
+      }))
+    };
+  });
+};
+
+const HERO_SLIDES = [
+  {
+    title: (
+      <>
+        Shop Smarter with <br className="hidden sm:block" />
+        <span className="text-blue-600 font-extrabold">AI-Powered</span> <br className="hidden sm:block" />
+        Workspace Catalog
+      </>
+    ),
+    description: "Discover premium walnut wood, natural leather, and ambient lighting accessories tailored to your workspace aesthetic.",
+    accentClass: "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30",
+    image: "https://res.cloudinary.com/ddarldtbb/image/upload/f_auto,q_auto/A_3D_commercial_product_photography_202605252017-removebg-preview_qtiikr",
+    accentText: "text-blue-600",
+    glowColor: "bg-blue-300/22",
+    theme: "walnut",
+    floaters: {
+      aiPicks: {
+        title: "AI Picks: Walnut",
+        p1: new URL('../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png', import.meta.url).href,
+        p2: new URL('../../Media/product_images/walnut-luxe-headphone-stand/image-1.jpeg', import.meta.url).href,
+        p3: new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-1.png', import.meta.url).href,
+      },
+      deal: {
+        label: "Walnut Spec Offer",
+        off: "15% OFF",
+        desc: "Discount on Full Set",
+        gradient: "from-amber-700 to-amber-900 shadow-amber-900/30 border-amber-600/30"
+      },
+      track: {
+        title: "Live Order Tracking",
+        order: "Order #WA55928",
+        status: "Processing",
+        time: "Arriving tomorrow"
+      },
+      delivery: {
+        title: "Free Delivery",
+        time: "Same Day",
+        desc: "Premium Shipping",
+        gradient: "from-amber-500 to-orange-600 shadow-amber-500/20 border-amber-300"
+      }
+    }
+  },
+  {
+    title: (
+      <>
+        Stealth Mode: <br className="hidden sm:block" />
+        <span className="text-slate-900 font-extrabold">Matte Black</span> <br className="hidden sm:block" />
+        Workspace Gear
+      </>
+    ),
+    description: "Sleek, minimalist dark setup accessories, mechanical keyboards, and matte black mounts built for style and focus.",
+    accentClass: "bg-slate-900 hover:bg-slate-800 shadow-slate-900/30",
+    image: new URL('../../Media/stealth_black_hero.png', import.meta.url).href,
+    accentText: "text-slate-950",
+    glowColor: "bg-indigo-300/22",
+    theme: "black",
+    floaters: {
+      aiPicks: {
+        title: "Stealth Mode Picks",
+        p1: new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-1.png', import.meta.url).href,
+        p2: new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-1.jpg', import.meta.url).href,
+        p3: new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-1.png', import.meta.url).href,
+      },
+      deal: {
+        label: "Stealth Bundle Sale",
+        off: "25% OFF",
+        desc: "Stealth Black Edition",
+        gradient: "from-slate-700 to-slate-900 shadow-slate-900/30 border-slate-600/30"
+      },
+      track: {
+        title: "Live Order Tracking",
+        order: "Order #ST11943",
+        status: "Shipped",
+        time: "Arriving in 1 Day"
+      },
+      delivery: {
+        title: "Fast Delivery",
+        time: "1-2 Days",
+        desc: "Priority Shipping",
+        gradient: "from-slate-600 to-slate-800 shadow-slate-700/20 border-slate-500"
+      }
+    }
+  },
+  {
+    title: (
+      <>
+        Cream & Pure <br className="hidden sm:block" />
+        <span className="text-amber-600 font-extrabold">Minimalist</span> <br className="hidden sm:block" />
+        Desktop Organizers
+      </>
+    ),
+    description: "Soft, warm tones, clean desktop arrangements, and elegant accessories designed to keep your mind clear and creative.",
+    accentClass: "bg-amber-600 hover:bg-amber-700 shadow-amber-600/30",
+    image: new URL('../../Media/minimalist_hero.png', import.meta.url).href,
+    accentText: "text-amber-600",
+    glowColor: "bg-amber-300/22",
+    theme: "minimalist",
+    floaters: {
+      aiPicks: {
+        title: "Minimalist Cream Picks",
+        p1: new URL('../../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-1.webp', import.meta.url).href,
+        p2: new URL('../../Media/product_images/baseus-heyo-rotation-countdown-timer/image-1.jpg', import.meta.url).href,
+        p3: new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+      },
+      deal: {
+        label: "Minimal Focus Sale",
+        off: "20% OFF",
+        desc: "Limited time discount",
+        gradient: "from-amber-400 to-amber-600 shadow-amber-600/30 border-amber-300/30"
+      },
+      track: {
+        title: "Live Order Tracking",
+        order: "Order #MI88942",
+        status: "In Transit",
+        time: "Arriving in 3 Days"
+      },
+      delivery: {
+        title: "Standard Shipping",
+        time: "Free",
+        desc: "Eco-friendly Courier",
+        gradient: "from-emerald-400 to-teal-500 shadow-emerald-500/20 border-emerald-300"
+      }
+    }
+  },
+  {
+    title: (
+      <>
+        Futuristic Battle <br className="hidden sm:block" />
+        <span className="text-purple-600 font-extrabold">Cyberpunk RGB</span> <br className="hidden sm:block" />
+        Gaming Ecosystems
+      </>
+    ),
+    description: "Vibrant neon lighting, high-performance charging mounts, and custom gaming gear designed for maximum style and speed.",
+    accentClass: "bg-purple-600 hover:bg-purple-700 shadow-purple-600/30",
+    image: new URL('../../Media/cyberpunk_hero.png', import.meta.url).href,
+    accentText: "text-purple-600",
+    glowColor: "bg-purple-300/22",
+    theme: "cyberpunk",
+    floaters: {
+      aiPicks: {
+        title: "Cyberpunk RGB Picks",
+        p1: new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-1.png', import.meta.url).href,
+        p2: new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-1.jpeg', import.meta.url).href,
+        p3: new URL('../../Media/product_images/divoom-ditoo-pro-retro-pixel-art-bluetooth-speaker/image-1.jpeg', import.meta.url).href,
+      },
+      deal: {
+        label: "Neon Flash Sale",
+        off: "40% OFF",
+        desc: "Hourly deal",
+        gradient: "from-purple-500 to-indigo-600 shadow-purple-500/30 border-purple-400/30"
+      },
+      track: {
+        title: "Live Order Tracking",
+        order: "Order #CY2077",
+        status: "Out for Delivery",
+        time: "Arriving in 2 Hours"
+      },
+      delivery: {
+        title: "Hyper Delivery",
+        time: "Instant",
+        desc: "Drone Shipping",
+        gradient: "from-fuchsia-500 to-purple-600 shadow-purple-500/20 border-fuchsia-400"
+      }
+    }
+  }
+];
+
 export default function Home() {
   const { user, logout } = useAuth();
   const aiServiceStatus = useAiServiceStatus();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [followedVendors, setFollowedVendors] = useState({});
   const [openDropdownVendor, setOpenDropdownVendor] = useState(null);
-  const [activeVendorId, setActiveVendorId] = useState('apple');
   const [activeTestimonialIdx, setActiveTestimonialIdx] = useState(0);
   const [subscriberEmail, setSubscriberEmail] = useState('');
   const [toastMessage, setToastMessage] = useState(null);
@@ -536,6 +790,29 @@ export default function Home() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState('login');
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
+  const [api, setApi] = useState(null);
+
+  useEffect(() => {
+    if (!api) return;
+    
+    const onSelect = () => {
+      setCurrentHeroSlide(api.selectedScrollSnap());
+    };
+
+    api.on("select", onSelect);
+    return () => {
+      api.off("select", onSelect);
+    };
+  }, [api]);
+
+  useEffect(() => {
+    if (!api) return;
+    const timer = setInterval(() => {
+      api.scrollNext();
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [api]);
 
   const scrollToTestimonial = (idx) => {
     setActiveTestimonialIdx(idx);
@@ -577,10 +854,81 @@ export default function Home() {
     };
   }, []);
 
+  // Database States
+  const [allDbProducts, setAllDbProducts] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const prodData = await requestJson(`${serviceRegistry.catalog}/products`);
+        setAllDbProducts(prodData);
+      } catch (e) {
+        console.error('Failed to load products from database', e);
+      }
+
+      try {
+        const catData = await requestJson(`${serviceRegistry.catalog}/categories`);
+        setDbCategories(catData);
+      } catch (e) {
+        console.error('Failed to load categories from database', e);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Chatbot Assistant State
+  const [isChatActive, setIsChatActive] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    { id: '1', sender: 'mia', text: 'Hi! I am Mia, your smart workspace concierge. Ask me for styling suggestions (e.g. walnut, minimalist, black, cyberpunk) or specific accessories.' }
+  ]);
+  const [chatMessageInput, setChatMessageInput] = useState('');
+  const [isChatTyping, setIsChatTyping] = useState(false);
+
+  const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatMessageInput.trim()) return;
+
+    const userMsgText = chatMessageInput;
+    const userMsg = { id: `msg_${Date.now()}`, sender: 'user', text: userMsgText };
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatMessageInput('');
+    setIsChatTyping(true);
+    setIsChatActive(true); // ensure it remains open
+
+    try {
+      const response = await askAiAssistant(userMsgText);
+      const miaMsg = {
+        id: `msg_${Date.now()}_mia`,
+        sender: 'mia',
+        text: response.response,
+        recommendations: response.recommendations
+      };
+      
+      setChatMessages(prev => [...prev, miaMsg]);
+
+      // If a vibe is suggested, auto-switch to it
+      if (response.vibeSuggested) {
+        handleVibeChange(response.vibeSuggested);
+        showToast(`Mia suggested switching to ${response.vibeSuggested} vibe!`);
+      }
+    } catch (err) {
+      console.error('Chat AI failed', err);
+      const errMsg = {
+        id: `msg_${Date.now()}_err`,
+        sender: 'mia',
+        text: 'Sorry, I encountered an issue connecting to the recommendation service. Please try again.'
+      };
+      setChatMessages(prev => [...prev, errMsg]);
+    } finally {
+      setIsChatTyping(false);
+    }
+  };
+
   // Workspace Curation Theme State
   const [workspaceVibe, setWorkspaceVibe] = useState('walnut');
   const [isCurationLoading, setIsCurationLoading] = useState(false);
-  const activeVibe = VIBE_DATASETS[workspaceVibe];
+  const activeVibe = compileVibeData(workspaceVibe, allDbProducts);
 
   const [selectedBundleItems, setSelectedBundleItems] = useState([]);
   const [isBundleAdded, setIsBundleAdded] = useState(false);
@@ -591,7 +939,7 @@ export default function Home() {
       setSelectedBundleItems(activeVibe.bundle.map(item => item.id));
     }
     setIsBundleAdded(false);
-  }, [workspaceVibe]);
+  }, [workspaceVibe, allDbProducts]);
 
   const currentBundleItems = activeVibe ? activeVibe.bundle : [];
   const rawBundleTotal = currentBundleItems
@@ -617,6 +965,38 @@ export default function Home() {
     setTimeout(() => {
       setIsCurationLoading(false);
     }, 450);
+  };
+
+  const handleBuyBundle = async () => {
+    if (!user) {
+      setAuthModalTab('login');
+      setIsAuthModalOpen(true);
+      showToast('Please login to place an order.');
+      return;
+    }
+    setIsCurationLoading(true);
+    try {
+      const items = selectedBundleItems.map(id => {
+        const p = allDbProducts.find(prod => String(prod.id) === id);
+        return {
+          product_id: p ? p.id : parseInt(id),
+          quantity: 1
+        };
+      });
+
+      await requestJson(`${serviceRegistry.commerce}/orders`, {
+        method: 'POST',
+        body: { items }
+      });
+
+      setIsBundleAdded(true);
+      showToast('Order placed successfully! Setup bundle is on the way.');
+      setTimeout(() => setIsBundleAdded(false), 2200);
+    } catch (e) {
+      showToast(e.message || 'Failed to place order.');
+    } finally {
+      setIsCurationLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -752,9 +1132,9 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#eef2f8] font-sans overflow-x-hidden text-slate-800">
+    <div className="min-h-screen bg-white font-sans overflow-x-hidden text-slate-800">
       {/* 1. Top Navbar */}
-      <nav className="bg-[#0b1021] text-white py-2 lg:py-3 z-50 relative w-full">
+      <nav className="bg-[#0b1021]/85 backdrop-blur-xl text-white py-2.5 lg:py-3.5 z-50 sticky top-0 w-full border-b border-white/[0.06] shadow-md transition-all duration-300">
         <div className="max-w-[1720px] mx-auto w-full px-4 lg:px-8 2xl:px-12 flex items-center justify-between gap-3 lg:gap-5 xl:gap-7">
           <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 min-w-0">
             <div className="flex items-center gap-2 shrink-0">
@@ -1087,35 +1467,57 @@ export default function Home() {
       </div>
 
       {/* 3. Hero Section — full-width background, constrained content */}
-      <section className="relative w-full overflow-hidden bg-[#eef2f8] flex xl:min-h-[calc(100vh-126px)]">
-        <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-b from-transparent to-[#eef2f8] pointer-events-none"></div>
+      <section className="relative w-full overflow-hidden bg-white flex xl:min-h-[calc(100vh-126px)]">
+        <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-b from-transparent to-white pointer-events-none"></div>
 
         <main className="relative max-w-[1720px] mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-8 2xl:px-12 pt-2 sm:pt-4 xl:pt-6 pb-4 sm:pb-6 xl:pb-4 2xl:pb-8 flex flex-col xl:grid xl:grid-cols-[minmax(300px,360px)_minmax(560px,1fr)_minmax(250px,280px)] 2xl:grid-cols-[minmax(360px,430px)_minmax(760px,1fr)_minmax(280px,320px)] items-center xl:items-center justify-start xl:justify-center gap-3 sm:gap-5 xl:gap-5 2xl:gap-10 xl:min-h-[calc(100vh-126px)]">
         
         {/* Left Column - Content */}
-        <div className="order-1 w-full xl:w-auto xl:max-w-[390px] 2xl:max-w-[430px] z-20 flex flex-col items-center xl:items-start justify-center shrink-0 text-center xl:text-left mt-2 xl:mt-0">
-          
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] 2xl:text-[56px] leading-[1.1] font-bold text-slate-900 mb-2 xl:mb-4 tracking-tight relative z-10">
-            Shop Smarter with <br className="hidden sm:block" />
-            <span className="text-blue-600">AI-Powered</span> <br className="hidden sm:block" />
-            Electronics Marketplace
-          </h1>
-          
-          <p className="text-[13px] sm:text-base text-slate-500 mb-4 xl:mb-6 max-w-[280px] sm:max-w-sm mx-auto xl:mx-0 leading-relaxed relative z-10">
-            Discover thousands of gadgets from trusted vendors with personalized recommendations, instant support, smart returns, and real-time delivery intelligence.
-          </p>
+        <div className="order-1 w-full xl:w-auto xl:max-w-[390px] 2xl:max-w-[430px] z-20 flex flex-col items-center xl:items-start justify-center shrink-0 text-center xl:text-left mt-2 xl:mt-0 min-h-[380px] sm:min-h-[440px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentHeroSlide}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.45, ease: "easeInOut" }}
+              className="flex flex-col items-center xl:items-start w-full text-center xl:text-left"
+            >
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] 2xl:text-[56px] leading-[1.1] font-bold text-slate-900 mb-2 xl:mb-4 tracking-tight relative z-10">
+                {HERO_SLIDES[currentHeroSlide].title}
+              </h1>
+              
+              <p className="text-[13px] sm:text-base text-slate-500 mb-4 xl:mb-6 max-w-[280px] sm:max-w-sm mx-auto xl:mx-0 leading-relaxed relative z-10">
+                {HERO_SLIDES[currentHeroSlide].description}
+              </p>
+              
+            </motion.div>
+          </AnimatePresence>
           
           <div className="flex items-center justify-center xl:justify-start gap-2.5 sm:gap-3 mb-4 xl:mb-6 relative z-10 w-full sm:w-auto px-4 sm:px-0">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-7 py-2.5 sm:py-3 rounded-xl font-semibold shadow-lg shadow-blue-600/30 transition-all active:scale-95 text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-none">
+            <button
+              onClick={() => {
+                handleVibeChange(HERO_SLIDES[currentHeroSlide].theme);
+                const el = document.getElementById('curation-hub');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`${HERO_SLIDES[currentHeroSlide].accentClass} text-white px-5 sm:px-7 py-2.5 sm:py-3 rounded-full font-semibold shadow-lg transition-all active:scale-95 text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-none`}
+            >
               Shop Now
             </button>
-            <button className="bg-white border-2 border-blue-100 text-blue-600 hover:border-blue-600 px-4 sm:px-7 py-2.5 sm:py-3 rounded-[11px] font-semibold shadow-sm transition-all active:scale-95 text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-none">
+            <button
+              onClick={() => {
+                setAuthModalTab('signup');
+                setIsAuthModalOpen(true);
+              }}
+              className="bg-white border-2 border-slate-200 text-slate-700 hover:border-slate-350 px-5 sm:px-7 py-2.5 sm:py-3 rounded-full font-semibold shadow-sm transition-all active:scale-95 text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-none"
+            >
               Become Seller
             </button>
           </div>
           
           {/* Stats - 2×2 on mobile, row on xl */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 2xl:flex 2xl:items-center pt-3 sm:pt-4 border-t border-slate-200/60 w-full relative z-10 gap-x-2 gap-y-2 sm:gap-4 2xl:gap-0 2xl:divide-x 2xl:divide-slate-200 px-2 sm:px-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 2xl:flex 2xl:items-center pt-3 sm:pt-4 border-t border-slate-200/60 w-full relative z-10 gap-x-2 gap-y-2 sm:gap-4 2xl:gap-0 2xl:divide-x 2xl:divide-slate-200 px-2 sm:px-0 mt-auto">
             <div className="flex items-center gap-2 2xl:gap-2.5 2xl:pr-5 bg-white/50 sm:bg-transparent p-2 sm:p-0 rounded-lg">
               <div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg shrink-0"><ShoppingBag className="w-4 h-4" /></div>
               <div>
@@ -1148,12 +1550,12 @@ export default function Home() {
         </div>
 
         {/* Middle Column - Hero Visual & Pedestal */}
-        <div className="order-3 xl:order-2 w-full xl:w-auto relative z-10 flex items-center justify-center min-h-[160px] sm:min-h-[240px] md:min-h-[320px] lg:min-h-[400px] xl:min-h-[500px] 2xl:min-h-[660px] mt-1 sm:mt-2 xl:mt-0">
+        <div className="order-3 xl:order-2 w-full xl:w-auto relative z-10 flex items-center justify-center min-h-[220px] sm:min-h-[300px] md:min-h-[380px] lg:min-h-[460px] xl:min-h-[500px] 2xl:min-h-[660px] mt-1 sm:mt-2 xl:mt-0 select-none">
           <div className="absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-300/22 blur-[55px] pointer-events-none sm:h-[360px] sm:w-[360px] sm:blur-[80px] xl:h-[440px] xl:w-[440px] xl:blur-[100px]"></div>
           <div className="absolute left-1/2 top-[48%] h-[180px] w-[82%] max-w-[620px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(191,219,254,0.85)_0%,rgba(219,234,254,0.45)_42%,rgba(238,242,248,0)_74%)] pointer-events-none sm:h-[220px] xl:h-[280px]"></div>
           <div className="absolute left-1/2 bottom-[8%] h-[120px] w-[72%] max-w-[560px] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(96,165,250,0.22)_0%,rgba(191,219,254,0.12)_48%,rgba(238,242,248,0)_76%)] blur-[18px] pointer-events-none"></div>
           
-          {/* ── Circular ring pattern (concentric rings behind image) ── */}
+          {/* ── Circular ring pattern ── */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden 2xl:overflow-visible">
             {[620, 520, 420, 320, 220].map((size, i) => (
               <div
@@ -1183,155 +1585,308 @@ export default function Home() {
                 ))
               )}
             </svg>
-            {/* Central glow */}
-            <div className="absolute w-[230px] sm:w-[360px] xl:w-[400px] h-[230px] sm:h-[360px] xl:h-[400px] bg-blue-400/20 rounded-full blur-[40px] sm:blur-[60px]"></div>
+            
+            {/* Central glow dynamically styled */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentHeroSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className={`absolute w-[230px] sm:w-[360px] xl:w-[400px] h-[230px] sm:h-[360px] xl:h-[400px] ${HERO_SLIDES[currentHeroSlide].glowColor} rounded-full blur-[40px] sm:blur-[60px]`}
+              />
+            </AnimatePresence>
           </div>
 
           {/* Pedestal Base ellipse */}
           <div className="absolute bottom-[2%] sm:bottom-[8%] left-1/2 -translate-x-1/2 w-[88%] sm:w-[78%] xl:w-[74%] h-6 sm:h-10 bg-blue-300/20 rounded-full blur-[15px] sm:blur-[20px] pointer-events-none z-0"></div>
 
-          {/* Main Hero Image */}
-          <img 
-            src="https://res.cloudinary.com/ddarldtbb/image/upload/f_auto,q_auto/A_3D_commercial_product_photography_202605252017-removebg-preview_qtiikr" 
-            alt="Electronics Collection" 
-            className="w-[90%] max-w-[320px] sm:max-w-[450px] md:max-w-[620px] lg:max-w-[720px] xl:max-w-[760px] 2xl:max-w-[980px] h-auto object-contain relative z-10 -mt-2 2xl:-mt-6"
-          />
-
-          {/* Floating Element 1: AI Picks */}
-          <FloatingElement className="hidden xl:block absolute top-[8%] left-[2%] 2xl:left-[6%] z-20 xl:scale-90 2xl:scale-100 origin-top-left" delay={0.2} yOffset={10}>
-            <div className="bg-white/95 backdrop-blur-xl border border-white/80 p-3 rounded-2xl shadow-xl flex flex-col gap-2 w-48 2xl:w-56">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-blue-600">AI Picks for You</span>
-                <X className="w-3.5 h-3.5 text-slate-400 cursor-pointer" />
-              </div>
-              <p className="text-[9px] text-slate-400 -mt-1">Based on your activity</p>
-              <div className="flex gap-2 mt-0.5">
-                <div className="bg-slate-50 rounded-xl flex-1 h-14 overflow-hidden border border-slate-100">
-                  <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80&h=80&fit=crop" alt="Watch" className="w-full h-full object-cover" />
-                </div>
-                <div className="bg-slate-50 rounded-xl flex-1 h-14 overflow-hidden border border-slate-100">
-                  <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop" alt="Headphones" className="w-full h-full object-cover" />
-                </div>
-                <div className="bg-slate-50 rounded-xl flex-1 h-14 overflow-hidden border border-slate-100">
-                  <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=80&h=80&fit=crop" alt="Phone" className="w-full h-full object-cover" />
-                </div>
-              </div>
-            </div>
-          </FloatingElement>
-
-          {/* Floating Element 2: Deal of the Day */}
-          <FloatingElement className="hidden xl:block absolute bottom-[20%] left-[1%] 2xl:left-[5%] z-20 xl:scale-90 2xl:scale-100 origin-bottom-left" delay={0.4} yOffset={12}>
-            <div className="bg-gradient-to-br from-red-500 to-rose-600 p-4 rounded-[1.25rem] shadow-xl shadow-red-500/30 text-white text-left max-w-[124px] 2xl:max-w-[140px] transform hover:-translate-y-1 transition-transform border border-white/10">
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full inline-block backdrop-blur-sm">Deal of the Day</span>
-                <X className="w-3.5 h-3.5 text-white/80 cursor-pointer -mr-1" />
-              </div>
-              <p className="text-[10px] text-white/90 mt-2 font-medium">Up to</p>
-              <p className="text-3xl font-black leading-none my-1 tracking-tight drop-shadow-sm pb-1">60% OFF</p>
-              <p className="text-[9px] text-white/80 font-medium bg-black/10 px-2 py-0.5 rounded-full w-fit mt-1">Limited time offer</p>
-            </div>
-          </FloatingElement>
-
-          {/* Floating Element 3: Live Order Tracking */}
-          <FloatingElement className="hidden xl:block absolute top-[9%] right-[2%] 2xl:right-[6%] z-20 xl:scale-90 2xl:scale-100 origin-top-right" delay={0.6} yOffset={10}>
-            <div className="bg-emerald-400/95 backdrop-blur-xl p-3.5 rounded-[1.25rem] shadow-xl shadow-emerald-500/20 text-white w-48 2xl:w-56 border border-white/10">
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-xs font-bold flex items-center gap-1.5">
-                  Live Order Tracking
-                  <motion.span
-                    className="w-1.5 h-1.5 rounded-full bg-white inline-block"
-                    animate={{ opacity: [1, 0, 1] }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
+          {/* Main Hero Image Carousel */}
+          <Carousel setApi={setApi} className="w-[90%] max-w-[320px] sm:max-w-[450px] md:max-w-[620px] lg:max-w-[720px] xl:max-w-[760px] 2xl:max-w-[980px] h-[190px] sm:h-[260px] md:h-[360px] lg:h-[440px] xl:h-[500px] 2xl:h-[600px] relative z-10 -mt-2 2xl:-mt-6 flex items-center justify-center" opts={{ loop: true }}>
+            <CarouselContent className="-ml-0 h-full">
+              {HERO_SLIDES.map((slide, idx) => (
+                <CarouselItem key={idx} className="pl-0 flex items-center justify-center h-full">
+                  <img 
+                    src={slide.image} 
+                    alt="Workspace Theme Showcase" 
+                    className="max-h-full max-w-full object-contain drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                   />
-                </span>
-                <X className="w-3.5 h-3.5 text-white/80 cursor-pointer" />
-              </div>
-              <p className="text-[9px] text-emerald-50 font-medium mb-1 tracking-wide">Order #EX784312</p>
-              <div className="flex justify-between items-center mb-2 mt-1.5 bg-black/10 p-1.5 rounded-lg">
-                <p className="text-[11px] font-bold">In Transit</p>
-                <motion.div
-                  className="bg-white/25 p-1 rounded-full"
-                  animate={{ x: [0, 4, 0] }}
-                  transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
-                >
-                  <Truck className="w-3 h-3 text-white" />
-                </motion.div>
-              </div>
-              <p className="text-[9px] text-emerald-100 font-semibold mb-1.5">Arriving in 2 Days</p>
-              {/* Animated progress track */}
-              <div className="relative h-1.5 bg-white/20 rounded-full mt-1 overflow-hidden">
-                <motion.div
-                  className="absolute left-0 top-0 h-full bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '65%' }}
-                  transition={{ duration: 1.5, delay: 1, ease: "easeOut" }}
-                />
-              </div>
-            </div>
-          </FloatingElement>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
 
-          {/* Floating Element 4: Fast Delivery */}
-          <FloatingElement className="hidden xl:block absolute bottom-[17%] right-[1%] 2xl:right-[5%] z-20 xl:scale-90 2xl:scale-100 origin-bottom-right" delay={0.8} yOffset={14}>
-            <div className="bg-gradient-to-r from-orange-400 to-amber-500 p-3.5 rounded-[1.25rem] shadow-xl shadow-orange-500/20 text-white flex flex-col transform hover:-translate-y-1 transition-transform border border-orange-300 backdrop-blur-md">
-              <span className="text-[9px] font-bold uppercase tracking-wider opacity-90 inline-block mb-1 bg-black/10 px-2 py-0.5 rounded-full w-fit">Fast Delivery</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <p className="text-xl font-black tracking-tight drop-shadow-sm">2-3 Days</p>
-                <Truck className="w-5 h-5 opacity-95 ml-1" />
-              </div>
-              <p className="text-[9px] bg-black/20 font-medium rounded-full px-2 py-0.5 w-fit mt-1.5 border border-white/10">Express Shipping</p>
-            </div>
-          </FloatingElement>
+          {/* Slide Specific Floating Elements (Placed outside Carousel to avoid clipping) */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentHeroSlide}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              {/* Floating Element 1: AI Picks */}
+              <FloatingElement className="hidden xl:block absolute top-[8%] left-[2%] 2xl:left-[6%] z-20 xl:scale-90 2xl:scale-100 origin-top-left" delay={0.2} yOffset={10}>
+                <div className="bg-white/95 backdrop-blur-xl border border-white/80 p-3 rounded-2xl shadow-xl flex flex-col gap-2 w-48 2xl:w-56">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-blue-600">{HERO_SLIDES[currentHeroSlide].floaters.aiPicks.title}</span>
+                    <X className="w-3.5 h-3.5 text-slate-400 cursor-pointer" />
+                  </div>
+                  <p className="text-[9px] text-slate-400 -mt-1">Handpicked match</p>
+                  <div className="flex gap-2 mt-0.5">
+                    <div className="bg-slate-50 rounded-xl flex-1 h-14 overflow-hidden border border-slate-100">
+                      <img src={HERO_SLIDES[currentHeroSlide].floaters.aiPicks.p1} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="bg-slate-50 rounded-xl flex-1 h-14 overflow-hidden border border-slate-100">
+                      <img src={HERO_SLIDES[currentHeroSlide].floaters.aiPicks.p2} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="bg-slate-50 rounded-xl flex-1 h-14 overflow-hidden border border-slate-100">
+                      <img src={HERO_SLIDES[currentHeroSlide].floaters.aiPicks.p3} className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                </div>
+              </FloatingElement>
 
+              {/* Floating Element 2: Deal of the Day */}
+              <FloatingElement className="hidden xl:block absolute bottom-[20%] left-[1%] 2xl:left-[5%] z-20 xl:scale-90 2xl:scale-100 origin-bottom-left" delay={0.4} yOffset={12}>
+                <div className={`bg-gradient-to-br ${HERO_SLIDES[currentHeroSlide].floaters.deal.gradient} p-4 rounded-[1.25rem] shadow-xl text-white text-left max-w-[124px] 2xl:max-w-[140px] transform hover:-translate-y-1 transition-transform border`}>
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full inline-block backdrop-blur-sm truncate max-w-[90px]">{HERO_SLIDES[currentHeroSlide].floaters.deal.label}</span>
+                    <X className="w-3.5 h-3.5 text-white/80 cursor-pointer -mr-1" />
+                  </div>
+                  <p className="text-[10px] text-white/90 mt-2 font-medium">Up to</p>
+                  <p className="text-3xl font-black leading-none my-1 tracking-tight drop-shadow-sm pb-1">{HERO_SLIDES[currentHeroSlide].floaters.deal.off}</p>
+                  <p className="text-[9px] text-white/80 font-medium bg-black/10 px-2 py-0.5 rounded-full w-fit mt-1">{HERO_SLIDES[currentHeroSlide].floaters.deal.desc}</p>
+                </div>
+              </FloatingElement>
+
+              {/* Floating Element 3: Live Order Tracking */}
+              <FloatingElement className="hidden xl:block absolute top-[9%] right-[2%] 2xl:right-[6%] z-20 xl:scale-90 2xl:scale-100 origin-top-right" delay={0.6} yOffset={10}>
+                <div className="bg-emerald-400/95 backdrop-blur-xl p-3.5 rounded-[1.25rem] shadow-xl shadow-emerald-500/20 text-white w-48 2xl:w-56 border border-white/10">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-xs font-bold flex items-center gap-1.5">
+                      {HERO_SLIDES[currentHeroSlide].floaters.track.title}
+                      <motion.span
+                        className="w-1.5 h-1.5 rounded-full bg-white inline-block"
+                        animate={{ opacity: [1, 0, 1] }}
+                        transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
+                      />
+                    </span>
+                    <X className="w-3.5 h-3.5 text-white/80 cursor-pointer" />
+                  </div>
+                  <p className="text-[9px] text-emerald-50 font-medium mb-1 tracking-wide">{HERO_SLIDES[currentHeroSlide].floaters.track.order}</p>
+                  <div className="flex justify-between items-center mb-2 mt-1.5 bg-black/10 p-1.5 rounded-lg">
+                    <p className="text-[11px] font-bold">{HERO_SLIDES[currentHeroSlide].floaters.track.status}</p>
+                    <motion.div
+                      className="bg-white/25 p-1 rounded-full"
+                      animate={{ x: [0, 4, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                    >
+                      <Truck className="w-3 h-3 text-white" />
+                    </motion.div>
+                  </div>
+                  <p className="text-[9px] text-emerald-100 font-semibold mb-1.5">{HERO_SLIDES[currentHeroSlide].floaters.track.time}</p>
+                  <div className="relative h-1.5 bg-white/20 rounded-full mt-1 overflow-hidden">
+                    <motion.div
+                      className="absolute left-0 top-0 h-full bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                      initial={{ width: '0%' }}
+                      animate={{ width: '65%' }}
+                      transition={{ duration: 1.5, delay: 1, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              </FloatingElement>
+
+              {/* Floating Element 4: Fast Delivery */}
+              <FloatingElement className="hidden xl:block absolute bottom-[17%] right-[1%] 2xl:right-[5%] z-20 xl:scale-90 2xl:scale-100 origin-bottom-right" delay={0.8} yOffset={14}>
+                <div className={`bg-gradient-to-r ${HERO_SLIDES[currentHeroSlide].floaters.delivery.gradient} p-3.5 rounded-[1.25rem] shadow-xl text-white flex flex-col transform hover:-translate-y-1 transition-transform border backdrop-blur-md`}>
+                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-90 inline-block mb-1 bg-black/10 px-2 py-0.5 rounded-full w-fit">{HERO_SLIDES[currentHeroSlide].floaters.delivery.title}</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xl font-black tracking-tight drop-shadow-sm">{HERO_SLIDES[currentHeroSlide].floaters.delivery.time}</p>
+                    <Truck className="w-5 h-5 opacity-95 ml-1" />
+                  </div>
+                  <p className="text-[9px] bg-black/20 font-medium rounded-full px-2 py-0.5 w-fit mt-1.5 border border-white/10">{HERO_SLIDES[currentHeroSlide].floaters.delivery.desc}</p>
+                </div>
+              </FloatingElement>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Left/Right Navigation Arrows */}
+          <button
+            onClick={() => api?.scrollPrev()}
+            className="absolute left-2 sm:left-4 z-30 w-10 h-10 rounded-full bg-white/70 hover:bg-white border border-slate-200 flex items-center justify-center shadow-md active:scale-95 transition-all text-slate-700 hover:text-slate-900 focus:outline-none top-1/2 -translate-y-1/2"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          <button
+            onClick={() => api?.scrollNext()}
+            className="absolute right-2 sm:right-4 z-30 w-10 h-10 rounded-full bg-white/70 hover:bg-white border border-slate-200 flex items-center justify-center shadow-md active:scale-95 transition-all text-slate-700 hover:text-slate-900 focus:outline-none top-1/2 -translate-y-1/2"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Bottom Dot indicators */}
+          <div className="absolute bottom-[2%] sm:bottom-[8%] left-1/2 -translate-x-1/2 flex items-center gap-2 z-30 bg-slate-950/10 backdrop-blur-md px-3.5 py-2 rounded-full border border-slate-200/10">
+            {HERO_SLIDES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => api?.scrollTo(idx)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  currentHeroSlide === idx ? 'bg-blue-600 w-6' : 'bg-slate-400 hover:bg-slate-600'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Mobile/Tablet Voice Assistant Card */}
         <div className="order-2 xl:hidden w-full max-w-[560px] mt-2 mb-1 relative z-20">
           <div className="rounded-[28px] p-[1.5px] bg-[conic-gradient(from_0deg_at_50%_50%,#1e40af_0%,#3b82f6_35%,#0ea5e9_65%,#1e40af_100%)] shadow-[0_20px_45px_rgba(30,64,175,0.25)]">
-            <div className="rounded-[27px] bg-gradient-to-b from-[#101d3f] via-[#13295f] to-[#1a2d62] px-4 py-4 sm:px-5 sm:py-5 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold">Voice Shop Assistant</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`w-2 h-2 rounded-full ${aiServiceStatus.indicatorClass}`}></span>
-                    <span className="text-[11px] text-slate-300">{aiServiceStatus.label}</span>
+            <div className="rounded-[27px] bg-gradient-to-b from-[#101d3f] via-[#13295f] to-[#1a2d62] px-4 py-4 sm:px-5 sm:py-5 text-white flex flex-col justify-between min-h-[250px]">
+              
+              {isChatActive ? (
+                <>
+                  {/* Header */}
+                  <div className="w-full flex justify-between items-center text-white pb-2.5 border-b border-white/5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
+                        <Brain className="w-3.5 h-3.5 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-extrabold text-xs">Mia Chat Assistant</p>
+                        <p className="text-[8px] text-emerald-400 font-bold leading-none">ACTIVE</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setIsChatActive(false)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                </div>
-                <Cpu className="w-4 h-4 text-blue-200" />
-              </div>
 
-              <div className="mt-4 flex items-center gap-3 sm:gap-4">
-                <div className="w-[90px] h-[90px] sm:w-[96px] sm:h-[96px] rounded-2xl bg-gradient-to-b from-[#2a3f78] to-[#1a2f64] border border-white/10 overflow-hidden shrink-0 shadow-[0_10px_20px_rgba(15,23,42,0.35)]">
-                  <img
-                    src="https://res.cloudinary.com/ddarldtbb/image/upload/v1779814719/i_need_this_girl_alone_202605262138-removebg-preview_czgnx1.png"
-                    alt="AI assistant avatar"
-                    className="w-full h-full object-cover scale-[1.15]"
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[13px] text-slate-100 leading-relaxed">Hi, I am Mia. I can find best deals and compare products instantly.</p>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Deals</span>
-                    <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Compare</span>
-                    <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Tracking</span>
+                  {/* Chat Messages Log */}
+                  <div className="flex-1 w-full overflow-y-auto my-3 pr-1 space-y-2.5 text-left text-xs text-white max-h-[220px]">
+                    {chatMessages.map((msg, mIdx) => (
+                      <div key={mIdx} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                        <div className={`p-2.5 rounded-2xl max-w-[90%] leading-relaxed ${
+                          msg.sender === 'user' 
+                            ? 'bg-blue-600 text-white rounded-tr-none' 
+                            : 'bg-white/10 text-slate-100 rounded-tl-none border border-white/5'
+                        }`}>
+                          {msg.text}
+                        </div>
+                        
+                        {msg.recommendations && msg.recommendations.length > 0 && (
+                          <div className="w-full mt-2 space-y-2">
+                            {msg.recommendations.map(p => (
+                              <div key={p.id} className="bg-white/5 border border-white/10 rounded-xl p-2 flex items-center gap-2">
+                                <img src={p.image} className="w-8 h-8 rounded bg-white p-0.5 object-contain shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-[10px] text-white truncate">{p.title}</p>
+                                  <p className="text-[9px] text-blue-400">LKR {Number(p.price).toLocaleString()}</p>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (p.vibe) {
+                                      handleVibeChange(p.vibe);
+                                    }
+                                    showToast(`Added ${p.title} to setup!`);
+                                  }}
+                                  className="p-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-bold"
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    {isChatTyping && (
+                      <div className="flex items-center gap-1.5 text-slate-400 italic pl-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce delay-75" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce delay-150" />
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
 
-              <div className="mt-4 flex items-center justify-center gap-[3px] h-9">
-                {[35, 55, 25, 80, 45, 95, 100, 70, 45, 85, 50, 75, 30, 55, 40].map((h, i) => (
-                  <VisualizerBar key={`mobile-viz-${i}`} baseHeight={h} delay={i * 0.08} />
-                ))}
-              </div>
+                  {/* Chat Input */}
+                  <form 
+                    onSubmit={handleSendChatMessage}
+                    className="w-full flex items-center bg-white/5 border border-white/10 p-1 rounded-xl focus-within:border-blue-500/50"
+                  >
+                    <input 
+                      type="text"
+                      placeholder="Type your message..."
+                      value={chatMessageInput}
+                      onChange={(e) => setChatMessageInput(e.target.value)}
+                      className="flex-1 bg-transparent border-0 text-white text-xs px-2.5 py-1.5 focus:ring-0 focus:outline-none placeholder-slate-500"
+                    />
+                    <button 
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg shadow-md"
+                    >
+                      Send
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Voice Shop Assistant</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`w-2 h-2 rounded-full ${aiServiceStatus.indicatorClass}`}></span>
+                        <span className="text-[11px] text-slate-300">{aiServiceStatus.label}</span>
+                      </div>
+                    </div>
+                    <Cpu className="w-4 h-4 text-blue-200" />
+                  </div>
 
-              <div className="mt-2 flex items-center justify-center">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  className="relative w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.6)]"
-                >
-                  <Mic className="text-white w-6 h-6" />
-                </motion.button>
-              </div>
-              <p className="text-center text-[11px] text-blue-100 font-medium mt-1">Tap to speak</p>
+                  <div className="mt-4 flex items-center gap-3 sm:gap-4">
+                    <div className="w-[90px] h-[90px] sm:w-[96px] sm:h-[96px] rounded-2xl bg-gradient-to-b from-[#2a3f78] to-[#1a2f64] border border-white/10 overflow-hidden shrink-0 shadow-[0_10px_20px_rgba(15,23,42,0.35)]">
+                      <img
+                        src="https://res.cloudinary.com/ddarldtbb/image/upload/v1779814719/i_need_this_girl_alone_202605262138-removebg-preview_czgnx1.png"
+                        alt="AI assistant avatar"
+                        className="w-full h-full object-cover scale-[1.15]"
+                      />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-[13px] text-slate-100 leading-relaxed">Hi, I am Mia. I can find best deals and compare products instantly.</p>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Deals</span>
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Compare</span>
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 border border-blue-300/25">Tracking</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-center gap-[3px] h-9">
+                    {[35, 55, 25, 80, 45, 95, 100, 70, 45, 85, 50, 75, 30, 55, 40].map((h, i) => (
+                      <VisualizerBar key={`mobile-viz-${i}`} baseHeight={h} delay={i * 0.08} />
+                    ))}
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-center">
+                    <motion.button
+                      onClick={() => setIsChatActive(true)}
+                      whileTap={{ scale: 0.95 }}
+                      className="relative w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.6)]"
+                    >
+                      <Mic className="text-white w-6 h-6" />
+                    </motion.button>
+                  </div>
+                  <p className="text-center text-[11px] text-blue-100 font-medium mt-1">Tap to speak</p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1349,115 +1904,209 @@ export default function Home() {
             <div className="absolute bottom-[-10%] right-[-20%] w-64 h-64 bg-blue-600/20 rounded-full blur-[60px] pointer-events-none"></div>
             <div className="absolute top-[20%] left-[-20%] w-40 h-40 bg-indigo-500/20 rounded-full blur-[40px] pointer-events-none"></div>
 
-            {/* Header */}
-            <div className="w-full flex justify-between items-center text-white relative z-10">
-              <div>
-                <p className="font-semibold text-sm">Voice Shop Assistant</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={`w-2 h-2 rounded-full ${aiServiceStatus.indicatorClass}`}></span>
-                  <span className="text-[11px] text-slate-400">{aiServiceStatus.label}</span>
-                </div>
-              </div>
-              <X className="w-4 h-4 text-slate-400 hover:text-white cursor-pointer" />
-            </div>
-
-            {/* Avatar + visualizer + message */}
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 w-full relative z-10">
-              <div className="absolute inset-x-4 top-[12%] h-24 bg-blue-500/10 blur-2xl pointer-events-none"></div>
-
-              <motion.div
-                className="relative mt-1"
-                animate={{ y: [0, -4, 0] }}
-                transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-              >
-                <motion.div
-                  className="absolute -inset-1 rounded-[30px] bg-gradient-to-r from-cyan-400/20 via-blue-500/20 to-indigo-400/20 blur-md"
-                  animate={{ opacity: [0.45, 0.85, 0.45], scale: [0.98, 1.02, 0.98] }}
-                  transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
-                />
-
-                <motion.div
-                  className="absolute inset-0 rounded-[28px] border border-blue-300/40"
-                  animate={{
-                    boxShadow: [
-                      "0 0 0 rgba(59,130,246,0.1)",
-                      "0 0 20px rgba(59,130,246,0.35)",
-                      "0 0 0 rgba(59,130,246,0.1)",
-                    ],
-                  }}
-                  transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-                />
-
-                <div className="relative w-[136px] 2xl:w-[176px] h-[136px] 2xl:h-[176px] rounded-[24px] 2xl:rounded-[28px] bg-gradient-to-b from-[#21366d]/90 via-[#1a2c5e]/95 to-[#13224a] border border-white/10 overflow-hidden flex items-end justify-center shadow-[0_20px_40px_rgba(2,6,23,0.45)]">
-                  <img
-                    src="https://res.cloudinary.com/ddarldtbb/image/upload/v1779814719/i_need_this_girl_alone_202605262138-removebg-preview_czgnx1.png"
-                    alt="AI assistant avatar"
-                    className="w-[124%] h-[124%] object-contain -mb-1 2xl:-mb-2 drop-shadow-[0_12px_26px_rgba(59,130,246,0.45)]"
-                  />
+            {isChatActive ? (
+              <>
+                {/* Header */}
+                <div className="w-full flex justify-between items-center text-white relative z-10 border-b border-white/5 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
+                      <Brain className="w-3.5 h-3.5 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-xs">Mia Chat Assistant</p>
+                      <p className="text-[8px] text-emerald-400 font-bold leading-none">ACTIVE</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsChatActive(false)}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-2.5 2xl:px-3 py-1 rounded-full bg-blue-500/20 border border-blue-300/30 backdrop-blur-md whitespace-nowrap flex items-center gap-1.5">
-                  <Cpu className="w-3 h-3 text-blue-200" />
-                  <p className="text-[9px] 2xl:text-[10px] font-semibold text-blue-100 tracking-wide">Mia • Smart Concierge</p>
+                {/* Chat Messages Log */}
+                <div className="flex-1 w-full overflow-y-auto my-3 pr-1 space-y-2.5 text-left text-xs text-white relative z-10 scrollbar-thin scrollbar-thumb-blue-600/30">
+                  {chatMessages.map((msg, mIdx) => (
+                    <div key={mIdx} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`p-2.5 rounded-2xl max-w-[90%] leading-relaxed ${
+                        msg.sender === 'user' 
+                          ? 'bg-blue-600 text-white rounded-tr-none' 
+                          : 'bg-white/10 text-slate-100 rounded-tl-none border border-white/5'
+                      }`}>
+                        {msg.text}
+                      </div>
+                      
+                      {msg.recommendations && msg.recommendations.length > 0 && (
+                        <div className="w-full mt-2 space-y-2">
+                          {msg.recommendations.map(p => (
+                            <div key={p.id} className="bg-white/5 border border-white/10 rounded-xl p-2 flex items-center gap-2">
+                              <img src={p.image} className="w-8 h-8 rounded bg-white p-0.5 object-contain shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-[10px] text-white truncate">{p.title}</p>
+                                <p className="text-[9px] text-blue-400">LKR {Number(p.price).toLocaleString()}</p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (p.vibe) {
+                                    handleVibeChange(p.vibe);
+                                  }
+                                  showToast(`Added ${p.title} to setup!`);
+                                }}
+                                className="p-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-bold"
+                              >
+                                Add
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {isChatTyping && (
+                    <div className="flex items-center gap-1.5 text-slate-400 italic pl-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce delay-75" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce delay-150" />
+                    </div>
+                  )}
                 </div>
-              </motion.div>
 
-              <div className="flex items-center gap-[3px] h-9 2xl:h-11 w-full justify-center px-2 2xl:px-3 opacity-90 mt-1">
-                {[35, 55, 25, 80, 45, 95, 100, 70, 45, 85, 50, 75, 30, 55, 40].map((h, i) => (
-                  <VisualizerBar key={i} baseHeight={h} delay={i * 0.08} />
-                ))}
-              </div>
-
-              <p className="text-[11px] 2xl:text-xs text-slate-200 font-medium leading-relaxed text-center px-2">Ask for deals, specs, and best product match.</p>
-
-              <div className="flex items-center justify-center gap-1.5 text-[9px] 2xl:text-[10px] text-blue-100">
-                <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Deals</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Compare</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Track</span>
-              </div>
-            </div>
-
-            {/* Animated Mic Button */}
-            <div className="flex flex-col items-center gap-1.5 relative z-10 pb-0.5">
-              <div className="relative flex items-center justify-center w-full">
-                <div className="absolute w-24 h-12 2xl:w-36 2xl:h-16 rounded-full bg-blue-500/15 blur-xl"></div>
-
-                <motion.div
-                  className="absolute w-14 h-14 2xl:w-20 2xl:h-20 rounded-full border border-blue-400/30"
-                  animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0 }}
-                />
-
-                <motion.div
-                  className="absolute w-14 h-14 2xl:w-20 2xl:h-20 rounded-full border border-blue-400/20"
-                  animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0.5 }}
-                />
-
-                <motion.div
-                  className="absolute w-12 h-12 2xl:w-16 2xl:h-16 rounded-full border-2 border-blue-500/50"
-                  animate={{ scale: [1, 1.15, 1], opacity: [1, 0.3, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                />
-
-                <motion.button
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative w-11 h-11 2xl:w-14 2xl:h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.65)]"
+                {/* Chat Input */}
+                <form 
+                  onSubmit={handleSendChatMessage}
+                  className="w-full flex items-center bg-white/5 border border-white/10 p-1 rounded-xl focus-within:border-blue-500/50 relative z-10"
                 >
-                  <Mic className="text-white w-4 h-4 2xl:w-6 2xl:h-6" />
-                </motion.button>
-              </div>
+                  <input 
+                    type="text"
+                    placeholder="Type your message..."
+                    value={chatMessageInput}
+                    onChange={(e) => setChatMessageInput(e.target.value)}
+                    className="flex-1 bg-transparent border-0 text-white text-xs px-2.5 py-1.5 focus:ring-0 focus:outline-none placeholder-slate-500"
+                  />
+                  <button 
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg shadow-md"
+                  >
+                    Send
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="w-full flex justify-between items-center text-white relative z-10">
+                  <div>
+                    <p className="font-semibold text-sm">Voice Shop Assistant</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`w-2 h-2 rounded-full ${aiServiceStatus.indicatorClass}`}></span>
+                      <span className="text-[11px] text-slate-400">{aiServiceStatus.label}</span>
+                    </div>
+                  </div>
+                  <X className="w-4 h-4 text-slate-400 hover:text-white cursor-pointer" />
+                </div>
 
-              <p className="text-blue-100 text-[10px] 2xl:text-[11px] font-semibold tracking-wide">Tap to speak</p>
-            </div>
+                {/* Avatar + visualizer + message */}
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 w-full relative z-10">
+                  <div className="absolute inset-x-4 top-[12%] h-24 bg-blue-500/15 blur-2xl pointer-events-none"></div>
+
+                  <motion.div
+                    className="relative mt-1"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+                  >
+                    <motion.div
+                      className="absolute -inset-1 rounded-[30px] bg-gradient-to-r from-cyan-400/20 via-blue-500/20 to-indigo-400/20 blur-md"
+                      animate={{ opacity: [0.45, 0.85, 0.45], scale: [0.98, 1.02, 0.98] }}
+                      transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
+                    />
+
+                    <motion.div
+                      className="absolute inset-0 rounded-[28px] border border-blue-300/40"
+                      animate={{
+                        boxShadow: [
+                          "0 0 0 rgba(59,130,246,0.1)",
+                          "0 0 20px rgba(59,130,246,0.35)",
+                          "0 0 0 rgba(59,130,246,0.1)",
+                        ],
+                      }}
+                      transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                    />
+
+                    <div className="relative w-[136px] 2xl:w-[176px] h-[136px] 2xl:h-[176px] rounded-[24px] 2xl:rounded-[28px] bg-gradient-to-b from-[#21366d]/90 via-[#1a2c5e]/95 to-[#13224a] border border-white/10 overflow-hidden flex items-end justify-center shadow-[0_20px_40px_rgba(2,6,23,0.45)]">
+                      <img
+                        src="https://res.cloudinary.com/ddarldtbb/image/upload/v1779814719/i_need_this_girl_alone_202605262138-removebg-preview_czgnx1.png"
+                        alt="AI assistant avatar"
+                        className="w-[124%] h-[124%] object-contain -mb-1 2xl:-mb-2 drop-shadow-[0_12px_26px_rgba(59,130,246,0.45)]"
+                      />
+                    </div>
+
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-2.5 2xl:px-3 py-1 rounded-full bg-blue-500/20 border border-blue-300/30 backdrop-blur-md whitespace-nowrap flex items-center gap-1.5">
+                      <Cpu className="w-3 h-3 text-blue-200" />
+                      <p className="text-[9px] 2xl:text-[10px] font-semibold text-blue-100 tracking-wide">Mia • Smart Concierge</p>
+                    </div>
+                  </motion.div>
+
+                  <div className="flex items-center gap-[3px] h-9 2xl:h-11 w-full justify-center px-2 2xl:px-3 opacity-90 mt-1">
+                    {[35, 55, 25, 80, 45, 95, 100, 70, 45, 85, 50, 75, 30, 55, 40].map((h, i) => (
+                      <VisualizerBar key={i} baseHeight={h} delay={i * 0.08} />
+                    ))}
+                  </div>
+
+                  <p className="text-[11px] 2xl:text-xs text-slate-200 font-medium leading-relaxed text-center px-2">Ask for deals, specs, and best product match.</p>
+
+                  <div className="flex items-center justify-center gap-1.5 text-[9px] 2xl:text-[10px] text-blue-100">
+                    <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Deals</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Compare</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/[0.08] border border-white/10">Track</span>
+                  </div>
+                </div>
+
+                {/* Animated Mic Button */}
+                <div className="flex flex-col items-center gap-1.5 relative z-10 pb-0.5">
+                  <div className="relative flex items-center justify-center w-full">
+                    <div className="absolute w-24 h-12 2xl:w-36 2xl:h-16 rounded-full bg-blue-500/15 blur-xl"></div>
+
+                    <motion.div
+                      className="absolute w-14 h-14 2xl:w-20 2xl:h-20 rounded-full border border-blue-400/30"
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0 }}
+                    />
+
+                    <motion.div
+                      className="absolute w-14 h-14 2xl:w-20 2xl:h-20 rounded-full border border-blue-400/20"
+                      animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0.5 }}
+                    />
+
+                    <motion.div
+                      className="absolute w-12 h-12 2xl:w-16 2xl:h-16 rounded-full border-2 border-blue-500/50"
+                      animate={{ scale: [1, 1.15, 1], opacity: [1, 0.3, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                    />
+
+                    <motion.button
+                      onClick={() => setIsChatActive(true)}
+                      whileHover={{ scale: 1.08 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="relative w-11 h-11 2xl:w-14 2xl:h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.65)]"
+                    >
+                      <Mic className="text-white w-4 h-4 2xl:w-6 2xl:h-6" />
+                    </motion.button>
+                  </div>
+
+                  <p className="text-blue-100 text-[10px] 2xl:text-[11px] font-semibold tracking-wide">Tap to speak</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>
       </section>
 
       {/* 4. Categories + Flash Deals Section */}
-      <section className="relative bg-[#eef2f8] overflow-hidden pt-4 sm:pt-5 pb-10 sm:pb-12 border-t border-slate-200/80">
+      <section className="relative bg-white overflow-hidden pt-4 sm:pt-5 pb-10 sm:pb-12 border-t border-slate-200/80">
         <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
           <div className="mb-3 flex items-center justify-end">
             <a
@@ -1470,8 +2119,8 @@ export default function Home() {
           </div>
 
           <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="grid min-w-max grid-flow-col auto-cols-[126px] sm:auto-cols-[138px] lg:auto-cols-[146px]">
-                {curatedCategories.map((category, index) => (
+            <div className="grid min-w-max grid-flow-col auto-cols-[140px] sm:auto-cols-[152px] lg:auto-cols-[164px]">
+                {(dbCategories.length > 0 ? dbCategories : curatedCategories).map((category, index) => (
                   <motion.button
                     key={category.name}
                     initial={{ opacity: 0, y: 16 }}
@@ -1481,11 +2130,11 @@ export default function Home() {
                     whileHover={{ y: -2 }}
                     className="group px-3 sm:px-3.5 py-2 text-center border-r border-slate-300/80 last:border-r-0"
                   >
-                    <div className="h-[96px] sm:h-[104px] w-full rounded-xl bg-white/80 p-1 flex items-center justify-center shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
+                    <div className="h-[112px] sm:h-[124px] w-full rounded-xl bg-white/80 p-2 flex items-center justify-center shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
                       <img
                         src={category.image}
                         alt={category.name}
-                        className="h-full w-full rounded-lg object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                        className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-[1.04]"
                       />
                     </div>
                     <p className="mt-3 text-[12px] sm:text-[13px] font-semibold leading-tight text-slate-900">{category.name}</p>
@@ -1500,7 +2149,7 @@ export default function Home() {
                   whileHover={{ y: -2 }}
                   className="px-3 py-2 text-center"
                 >
-                  <div className="h-[96px] sm:h-[104px] w-full flex items-center justify-center">
+                  <div className="h-[112px] sm:h-[124px] w-full flex items-center justify-center">
                     <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg shadow-black/20">
                       <ArrowRight className="h-7 w-7" />
                     </span>
@@ -1522,14 +2171,17 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <a href="#" className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-800">
+              <a
+                href="#"
+                className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
+              >
                 View All Deals
                 <ArrowRight className="h-4 w-4" />
               </a>
             </div>
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
-              {flashDeals.map((deal, index) => (
+              {(allDbProducts.length > 0 ? compileDeals(allDbProducts) : flashDeals).map((deal, index) => (
                 <motion.article
                   key={deal.id}
                   initial={{ opacity: 0, y: 24 }}
@@ -1546,8 +2198,8 @@ export default function Home() {
                     <Heart className="h-3.5 w-3.5" />
                   </button>
 
-                  <div className="h-28 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white p-2">
-                    <img src={deal.image} alt={deal.title} className="h-full w-full rounded-lg object-cover" />
+                  <div className="h-44 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white p-2 flex items-center justify-center">
+                    <img src={deal.image} alt={deal.title} className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-105" />
                   </div>
 
                   <h4 className="mt-2.5 text-[12px] font-semibold leading-snug text-slate-800 min-h-[38px]">{deal.title}</h4>
@@ -1574,7 +2226,10 @@ export default function Home() {
               <p className="text-xs sm:text-sm text-slate-600">
                 312 deals were updated in the last hour. Prices can shift in real-time.
               </p>
-              <a href="#" className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700 hover:text-blue-800">
+              <a
+                href="#"
+                className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
+              >
                 See all live deals
                 <ArrowRight className="h-4 w-4" />
               </a>
@@ -1584,7 +2239,7 @@ export default function Home() {
       </section>
 
       {/* 5. Curate Your Workspace — Setup Curation Hub */}
-      <section className="relative bg-[#eef2f8] pb-16 pt-12 border-t border-slate-200/80">
+      <section id="curation-hub" className="relative bg-white pb-16 pt-12 border-t border-slate-200/80">
         
         {/* Soft Radial Ambient Glow */}
         <div className="absolute top-[10%] left-[-10%] w-[400px] h-[400px] bg-blue-400/5 rounded-full blur-[80px] pointer-events-none" />
@@ -1618,7 +2273,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.42, delay: 0.05 }}
-              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
             >
               <div className="flex-1 flex flex-col justify-between">
                 <div>
@@ -1630,7 +2285,7 @@ export default function Home() {
                 </div>
 
                 <div className="my-2 relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50/60 p-2 flex flex-col items-center justify-center">
-                  <div className="h-36 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center relative">
+                  <div className="h-48 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center relative">
                     <img src={activeVibe.recentlyViewed.image} alt={activeVibe.recentlyViewed.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
                     <span className="absolute bottom-2 left-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-900/80 text-white backdrop-blur-sm">
                       {activeVibe.recentlyViewed.timeText}
@@ -1659,7 +2314,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.42, delay: 0.1 }}
-              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
             >
               <div className="flex-1 flex flex-col justify-between">
                 <div>
@@ -1674,7 +2329,7 @@ export default function Home() {
                 </div>
 
                 <div className="my-2 relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50/60 p-2 flex flex-col items-center justify-center">
-                  <div className="h-36 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center">
+                  <div className="h-48 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center">
                     <img src={activeVibe.handpicked.image} alt={activeVibe.handpicked.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
                   </div>
                   <div className="w-full mt-3 text-left">
@@ -1699,7 +2354,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.42, delay: 0.15 }}
-              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
             >
               <div>
                 <div className="flex justify-between items-center mb-2">
@@ -1768,10 +2423,7 @@ export default function Home() {
 
                 <button
                   disabled={selectedBundleItems.length === 0}
-                  onClick={() => {
-                    setIsBundleAdded(true);
-                    setTimeout(() => setIsBundleAdded(false), 2200);
-                  }}
+                  onClick={handleBuyBundle}
                   className={`w-full mt-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                     isBundleAdded
                       ? 'bg-emerald-600 text-white'
@@ -1801,7 +2453,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.42, delay: 0.2 }}
-              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[490px] group overflow-hidden"
+              className="bg-white rounded-3xl border border-slate-200/60 p-4 shadow-[0_4px_20px_rgba(15,23,42,0.02)] hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
             >
               <div className="flex-1 flex flex-col justify-between">
                 <div>
@@ -1816,7 +2468,7 @@ export default function Home() {
                 </div>
 
                 <div className="my-2 relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50/60 p-2 flex flex-col items-center justify-center">
-                  <div className="h-36 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center">
+                  <div className="h-48 w-full rounded-xl overflow-hidden bg-white border border-slate-200/50 flex items-center justify-center">
                     <img src={activeVibe.trending.image} alt={activeVibe.trending.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
                   </div>
                   <div className="w-full mt-3 text-left">
@@ -1842,7 +2494,7 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.42, delay: 0.25 }}
-              className="rounded-3xl relative overflow-hidden bg-gradient-to-b from-blue-50/30 via-white to-white text-slate-800 p-4 shadow-[0_4px_24px_rgba(37,99,235,0.03)] border border-blue-100 flex flex-col justify-between h-[490px]"
+              className="rounded-3xl relative overflow-hidden bg-gradient-to-b from-blue-50/30 via-white to-white text-slate-800 p-4 shadow-[0_4px_24px_rgba(37,99,235,0.03)] border border-blue-100 flex flex-col justify-between h-[540px]"
             >
               {/* Decorative blobs */}
               <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
@@ -1913,7 +2565,7 @@ export default function Home() {
       </section>
 
       {/* 6. Featured Vendors Section */}
-      <section className="relative bg-[#f8fafc] py-16 border-t border-slate-200/80">
+      <section className="relative bg-white py-16 border-t border-slate-200/80">
         {/* Soft Ambient glow behind the split console */}
         <div className="absolute top-[10%] left-[5%] w-[450px] h-[450px] bg-blue-500/5 rounded-full blur-[90px] pointer-events-none" />
         <div className="absolute bottom-[10%] right-[5%] w-[450px] h-[450px] bg-indigo-500/5 rounded-full blur-[90px] pointer-events-none" />
@@ -1936,241 +2588,159 @@ export default function Home() {
                 Connect and browse official vendor storefronts integrated into unified workspace setups.
               </p>
             </div>
-            <a href="#" className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-700 hover:text-blue-800 group shrink-0 self-start sm:self-center">
+            <a
+              href="#"
+              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800 shrink-0 self-start sm:self-center"
+            >
               View All Partners
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="h-4 w-4" />
             </a>
           </div>
 
-          {/* Interactive Split-Pane Console */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Left Sidebar: Brand selector buttons (4 columns on lg) */}
-            <div className="lg:col-span-4 flex flex-col gap-3.5 w-full">
-              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1 pl-1">Partner Directory</p>
-              
-              {VENDORS_DATA.map((vendor) => {
-                const isActive = activeVendorId === vendor.id;
-                const isFollowed = !!followedVendors[vendor.id];
-                return (
-                  <button
-                    key={vendor.id}
-                    onClick={() => setActiveVendorId(vendor.id)}
-                    className={`relative w-full text-left p-4 rounded-3xl border transition-all duration-300 flex items-center justify-between group overflow-hidden ${
-                      isActive
-                        ? 'bg-white border-slate-300 shadow-[0_12px_24px_rgba(15,23,42,0.04)] -translate-x-1 lg:-translate-x-2'
-                        : 'bg-white/60 border-slate-200/70 hover:bg-white hover:border-slate-300 hover:shadow-[0_8px_16px_rgba(15,23,42,0.02)]'
-                    }`}
-                  >
-                    {/* Active highlight line indicator */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600 rounded-r-md"
-                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                      />
-                    )}
+          {/* Interactive split/catalog redesigned to grid directory */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8 mt-10">
+            {compileVendorsData(VENDORS_DATA, allDbProducts).map((vendor) => {
+              const isFollowed = !!followedVendors[vendor.id];
+              const activeDropdown = openDropdownVendor === vendor.id;
+              return (
+                <motion.div
+                  key={vendor.id}
+                  whileHover={{ y: -6, transition: { duration: 0.2, ease: "easeOut" } }}
+                  className={`relative rounded-[2rem] border p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(15,23,42,0.02)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.06)] overflow-hidden bg-gradient-to-br ${vendor.cardBg} group min-h-[300px]`}
+                >
+                  {/* Subtle Ambient Brand Glow inside Card */}
+                  <div className={`absolute -top-16 -right-16 w-36 h-36 bg-gradient-to-br ${vendor.glowGrad || 'from-blue-500/10 to-indigo-500/10'} opacity-[0.08] rounded-full blur-[35px] pointer-events-none group-hover:scale-110 transition-transform duration-500`} />
+                  <div className={`absolute -bottom-16 -left-16 w-36 h-36 bg-gradient-to-br ${vendor.glowGrad || 'from-indigo-500/10 to-blue-500/10'} opacity-[0.08] rounded-full blur-[35px] pointer-events-none`} />
 
-                    <div className="flex items-center gap-3.5">
-                      {/* Logo Ring */}
-                      <div className={`w-12 h-12 rounded-xl bg-slate-50 border flex items-center justify-center p-1.5 transition-all duration-300 shrink-0 ${
-                        isActive ? 'border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]' : 'border-slate-200/60'
-                      }`}>
-                        {vendor.logoSvg}
-                      </div>
-
-                      <div>
-                        <h4 className="text-sm font-extrabold text-slate-900 leading-tight flex items-center gap-1.5">
-                          {vendor.name}
-                          {isFollowed && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" title="Following" />
-                          )}
-                        </h4>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="w-3 h-3 fill-amber-400 text-amber-500 stroke-[1.5]" />
-                          <span className="text-[11px] font-bold text-slate-700">{vendor.rating}</span>
-                          <span className="text-[9px] text-slate-400">({vendor.reviews})</span>
+                  <div className="relative z-10 flex-1 flex flex-col">
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        {/* Logo Wrapper with organic circular shape & soft shadow */}
+                        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center p-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.03)] shrink-0 transition-transform duration-500 group-hover:scale-105">
+                          {vendor.logoSvg}
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Followers count compact badge */}
-                    <div className="text-right shrink-0">
-                      <p className="text-[9px] font-bold text-slate-400">Followers</p>
-                      <p className="text-xs font-black text-slate-800 mt-0.5">
-                        {formatNumber(vendor.baseFollowers + (isFollowed ? 1 : 0))}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Right Panel: Dynamic Dark Showcase Stage (8 columns on lg) */}
-            <div className="lg:col-span-8 w-full h-full">
-              {VENDORS_DATA.map((vendor) => {
-                if (vendor.id !== activeVendorId) return null;
-                const isFollowed = !!followedVendors[vendor.id];
-                return (
-                  <motion.div
-                    key={vendor.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className={`w-full bg-gradient-to-br rounded-[40px] border p-8 flex flex-col justify-between shadow-[0_24px_50px_rgba(15,23,42,0.1)] relative overflow-hidden backdrop-blur-md h-[610px] ${vendor.stageBg}`}
-                  >
-                    {/* Glowing Accent Ambient Blob */}
-                    <div className={`absolute -top-24 -right-24 w-64 h-64 bg-gradient-to-br ${vendor.glowGrad} opacity-[0.08] rounded-full blur-[50px] pointer-events-none`} />
-                    <div className={`absolute -bottom-24 -left-24 w-64 h-64 bg-gradient-to-br ${vendor.glowGrad} opacity-[0.08] rounded-full blur-[50px] pointer-events-none`} />
-
-                    <div className="relative z-10">
-                      
-                      {/* Stage Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100/95 flex items-center justify-center p-2 shadow-md shrink-0">
-                            {vendor.logoSvg}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-xl font-black text-white">{vendor.name}</h3>
-                              <span className="text-[8px] tracking-wider uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md font-black">
-                                Verified Partner
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-base font-black text-slate-900 leading-tight">
+                              {vendor.name}
+                            </h4>
+                            {isFollowed && (
+                              <span className="inline-flex items-center bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-[8px] font-extrabold tracking-wider uppercase border border-blue-100 animate-pulse">
+                                Following
                               </span>
-                            </div>
-                            <p className="text-xs text-slate-400 mt-1">{vendor.tagline}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[9px] tracking-wider uppercase bg-slate-950/5 text-slate-600 border border-slate-200/40 px-2 py-0.5 rounded-md font-bold shadow-sm">
+                              Official Partner
+                            </span>
                           </div>
                         </div>
-
-                        {/* Stage Follow Action */}
-                        <button
-                          onClick={() => handleToggleFollowVendor(vendor.id, vendor.name)}
-                          className={`px-5 py-2.5 rounded-full text-xs font-black transition-all flex items-center gap-1.5 self-start sm:self-center shrink-0 ${
-                            isFollowed
-                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-md'
-                              : 'bg-white text-slate-900 hover:bg-slate-100 hover:scale-[1.02] active:scale-98 shadow-sm'
-                          }`}
-                        >
-                          {isFollowed ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>Following Partner</span>
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>Follow Brand</span>
-                            </>
-                          )}
-                        </button>
                       </div>
+                      
+                      {/* Follow Brand Icon Toggle */}
+                      <button
+                        onClick={() => handleToggleFollowVendor(vendor.id, vendor.name)}
+                        className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all duration-300 shadow-sm shrink-0 active:scale-90 ${
+                          isFollowed
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/10 hover:bg-blue-700'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-350 hover:text-slate-800'
+                        }`}
+                        title={isFollowed ? "Unfollow Brand" : "Follow Brand"}
+                      >
+                        <Heart className={`w-4 h-4 ${isFollowed ? 'fill-white stroke-[2.5]' : 'stroke-[2]'}`} />
+                      </button>
+                    </div>
 
-                      {/* Partners Catalog Shelf title */}
-                      <div className="mt-6 flex justify-between items-center mb-4">
-                        <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Featured Partner Catalog</p>
-                        <p className="text-[10px] text-slate-500 font-bold">Showing 3 of {vendor.productsCount} items</p>
+                    {/* Description/Tagline */}
+                    <p className="text-xs text-slate-500 mt-4 leading-relaxed font-medium line-clamp-2 min-h-[32px]">
+                      {vendor.tagline}
+                    </p>
+
+                    {/* Stats Row */}
+                    <div className="grid grid-cols-3 gap-2 mt-6 py-4 border-t border-b border-slate-100/70 text-left">
+                      <div>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Rating</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 stroke-[1.5]" />
+                          <span className="text-xs font-black text-slate-800">{vendor.rating}</span>
+                          <span className="text-[9px] text-slate-400 font-bold">({formatNumber(vendor.reviews)})</span>
+                        </div>
                       </div>
+                      <div className="border-l border-slate-100 pl-3">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Followers</p>
+                        <p className="text-xs font-black text-slate-800 mt-0.5">
+                          {formatNumber(vendor.baseFollowers + (isFollowed ? 1 : 0))}
+                        </p>
+                      </div>
+                      <div className="border-l border-slate-100 pl-3">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Hardware</p>
+                        <p className="text-xs font-black text-slate-800 mt-0.5">
+                          {vendor.productsCount}+ Items
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-                      {/* Product Shelf Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        {vendor.products.map((product, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-white/5 border border-white/10 rounded-3xl p-3.5 flex flex-col justify-between h-[230px] transition-all duration-300 hover:bg-white/10 hover:border-white/20 group/item relative"
+                  {/* Action Row */}
+                  <div className="relative flex items-center mt-5 gap-2">
+                    <button
+                      onClick={() => showToast(`Opening storefront for ${vendor.name}...`)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white active:scale-98 py-3 px-4 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm shadow-blue-500/10"
+                    >
+                      <ShoppingBag className="w-4 h-4 text-white" />
+                      Visit Storefront
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDropdownVendor(openDropdownVendor === vendor.id ? null : vendor.id);
+                      }}
+                      className={`w-10 h-10 rounded-2xl border transition-all flex items-center justify-center active:scale-95 ${
+                        activeDropdown
+                          ? 'bg-slate-100 border-slate-350 text-slate-800'
+                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                      }`}
+                      title="More Actions"
+                    >
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${activeDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {activeDropdown && (
+                      <div className="absolute right-0 bottom-full mb-3.5 w-52 rounded-2xl bg-white border border-slate-200 p-2 shadow-[0_15px_30px_rgba(15,23,42,0.08)] z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                        {[
+                          { label: 'Browse Catalog', icon: <ExternalLink className="w-3.5 h-3.5" /> },
+                          { label: 'Chat with Agent', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+                          { label: 'Certificates', icon: <Award className="w-3.5 h-3.5" /> },
+                          { label: 'Write Review', icon: <FileText className="w-3.5 h-3.5" /> }
+                        ].map((opt, oIdx) => (
+                          <button
+                            key={oIdx}
+                            onClick={() => {
+                              showToast(`${opt.label} clicked for ${vendor.name}`);
+                              setOpenDropdownVendor(null);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors group"
                           >
-                            <div className="h-24 w-full bg-white rounded-2xl flex items-center justify-center p-2 border border-white/5 overflow-hidden shadow-inner">
-                              <img
-                                src={product.image}
-                                alt={product.title}
-                                className="max-h-full max-w-full object-contain mix-blend-multiply group-hover/item:scale-110 transition-transform duration-500"
-                              />
-                            </div>
-                            
-                            <div className="mt-3">
-                              <h5 className="text-[11px] font-extrabold text-white leading-snug truncate" title={product.title}>
-                                {product.title}
-                              </h5>
-                              <p className="text-[9px] font-black text-blue-400 tracking-wide uppercase mt-0.5 leading-none">
-                                {product.spec}
-                              </p>
-                            </div>
-
-                            <div className="flex justify-between items-center mt-2.5">
-                              <span className="text-xs font-black text-white">{product.price || 'LKR 12,900'}</span>
-                              <button
-                                onClick={() => showToast(`Added ${product.title} to your workspace setup!`)}
-                                className="w-7 h-7 rounded-xl bg-white/10 hover:bg-blue-600 text-white flex items-center justify-center border border-white/10 transition-all hover:scale-105 active:scale-95"
-                                title="Add to Workspace Setup"
-                              >
-                                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                              </button>
-                            </div>
-                          </div>
+                            <span className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0">{opt.icon}</span>
+                            <span>{opt.label}</span>
+                          </button>
                         ))}
                       </div>
-
-                    </div>
-
-                    {/* Visit Store Action Row */}
-                    <div className="relative flex items-center vendor-dropdown-container mt-6">
-                      <button
-                        onClick={() => showToast(`Opening storepage for ${vendor.name}...`)}
-                        className="flex-1 bg-white hover:bg-slate-100 text-slate-900 active:scale-99 py-3 px-5 rounded-l-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-md"
-                      >
-                        <ShoppingBag className="w-4 h-4 text-slate-800" />
-                        Visit Official Store
-                      </button>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdownVendor(openDropdownVendor === vendor.id ? null : vendor.id);
-                        }}
-                        className={`px-4 py-3 rounded-r-2xl border-l border-slate-200 text-slate-800 transition-all flex items-center justify-center shadow-md ${
-                          openDropdownVendor === vendor.id
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'bg-white hover:bg-slate-100'
-                        }`}
-                      >
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${openDropdownVendor === vendor.id ? 'rotate-180' : ''}`} />
-                      </button>
-                      
-                      {openDropdownVendor === vendor.id && (
-                        <div className="absolute right-0 bottom-full mb-3 w-56 rounded-2xl bg-white border border-slate-200/80 p-2 shadow-[0_15px_30px_rgba(15,23,42,0.12)] z-40 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                          {[
-                            { label: 'Browse Catalog', icon: <ExternalLink className="w-3.5 h-3.5" /> },
-                            { label: 'Chat with Agent', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-                            { label: 'Certificates', icon: <Award className="w-3.5 h-3.5" /> },
-                            { label: 'Write Review', icon: <FileText className="w-3.5 h-3.5" /> }
-                          ].map((opt, oIdx) => (
-                            <button
-                              key={oIdx}
-                              onClick={() => {
-                                showToast(`${opt.label} clicked for ${vendor.name}`);
-                                setOpenDropdownVendor(null);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors group"
-                            >
-                              <span className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0">{opt.icon}</span>
-                              <span>{opt.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                  </motion.div>
-                );
-              })}
-            </div>
-
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-          
         </div>
       </section>
 
       {/* 7. Why Shop with Tech-Hub AI Values Section */}
-      <section className="relative bg-gradient-to-b from-[#eef2f8] to-[#f4f7fc] pb-16 pt-10 border-t border-slate-200/80">
+      <section className="relative bg-white pb-16 pt-10 border-t border-slate-200/80">
         <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
           
           {/* Header */}
@@ -2184,43 +2754,49 @@ export default function Home() {
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {[
               {
                 title: 'AI Product Discovery',
                 desc: 'Mia, our smart neural recommendation engine, parses your workspace aesthetic and parameters to curate perfect gadget sets.',
                 icon: <Brain className="w-6 h-6 text-blue-500" />,
-                bgGrad: 'from-blue-500/5 to-cyan-500/5 hover:border-blue-500/20'
+                bgGrad: 'from-blue-500/5 to-cyan-500/5 hover:border-blue-500/20',
+                colSpan: 'md:col-span-2'
               },
               {
                 title: 'Smart Returns',
                 desc: 'Hassle-free automated return flows. Get instant returns validation, label generation, and refund approvals in seconds.',
                 icon: <RotateCcw className="w-6 h-6 text-indigo-500" />,
-                bgGrad: 'from-indigo-500/5 to-purple-500/5 hover:border-indigo-500/20'
+                bgGrad: 'from-indigo-500/5 to-purple-500/5 hover:border-indigo-500/20',
+                colSpan: 'md:col-span-1'
               },
               {
                 title: 'Verified Vendors',
                 desc: 'Every merchant undergoes strict KYC verification. Buy with absolute confidence knowing all items are 100% genuine.',
                 icon: <ShieldCheck className="w-6 h-6 text-emerald-500" />,
-                bgGrad: 'from-emerald-500/5 to-teal-500/5 hover:border-emerald-500/20'
+                bgGrad: 'from-emerald-500/5 to-teal-500/5 hover:border-emerald-500/20',
+                colSpan: 'md:col-span-1'
               },
               {
                 title: 'Fast Delivery',
                 desc: 'Intelligent route optimization and shipping partnerships mean we guarantee exact delivery windows and tracking updates.',
                 icon: <Truck className="w-6 h-6 text-amber-500" />,
-                bgGrad: 'from-amber-500/5 to-orange-500/5 hover:border-amber-500/20'
+                bgGrad: 'from-amber-500/5 to-orange-500/5 hover:border-amber-500/20',
+                colSpan: 'md:col-span-2'
               },
               {
                 title: 'Warranty Protection',
                 desc: 'Tech-Hub certified extended coverage plans. Hassle-free repairs & replacements with quick vendor coordination.',
                 icon: <CheckCircle2 className="w-6 h-6 text-rose-500" />,
-                bgGrad: 'from-rose-500/5 to-pink-500/5 hover:border-rose-500/20'
+                bgGrad: 'from-rose-500/5 to-pink-500/5 hover:border-rose-500/20',
+                colSpan: 'md:col-span-1'
               },
               {
                 title: '24/7 AI Support',
                 desc: 'Instant text & voice assistance to resolve queries, compare device specifications, or assist in tracking your packages.',
                 icon: <HeadphonesIcon className="w-6 h-6 text-violet-500" />,
-                bgGrad: 'from-violet-500/5 to-fuchsia-500/5 hover:border-violet-500/20'
+                bgGrad: 'from-violet-500/5 to-fuchsia-500/5 hover:border-violet-500/20',
+                colSpan: 'md:col-span-2'
               }
             ].map((feature, idx) => (
               <motion.div
@@ -2230,9 +2806,9 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: idx * 0.06 }}
                 whileHover={{ y: -6 }}
-                className={`bg-white rounded-3xl border border-slate-200/60 p-6 flex gap-4 transition-all duration-300 hover:shadow-lg shadow-sm bg-gradient-to-br ${feature.bgGrad}`}
+                className={`bg-white rounded-3xl border border-slate-200/60 p-6 flex flex-col sm:flex-row gap-4 transition-all duration-300 hover:shadow-lg shadow-sm bg-gradient-to-br ${feature.bgGrad} ${feature.colSpan}`}
               >
-                <div className="bg-white rounded-2xl p-3 shadow-md border border-slate-100 flex items-center justify-center h-12 w-12 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="bg-white rounded-2xl p-3 shadow-md border border-slate-100 flex items-center justify-center h-12 w-12 shrink-0 group-hover:scale-105 transition-transform self-start">
                   {feature.icon}
                 </div>
                 <div>
