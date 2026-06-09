@@ -8,7 +8,7 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#eef2f8] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         {/* Pulsing Loading spinner */}
         <div className="relative w-16 h-16">
           <div className="absolute inset-0 rounded-full border-4 border-blue-500/20" />
@@ -29,7 +29,7 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Authenticated but unauthorized role (e.g., customer trying to access /admin)
     return (
-      <div className="min-h-screen bg-[#eef2f8] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-white rounded-3xl p-8 border border-red-100 max-w-md shadow-lg">
           <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-5 border border-red-100">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
