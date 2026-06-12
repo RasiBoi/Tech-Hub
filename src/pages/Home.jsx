@@ -15,6 +15,7 @@ import { requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import { askAiAssistant } from '../services/aiService';
 import { Carousel, CarouselContent, CarouselItem } from '../components/ui/carousel';
+import { CircularTestimonials } from '../components/ui/circular-testimonials';
 
 /* ── Smooth floating wrapper ─────────────────────────────── */
 const FloatingElement = ({ children, className, delay = 0, yOffset = 15 }) => (
@@ -1070,7 +1071,7 @@ export default function Home() {
 
   const flashDeals = [
     {
-      id: 'stand-foldable',
+      id: 'stand-1',
       title: 'Baseus Foldable Desktop Phone Stand',
       image: new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-2.jpeg', import.meta.url).href,
       discount: '-21%',
@@ -1080,7 +1081,7 @@ export default function Home() {
       live: '34 watching',
     },
     {
-      id: 'desk-organizer',
+      id: 'org-1',
       title: 'Premium Walnut Desk Organizer',
       image: new URL('../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-2.jpg', import.meta.url).href,
       discount: '-18%',
@@ -1090,7 +1091,7 @@ export default function Home() {
       live: '19 carts',
     },
     {
-      id: 'desk-mat',
+      id: 'mat-1',
       title: 'Simplist Desk Mat Pro Plus',
       image: new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-2.png', import.meta.url).href,
       discount: '-30%',
@@ -1100,7 +1101,7 @@ export default function Home() {
       live: '42 sold today',
     },
     {
-      id: 'desk-lamp',
+      id: 'light-1',
       title: 'Baseus Smart Eye Foldable Desk Lamp',
       image: new URL('../../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-2.webp', import.meta.url).href,
       discount: '-25%',
@@ -1110,7 +1111,7 @@ export default function Home() {
       live: '11 on checkout',
     },
     {
-      id: 'charging-station',
+      id: 'charge-1',
       title: 'Baseus MagPro 3-in-1 Charging Station',
       image: new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-2.jpg', import.meta.url).href,
       discount: '-20%',
@@ -1120,7 +1121,7 @@ export default function Home() {
       live: '36 wishlisted',
     },
     {
-      id: 'monitor-raiser',
+      id: 'raiser-1',
       title: 'Ugreen Aluminum Monitor Raiser Stand',
       image: new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-2.jpg', import.meta.url).href,
       discount: '-30%',
@@ -2109,53 +2110,60 @@ export default function Home() {
       <section className="relative bg-white overflow-hidden pt-4 sm:pt-5 pb-10 sm:pb-12 border-t border-slate-200/80">
         <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
           <div className="mb-3 flex items-center justify-end">
-            <a
-              href="#"
+            <Link
+              to="/category/All"
               className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
             >
               View More Categories
               <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
 
           <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="grid min-w-max grid-flow-col auto-cols-[140px] sm:auto-cols-[152px] lg:auto-cols-[164px]">
                 {(dbCategories.length > 0 ? dbCategories : curatedCategories).map((category, index) => (
-                  <motion.button
+                  <Link
                     key={category.name}
+                    to={`/category/${encodeURIComponent(category.name)}`}
+                    className="block"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.3 }}
+                      transition={{ duration: 0.35, delay: index * 0.04 }}
+                      whileHover={{ y: -2 }}
+                      className="group px-3 sm:px-3.5 py-2 text-center border-r border-slate-300/80 last:border-r-0 cursor-pointer"
+                    >
+                      <div className="h-[112px] sm:h-[124px] w-full rounded-xl bg-white/80 p-2 flex items-center justify-center shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-[1.04]"
+                        />
+                      </div>
+                      <p className="mt-3 text-[12px] sm:text-[13px] font-semibold leading-tight text-slate-900">{category.name}</p>
+                    </motion.div>
+                  </Link>
+                ))}
+
+                <Link to="/category/All" className="inline-block">
+                  <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.35, delay: index * 0.04 }}
+                    transition={{ duration: 0.35, delay: 0.38 }}
                     whileHover={{ y: -2 }}
-                    className="group px-3 sm:px-3.5 py-2 text-center border-r border-slate-300/80 last:border-r-0"
+                    className="px-3 py-2 text-center cursor-pointer"
                   >
-                    <div className="h-[112px] sm:h-[124px] w-full rounded-xl bg-white/80 p-2 flex items-center justify-center shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
-                      <img
-                        src={category.image}
-                        alt={category.name}
-                        className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-[1.04]"
-                      />
+                    <div className="h-[112px] sm:h-[124px] w-full flex items-center justify-center">
+                      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg shadow-black/20">
+                        <ArrowRight className="h-7 w-7" />
+                      </span>
                     </div>
-                    <p className="mt-3 text-[12px] sm:text-[13px] font-semibold leading-tight text-slate-900">{category.name}</p>
-                  </motion.button>
-                ))}
-
-                <motion.button
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.3 }}
-                  transition={{ duration: 0.35, delay: 0.38 }}
-                  whileHover={{ y: -2 }}
-                  className="px-3 py-2 text-center"
-                >
-                  <div className="h-[112px] sm:h-[124px] w-full flex items-center justify-center">
-                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg shadow-black/20">
-                      <ArrowRight className="h-7 w-7" />
-                    </span>
-                  </div>
-                  <p className="mt-3 text-[12px] sm:text-[13px] font-semibold text-slate-900">More Categories</p>
-                </motion.button>
+                    <p className="mt-3 text-[12px] sm:text-[13px] font-semibold text-slate-900">More Categories</p>
+                  </motion.div>
+                </Link>
               </div>
           </div>
 
@@ -2189,36 +2197,54 @@ export default function Home() {
                   viewport={{ once: true, amount: 0.22 }}
                   transition={{ duration: 0.42, delay: index * 0.05 }}
                   whileHover={{ y: -8 }}
-                  className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/88 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-sm"
+                  className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/88 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)] backdrop-blur-sm flex flex-col justify-between"
                 >
-                  <div className="absolute left-3 top-3 rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                    {deal.discount}
+                  <Link to={`/product/${deal.id}`} className="block">
+                    <div className="absolute left-3 top-3 rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white z-10">
+                      {deal.discount}
+                    </div>
+
+                    <div className="h-44 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white p-2 flex items-center justify-center">
+                      <img src={deal.image} alt={deal.title} className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-105" />
+                    </div>
+
+                    <h4 className="mt-2.5 text-[12px] font-semibold leading-snug text-slate-800 min-h-[38px] group-hover:text-blue-600 transition-colors">{deal.title}</h4>
+
+                    <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-500">
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                      <span className="font-semibold text-slate-700">{deal.rating}</span>
+                      <span className="text-slate-400">({deal.live})</span>
+                    </div>
+
+                    <div className="mt-2 flex items-end gap-2 pb-1">
+                      <p className="text-base font-extrabold text-rose-600">{deal.price}</p>
+                      <p className="pb-0.5 text-[11px] text-slate-400 line-through">{deal.oldPrice}</p>
+                    </div>
+                  </Link>
+
+                  <div className="mt-2.5 flex gap-2 relative z-10">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showToast(`"${deal.title}" added to setup!`);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-blue-100 bg-blue-50 px-2 py-2 text-[11px] font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white shadow-sm"
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                      Quick add
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showToast("Added to wishlist!");
+                      }}
+                      className="rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-colors"
+                    >
+                      <Heart className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <button className="absolute right-3 top-3 rounded-full border border-slate-200 bg-white/90 p-1 text-slate-400 hover:text-rose-500 transition-colors">
-                    <Heart className="h-3.5 w-3.5" />
-                  </button>
-
-                  <div className="h-44 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white p-2 flex items-center justify-center">
-                    <img src={deal.image} alt={deal.title} className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-105" />
-                  </div>
-
-                  <h4 className="mt-2.5 text-[12px] font-semibold leading-snug text-slate-800 min-h-[38px]">{deal.title}</h4>
-
-                  <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-500">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
-                    <span className="font-semibold text-slate-700">{deal.rating}</span>
-                    <span className="text-slate-400">({deal.live})</span>
-                  </div>
-
-                  <div className="mt-2 flex items-end gap-2">
-                    <p className="text-base font-extrabold text-rose-600">{deal.price}</p>
-                    <p className="pb-0.5 text-[11px] text-slate-400 line-through">{deal.oldPrice}</p>
-                  </div>
-
-                  <button className="mt-2.5 inline-flex w-full items-center justify-center gap-1 rounded-xl border border-blue-100 bg-blue-50 px-2 py-2 text-[11px] font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white">
-                    <ShoppingCart className="h-3.5 w-3.5" />
-                    Quick add
-                  </button>
                 </motion.article>
               ))}
             </div>
@@ -2565,19 +2591,19 @@ export default function Home() {
       </section>
 
       {/* 6. Featured Vendors Section */}
-      <section className="relative bg-white py-16 border-t border-slate-200/80">
-        {/* Soft Ambient glow behind the split console */}
-        <div className="absolute top-[10%] left-[5%] w-[450px] h-[450px] bg-blue-500/5 rounded-full blur-[90px] pointer-events-none" />
-        <div className="absolute bottom-[10%] right-[5%] w-[450px] h-[450px] bg-indigo-500/5 rounded-full blur-[90px] pointer-events-none" />
+      <section className="relative bg-white py-20 border-t border-slate-200/80 overflow-hidden">
+        {/* Soft ambient branding glows */}
+        <div className="absolute top-[20%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[20%] right-[10%] w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12 relative z-10">
           
           {/* Header */}
-          <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mb-14 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
                 <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-2.5 tracking-tight">
-                  Featured Vendors
+                  Featured Ecosystem Partners
                 </h3>
                 <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200/80 px-3.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm">
                   <Activity className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
@@ -2585,7 +2611,7 @@ export default function Home() {
                 </span>
               </div>
               <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-2.5">
-                Connect and browse official vendor storefronts integrated into unified workspace setups.
+                Explore premium products and official hardware integrations curated directly from our official brand partners.
               </p>
             </div>
             <a
@@ -2597,147 +2623,53 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Interactive split/catalog redesigned to grid directory */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8 mt-10">
-            {compileVendorsData(VENDORS_DATA, allDbProducts).map((vendor) => {
-              const isFollowed = !!followedVendors[vendor.id];
-              const activeDropdown = openDropdownVendor === vendor.id;
-              return (
-                <motion.div
-                  key={vendor.id}
-                  whileHover={{ y: -6, transition: { duration: 0.2, ease: "easeOut" } }}
-                  className={`relative rounded-[2rem] border p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(15,23,42,0.02)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.06)] overflow-hidden bg-gradient-to-br ${vendor.cardBg} group min-h-[300px]`}
-                >
-                  {/* Subtle Ambient Brand Glow inside Card */}
-                  <div className={`absolute -top-16 -right-16 w-36 h-36 bg-gradient-to-br ${vendor.glowGrad || 'from-blue-500/10 to-indigo-500/10'} opacity-[0.08] rounded-full blur-[35px] pointer-events-none group-hover:scale-110 transition-transform duration-500`} />
-                  <div className={`absolute -bottom-16 -left-16 w-36 h-36 bg-gradient-to-br ${vendor.glowGrad || 'from-indigo-500/10 to-blue-500/10'} opacity-[0.08] rounded-full blur-[35px] pointer-events-none`} />
-
-                  <div className="relative z-10 flex-1 flex flex-col">
-                    {/* Header Row */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        {/* Logo Wrapper with organic circular shape & soft shadow */}
-                        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center p-2.5 shadow-[0_4px_12px_rgba(15,23,42,0.03)] shrink-0 transition-transform duration-500 group-hover:scale-105">
-                          {vendor.logoSvg}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="text-base font-black text-slate-900 leading-tight">
-                              {vendor.name}
-                            </h4>
-                            {isFollowed && (
-                              <span className="inline-flex items-center bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-[8px] font-extrabold tracking-wider uppercase border border-blue-100 animate-pulse">
-                                Following
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-[9px] tracking-wider uppercase bg-slate-950/5 text-slate-600 border border-slate-200/40 px-2 py-0.5 rounded-md font-bold shadow-sm">
-                              Official Partner
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Follow Brand Icon Toggle */}
-                      <button
-                        onClick={() => handleToggleFollowVendor(vendor.id, vendor.name)}
-                        className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all duration-300 shadow-sm shrink-0 active:scale-90 ${
-                          isFollowed
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/10 hover:bg-blue-700'
-                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-350 hover:text-slate-800'
-                        }`}
-                        title={isFollowed ? "Unfollow Brand" : "Follow Brand"}
-                      >
-                        <Heart className={`w-4 h-4 ${isFollowed ? 'fill-white stroke-[2.5]' : 'stroke-[2]'}`} />
-                      </button>
-                    </div>
-
-                    {/* Description/Tagline */}
-                    <p className="text-xs text-slate-500 mt-4 leading-relaxed font-medium line-clamp-2 min-h-[32px]">
-                      {vendor.tagline}
-                    </p>
-
-                    {/* Stats Row */}
-                    <div className="grid grid-cols-3 gap-2 mt-6 py-4 border-t border-b border-slate-100/70 text-left">
-                      <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Rating</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 stroke-[1.5]" />
-                          <span className="text-xs font-black text-slate-800">{vendor.rating}</span>
-                          <span className="text-[9px] text-slate-400 font-bold">({formatNumber(vendor.reviews)})</span>
-                        </div>
-                      </div>
-                      <div className="border-l border-slate-100 pl-3">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Followers</p>
-                        <p className="text-xs font-black text-slate-800 mt-0.5">
-                          {formatNumber(vendor.baseFollowers + (isFollowed ? 1 : 0))}
-                        </p>
-                      </div>
-                      <div className="border-l border-slate-100 pl-3">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Hardware</p>
-                        <p className="text-xs font-black text-slate-800 mt-0.5">
-                          {vendor.productsCount}+ Items
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Row */}
-                  <div className="relative flex items-center mt-5 gap-2">
-                    <button
-                      onClick={() => showToast(`Opening storefront for ${vendor.name}...`)}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white active:scale-98 py-3 px-4 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm shadow-blue-500/10"
-                    >
-                      <ShoppingBag className="w-4 h-4 text-white" />
-                      Visit Storefront
-                    </button>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenDropdownVendor(openDropdownVendor === vendor.id ? null : vendor.id);
-                      }}
-                      className={`w-10 h-10 rounded-2xl border transition-all flex items-center justify-center active:scale-95 ${
-                        activeDropdown
-                          ? 'bg-slate-100 border-slate-350 text-slate-800'
-                          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                      }`}
-                      title="More Actions"
-                    >
-                      <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${activeDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {activeDropdown && (
-                      <div className="absolute right-0 bottom-full mb-3.5 w-52 rounded-2xl bg-white border border-slate-200 p-2 shadow-[0_15px_30px_rgba(15,23,42,0.08)] z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                        {[
-                          { label: 'Browse Catalog', icon: <ExternalLink className="w-3.5 h-3.5" /> },
-                          { label: 'Chat with Agent', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-                          { label: 'Certificates', icon: <Award className="w-3.5 h-3.5" /> },
-                          { label: 'Write Review', icon: <FileText className="w-3.5 h-3.5" /> }
-                        ].map((opt, oIdx) => (
-                          <button
-                            key={oIdx}
-                            onClick={() => {
-                              showToast(`${opt.label} clicked for ${vendor.name}`);
-                              setOpenDropdownVendor(null);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors group"
-                          >
-                            <span className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0">{opt.icon}</span>
-                            <span>{opt.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
+          {/* Testimonial Showcase */}
+          <div className="flex items-center justify-center w-full min-h-[450px] relative">
+            <CircularTestimonials
+              testimonials={compileVendorsData(VENDORS_DATA, allDbProducts).map(vendor => {
+                const vendorImages = {
+                  apple: 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
+                  samsung: 'https://images.unsplash.com/photo-1628749528992-f5702133b686?q=80&w=1368&auto=format&fit=crop',
+                  dell: 'https://images.unsplash.com/photo-1524267213992-b76e8577d046?q=80&w=1368&auto=format&fit=crop',
+                  sony: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?q=80&w=1368&auto=format&fit=crop',
+                  xiaomi: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1368&auto=format&fit=crop',
+                  beats: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1368&auto=format&fit=crop'
+                };
+                return {
+                  name: vendor.name,
+                  designation: 'Official Partner',
+                  quote: vendor.tagline,
+                  src: vendorImages[vendor.id] || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
+                  id: vendor.id,
+                  rating: vendor.rating,
+                  reviews: vendor.reviews,
+                  productsCount: vendor.productsCount,
+                  baseFollowers: vendor.baseFollowers,
+                  logoSvg: vendor.logoSvg,
+                  isFollowed: !!followedVendors[vendor.id],
+                  onFollow: () => handleToggleFollowVendor(vendor.id, vendor.name),
+                  onVisit: () => showToast(`Opening storefront for ${vendor.name}...`)
+                };
+              })}
+              autoplay={true}
+              colors={{
+                name: "#0f172a", // slate-900
+                designation: "#2563eb", // blue-600
+                testimony: "#334155", // slate-700
+                arrowBackground: "#0f172a", // slate-900
+                arrowForeground: "#ffffff", // white
+                arrowHoverBackground: "#2563eb", // blue-600
+              }}
+              fontSizes={{
+                name: "30px",
+                designation: "14px",
+                quote: "18px",
+              }}
+            />
           </div>
         </div>
       </section>
+
 
       {/* 7. Why Shop with Tech-Hub AI Values Section */}
       <section className="relative bg-white pb-16 pt-10 border-t border-slate-200/80">
