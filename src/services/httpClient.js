@@ -48,6 +48,16 @@ export const requestJson = async (
     });
 
     if (!response.ok) {
+      try {
+        const errorJson = await response.json();
+        if (errorJson && errorJson.message) {
+          throw new Error(errorJson.message);
+        }
+      } catch (e) {
+        if (e.message && !e.message.startsWith('Request failed')) {
+          throw e;
+        }
+      }
       throw new Error(`Request failed: ${response.status}`);
     }
 
@@ -55,7 +65,14 @@ export const requestJson = async (
       return null;
     }
 
-    return response.json();
+    const json = await response.json();
+    
+    // Automatically unwrap standard enterprise API envelope
+    if (json && typeof json === 'object' && json.success === true && 'data' in json) {
+      return json.data;
+    }
+
+    return json;
   } finally {
     clearTimeout(timeoutId);
   }

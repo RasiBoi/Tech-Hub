@@ -21,8 +21,8 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
 
   // Not authenticated
   if (!user) {
-    // Redirect to home page but save the target route they tried to visit
-    return <Navigate to="/" state={{ from: location, triggerAuth: true }} replace />;
+    // Redirect to login page but save the target route they tried to visit
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check roles if specified

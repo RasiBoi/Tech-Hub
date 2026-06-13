@@ -4,27 +4,6 @@ import { serviceRegistry } from '../config/serviceRegistry';
 
 const AuthContext = createContext(null);
 
-export const MOCK_ACCOUNTS = {
-  admin: {
-    name: 'Sarah (Platform Admin)',
-    email: 'admin@techhub.com',
-    role: 'admin',
-    avatarBg: 'bg-rose-500 text-white'
-  },
-  vendor: {
-    name: 'Apple Store Inc.',
-    email: 'vendor@techhub.com',
-    role: 'vendor',
-    storeName: 'Apple Official Store',
-    avatarBg: 'bg-slate-800 text-white'
-  },
-  customer: {
-    name: 'Alex Johnson',
-    email: 'customer@techhub.com',
-    role: 'customer',
-    avatarBg: 'bg-blue-600 text-white'
-  }
-};
 
 const formatUser = (user) => {
   if (!user) return null;
