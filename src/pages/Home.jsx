@@ -10,7 +10,7 @@ import {
 import { useAiServiceStatus } from '../hooks/useAiServiceStatus';
 import { useAuth } from '../context/AuthContext';
 import { AuthModal } from '../components/AuthModal';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import { askAiAssistant } from '../services/aiService';
@@ -778,6 +778,7 @@ const HERO_SLIDES = [
 
 export default function Home() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const aiServiceStatus = useAiServiceStatus();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [followedVendors, setFollowedVendors] = useState({});
@@ -970,8 +971,7 @@ export default function Home() {
 
   const handleBuyBundle = async () => {
     if (!user) {
-      setAuthModalTab('login');
-      setIsAuthModalOpen(true);
+      navigate('/login');
       showToast('Please login to place an order.');
       return;
     }
@@ -1282,24 +1282,18 @@ export default function Home() {
                   Become Seller
                 </button>
                 <div className="h-4 w-[1px] bg-white/10 hidden md:block" />
-                <button
-                  onClick={() => {
-                    setAuthModalTab('login');
-                    setIsAuthModalOpen(true);
-                  }}
+                <Link
+                  to="/login"
                   className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                 >
                   Log In
-                </button>
-                <button
-                  onClick={() => {
-                    setAuthModalTab('signup');
-                    setIsAuthModalOpen(true);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all whitespace-nowrap shadow-md shadow-blue-600/10 hover:scale-[1.02]"
+                </Link>
+                <Link
+                  to="/login"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all whitespace-nowrap shadow-md shadow-blue-600/10 hover:scale-[1.02] flex items-center justify-center"
                 >
                   Sign Up
-                </button>
+                </Link>
               </div>
             )}
 
@@ -1381,26 +1375,20 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setAuthModalTab('login');
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="bg-white/[0.04] hover:bg-white/[0.1] text-white text-xs font-extrabold py-2.5 rounded-xl transition-all border border-white/5"
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="bg-white/[0.04] hover:bg-white/[0.1] text-white text-xs font-extrabold py-2.5 rounded-xl transition-all border border-white/5 text-center flex items-center justify-center"
                   >
                     Log In
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setAuthModalTab('signup');
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold py-2.5 rounded-xl transition-all shadow-md shadow-blue-600/10"
+                  </Link>
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold py-2.5 rounded-xl transition-all shadow-md shadow-blue-600/10 text-center flex items-center justify-center"
                   >
                     Sign Up
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>

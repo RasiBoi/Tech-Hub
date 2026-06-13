@@ -882,24 +882,18 @@ export default function Category() {
                 >
                   Become Seller
                 </button>
-                <button
-                  onClick={() => {
-                    setAuthModalTab('login');
-                    setIsAuthModalOpen(true);
-                  }}
+                <Link
+                  to="/login"
                   className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors"
                 >
                   Log In
-                </button>
-                <button
-                  onClick={() => {
-                    setAuthModalTab('signup');
-                    setIsAuthModalOpen(true);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-md transition-all shadow-md shadow-blue-600/10 hover:scale-[1.02]"
+                </Link>
+                <Link
+                  to="/login"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-md transition-all shadow-md shadow-blue-600/10 hover:scale-[1.02] flex items-center justify-center"
                 >
                   Sign Up
-                </button>
+                </Link>
               </div>
             )}
 

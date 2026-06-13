@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock, User, Store, ShieldAlert, Cpu, CheckCircle2, ArrowRight } from 'lucide-react';
-import { useAuth, MOCK_ACCOUNTS } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
   const { login, register } = useAuth();
@@ -19,19 +19,6 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
     setError('');
   };
 
-  const handleQuickLogin = async (roleType) => {
-    setError('');
-    setIsSubmitting(true);
-    try {
-      const demoAccount = MOCK_ACCOUNTS[roleType];
-      await login(demoAccount.email, 'password123');
-      onClose();
-    } catch (err) {
-      setError(err.message || 'Quick login failed');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -281,35 +268,6 @@ export const AuthModal = ({ isOpen, onClose, initialTab = 'login' }) => {
             </button>
           </form>
 
-          {/* Quick Demo Credentials shortcut */}
-          {activeTab === 'login' && (
-            <div className="mt-6 border-t border-slate-100 pt-5">
-              <p className="text-[11px] font-bold text-slate-500 tracking-wide mb-3">
-                Quick Demo Personas (Click to test roles)
-              </p>
-              <div className="flex flex-col gap-2">
-                {[
-                  { key: 'customer', label: 'Alex (Customer)', icon: <User className="w-3.5 h-3.5" />, color: 'border-blue-100 bg-blue-50/30 text-blue-700 hover:bg-blue-50/60 hover:border-blue-200 shadow-sm shadow-blue-500/5' },
-                  { key: 'vendor', label: 'Apple Store (Vendor)', icon: <Store className="w-3.5 h-3.5" />, color: 'border-slate-200/60 bg-slate-50 text-slate-700 hover:bg-slate-100/50 hover:border-slate-200 shadow-sm shadow-slate-500/5' },
-                  { key: 'admin', label: 'Sarah (Admin)', icon: <ShieldAlert className="w-3.5 h-3.5" />, color: 'border-rose-100 bg-rose-50/30 text-rose-700 hover:bg-rose-50/60 hover:border-rose-200 shadow-sm shadow-rose-500/5' }
-                ].map((demo) => (
-                  <button
-                    key={demo.key}
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => handleQuickLogin(demo.key)}
-                    className={`w-full py-3 px-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between group ${demo.color}`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="shrink-0 opacity-70 group-hover:scale-105 transition-transform">{demo.icon}</div>
-                      <span>Login as {demo.label}</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </motion.div>
       </div>
     </AnimatePresence>
