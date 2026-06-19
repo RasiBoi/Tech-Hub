@@ -8,12 +8,47 @@ import {
   SlidersHorizontal, Check, ShieldCheck, Share2, Plus, Minus, Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { AuthModal } from '../components/AuthModal';
 import { requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 // Detailed mapping of product images for premium gallery views
 const PRODUCT_IMAGES_MAP = {
+  "stand-1": [
+    new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-1.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-2.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-3.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-4.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-5.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-6.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-7.jpeg', import.meta.url).href
+  ],
+  "stand-2": [
+    new URL('../../Media/product_images/ugreen-aluminum-foldable-laptop-stand/image-1.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-aluminum-foldable-laptop-stand/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-aluminum-foldable-laptop-stand/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-aluminum-foldable-laptop-stand/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-aluminum-foldable-laptop-stand/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-aluminum-foldable-laptop-stand/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-aluminum-foldable-laptop-stand/image-7.jpeg', import.meta.url).href
+  ],
+  "stand-3": [
+    new URL('../../Media/product_images/simplist-book-stand-ergonomic-portable-adjustable-book-holder-rest-for-hands-free-reading/image-1.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-book-stand-ergonomic-portable-adjustable-book-holder-rest-for-hands-free-reading/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-book-stand-ergonomic-portable-adjustable-book-holder-rest-for-hands-free-reading/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-book-stand-ergonomic-portable-adjustable-book-holder-rest-for-hands-free-reading/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-book-stand-ergonomic-portable-adjustable-book-holder-rest-for-hands-free-reading/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-book-stand-ergonomic-portable-adjustable-book-holder-rest-for-hands-free-reading/image-6.jpg', import.meta.url).href
+  ],
+  "stand-4": [
+    new URL('../../Media/product_images/upergo-tablet-ipad-dock-stand-aluminium-silver/image-1.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-tablet-ipad-dock-stand-aluminium-silver/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-tablet-ipad-dock-stand-aluminium-silver/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-tablet-ipad-dock-stand-aluminium-silver/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-tablet-ipad-dock-stand-aluminium-silver/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-tablet-ipad-dock-stand-aluminium-silver/image-6.jpg', import.meta.url).href
+  ],
   "stand-5": [
     new URL('../../Media/product_images/baseus-metal-adjustable-laptop-stand-laptop-riser-with-adjustable-height-and-angle/image-1.jpg', import.meta.url).href,
     new URL('../../Media/product_images/baseus-metal-adjustable-laptop-stand-laptop-riser-with-adjustable-height-and-angle/image-2.jpeg', import.meta.url).href,
@@ -32,6 +67,179 @@ const PRODUCT_IMAGES_MAP = {
     new URL('../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-4.jpg', import.meta.url).href,
     new URL('../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-5.jpg', import.meta.url).href,
     new URL('../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-6.jpg', import.meta.url).href
+  ],
+  "org-2": [
+    new URL('../../Media/product_images/premium-walnut-business-card-holder-c-level-collection/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/premium-walnut-business-card-holder-c-level-collection/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/premium-walnut-business-card-holder-c-level-collection/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/premium-walnut-business-card-holder-c-level-collection/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/premium-walnut-business-card-holder-c-level-collection/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/premium-walnut-business-card-holder-c-level-collection/image-6.png', import.meta.url).href
+  ],
+  "org-3": [
+    new URL('../../Media/product_images/oggi-clear-drawer-organizers-trays-set/image-1.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/oggi-clear-drawer-organizers-trays-set/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/oggi-clear-drawer-organizers-trays-set/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/oggi-clear-drawer-organizers-trays-set/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/oggi-clear-drawer-organizers-trays-set/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/oggi-clear-drawer-organizers-trays-set/image-6.jpg', import.meta.url).href
+  ],
+  "mat-1": [
+    new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-2.png', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-3.png', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-4.png', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-5.png', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-6.png', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-plus/image-7.png', import.meta.url).href
+  ],
+  "mat-2": [
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-1.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-2.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-3.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-4.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-5.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-7.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-8.jpg', import.meta.url).href
+  ],
+  "mat-3": [
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-1.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-7.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-8.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-9.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-10.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-11.jpg', import.meta.url).href
+  ],
+  "light-1": [
+    new URL('../../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-1.webp', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-2.webp', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-3.webp', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-4.webp', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-smart-eye-foldable-desk-lamp/image-5.webp', import.meta.url).href
+  ],
+  "light-2": [
+    new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-1.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-7.jpeg', import.meta.url).href
+  ],
+  "light-3": [
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-2.png', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-3.png', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-4.png', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-5.png', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-6.webp', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-7.webp', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-8.webp', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-9.webp', import.meta.url).href,
+    new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-10.webp', import.meta.url).href
+  ],
+  "clock-1": [
+    new URL('../../Media/product_images/baseus-heyo-rotation-countdown-timer/image-1.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-heyo-rotation-countdown-timer/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-heyo-rotation-countdown-timer/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-heyo-rotation-countdown-timer/image-4.jpg', import.meta.url).href
+  ],
+  "clock-2": [
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-1.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-2.png', import.meta.url).href,
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-3.png', import.meta.url).href,
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-4.png', import.meta.url).href,
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-5.png', import.meta.url).href,
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-6.png', import.meta.url).href,
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-7.png', import.meta.url).href,
+    new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-8.png', import.meta.url).href
+  ],
+  "charge-1": [
+    new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-3.webp', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-7.jpg', import.meta.url).href
+  ],
+  "charge-2": [
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-2.png', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-3.webp', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-4.png', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-5.webp', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-6.webp', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-7.webp', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-8.webp', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-9.webp', import.meta.url).href
+  ],
+  "raiser-1": [
+    new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-7.jpg', import.meta.url).href
+  ],
+  "raiser-2": [
+    new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-2.png', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-3.png', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-4.png', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-5.png', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-6.png', import.meta.url).href,
+    new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-7.png', import.meta.url).href
+  ],
+  "desk-1": [
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-1.png', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-2.png', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-7.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-8.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-9.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-10.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-11.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-12.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-13.jpg', import.meta.url).href
+  ],
+  "chair-1": [
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-1.jpeg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-2.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-3.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-6.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-7.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-8.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-9.png', import.meta.url).href,
+    new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-10.png', import.meta.url).href
+  ],
+  "stress-1": [
+    new URL('../../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-1.webp', import.meta.url).href,
+    new URL('../../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-2.webp', import.meta.url).href,
+    new URL('../../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-3.webp', import.meta.url).href,
+    new URL('../../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-4.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-5.jpg', import.meta.url).href,
+    new URL('../../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-6.jpg', import.meta.url).href
+  ],
+  "cable-1": [
+    new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-1.webp', import.meta.url).href,
+    new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-2.webp', import.meta.url).href,
+    new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-3.webp', import.meta.url).href,
+    new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-4.webp', import.meta.url).href,
+    new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-5.webp', import.meta.url).href,
+    new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-6.webp', import.meta.url).href
   ]
 };
 
@@ -98,6 +306,7 @@ const STORE_PRODUCTS_DETAILS = {
 
 // Fallback dynamic database populated with real folders
 const STATIC_PRODUCTS_FALLBACK = [
+  // stands & holders
   {
     id: "stand-1",
     title: "Baseus Foldable Desktop Phone Stand",
@@ -168,6 +377,8 @@ const STATIC_PRODUCTS_FALLBACK = [
     discount: "-20%",
     live: "18 checking out"
   },
+
+  // desk organizers
   {
     id: "org-1",
     title: "Premium Walnut Desk Organizer",
@@ -183,6 +394,36 @@ const STATIC_PRODUCTS_FALLBACK = [
     live: "19 carts"
   },
   {
+    id: "org-2",
+    title: "Premium Walnut Business Card Holder",
+    price: 4900,
+    rating: 4.6,
+    reviewsCount: 11,
+    image: new URL('../../Media/product_images/premium-walnut-business-card-holder-c-level-collection/image-1.png', import.meta.url).href,
+    category: "Desk Organizers",
+    subcategory: "Wood Organizers",
+    brand: "C-Level Collection",
+    vibe: "walnut",
+    discount: "-15%",
+    live: "Active discount"
+  },
+  {
+    id: "org-3",
+    title: "Oggi Clear Drawer Organizers Trays Set",
+    price: 7500,
+    rating: 4.7,
+    reviewsCount: 23,
+    image: new URL('../../Media/product_images/oggi-clear-drawer-organizers-trays-set/image-1.jpg', import.meta.url).href,
+    category: "Desk Organizers",
+    subcategory: "Desk Drawers",
+    brand: "Oggi",
+    vibe: "minimalist",
+    discount: "-12%",
+    live: "Popular"
+  },
+
+  // desk mats
+  {
     id: "mat-1",
     title: "Simplist Desk Mat Pro Plus (Cream)",
     price: 6400,
@@ -197,6 +438,36 @@ const STATIC_PRODUCTS_FALLBACK = [
     live: "42 sold today"
   },
   {
+    id: "mat-2",
+    title: "Feltguard Pro Felt Deskmat",
+    price: 5800,
+    rating: 4.6,
+    reviewsCount: 31,
+    image: new URL('../../Media/product_images/feltguard-pro-felt-deskmat/image-1.jpeg', import.meta.url).href,
+    category: "Desk Mats",
+    subcategory: "Felt Desk Mats",
+    brand: "Feltguard",
+    vibe: "walnut",
+    discount: "-25%",
+    live: "Hot seller"
+  },
+  {
+    id: "mat-3",
+    title: "Simplist Top Grain Leather Desk Mat",
+    price: 14500,
+    rating: 4.9,
+    reviewsCount: 55,
+    image: new URL('../../Media/product_images/simplist-desk-mat-pro-non-slip-pu-leather-desk-pad/image-1.jpeg', import.meta.url).href,
+    category: "Desk Mats",
+    subcategory: "Leather Desk Mats",
+    brand: "Simplist",
+    vibe: "black",
+    discount: "-10%",
+    live: "Premium selection"
+  },
+
+  // lighting
+  {
     id: "light-1",
     title: "Baseus Smart Eye Foldable Desk Lamp",
     price: 12800,
@@ -209,6 +480,188 @@ const STATIC_PRODUCTS_FALLBACK = [
     vibe: "minimalist",
     discount: "-25%",
     live: "11 on checkout"
+  },
+  {
+    id: "light-2",
+    title: "Mi Computer Monitor Light Bar",
+    price: 15900,
+    rating: 4.9,
+    reviewsCount: 84,
+    image: new URL('../../Media/product_images/mi-computer-monitor-light-bar-black/image-1.jpg', import.meta.url).href,
+    category: "Lighting",
+    subcategory: "Monitor Light Bars",
+    brand: "Xiaomi",
+    vibe: "black",
+    discount: "-15%",
+    live: "Trending #1"
+  },
+  {
+    id: "light-3",
+    title: "The Hive Hexagon LED Panel Set",
+    price: 24500,
+    rating: 4.7,
+    reviewsCount: 39,
+    image: new URL('../../Media/product_images/the-hive-hexagon-led-light-panel/image-1.png', import.meta.url).href,
+    category: "Lighting",
+    subcategory: "Ambient Lighting",
+    brand: "The Hive",
+    vibe: "cyberpunk",
+    discount: "-20%",
+    live: "RGB Sync"
+  },
+
+  // clocks & timers
+  {
+    id: "clock-1",
+    title: "Baseus Heyo Rotation Countdown Timer",
+    price: 4900,
+    rating: 4.8,
+    reviewsCount: 72,
+    image: new URL('../../Media/product_images/baseus-heyo-rotation-countdown-timer/image-1.jpg', import.meta.url).href,
+    category: "Clocks & Timers",
+    subcategory: "Digital Timers",
+    brand: "Baseus",
+    vibe: "cyberpunk",
+    discount: "-10%",
+    live: "72 wishlisted"
+  },
+  {
+    id: "clock-2",
+    title: "Divoom Times Gate Pixel Art Display",
+    price: 42900,
+    rating: 4.9,
+    reviewsCount: 112,
+    image: new URL('../../Media/product_images/divoom-times-gate-pixel-art-informative-display/image-1.jpeg', import.meta.url).href,
+    category: "Clocks & Timers",
+    subcategory: "Retro Pixel Clocks",
+    brand: "Divoom",
+    vibe: "cyberpunk",
+    discount: "-15%",
+    live: "Hot item"
+  },
+
+  // charging stations
+  {
+    id: "charge-1",
+    title: "Baseus MagPro 3-in-1 Charging Station",
+    price: 21900,
+    rating: 4.8,
+    reviewsCount: 36,
+    image: new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-1.png', import.meta.url).href,
+    category: "Charging Stations",
+    subcategory: "Wireless Chargers",
+    brand: "Baseus",
+    vibe: "minimalist",
+    discount: "-20%",
+    live: "36 wishlisted"
+  },
+  {
+    id: "charge-2",
+    title: "Ugreen Qi2 2-in-1 Wireless Robot Charger",
+    price: 18900,
+    rating: 4.9,
+    reviewsCount: 112,
+    image: new URL('../../Media/product_images/ugreen-qi2-2-in-1-wireless-robot-charging-station/image-1.png', import.meta.url).href,
+    category: "Charging Stations",
+    subcategory: "Multi-device Docks",
+    brand: "Ugreen",
+    vibe: "black",
+    discount: "-15%",
+    live: "Fast charge"
+  },
+
+  // monitor raisers
+  {
+    id: "raiser-1",
+    title: "Ugreen Walnut Monitor Raiser Stand",
+    price: 18900,
+    rating: 4.7,
+    reviewsCount: 8,
+    image: new URL('../../Media/product_images/ugreen-monitor-raiser-stand/image-1.png', import.meta.url).href,
+    category: "Monitor Raisers",
+    subcategory: "Walnut Raisers",
+    brand: "Ugreen",
+    vibe: "walnut",
+    discount: "-30%",
+    live: "8 left"
+  },
+  {
+    id: "raiser-2",
+    title: "Upergo Premium Walnut Dual Riser",
+    price: 35000,
+    rating: 4.9,
+    reviewsCount: 15,
+    image: new URL('../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-1.png', import.meta.url).href,
+    category: "Monitor Raisers",
+    subcategory: "Dual Monitor Mounts",
+    brand: "Upergo",
+    vibe: "walnut",
+    discount: "-10%",
+    live: "High demand"
+  },
+
+  // standing desks
+  {
+    id: "desk-1",
+    title: "FlexiSpot E7 Ergonomic Standing Desk",
+    price: 185000,
+    rating: 4.9,
+    reviewsCount: 84,
+    image: new URL('../../Media/product_images/flexispot-e7-height-adjustable-ergonomic-standing-desk/image-1.png', import.meta.url).href,
+    category: "Standing Desks",
+    subcategory: "Electric standing desks",
+    brand: "FlexiSpot",
+    vibe: "walnut",
+    discount: "-12%",
+    live: "Free delivery"
+  },
+
+  // ergonomic chairs
+  {
+    id: "chair-1",
+    title: "FlexiSpot C7 Premium Ergonomic Chair",
+    price: 98500,
+    rating: 4.9,
+    reviewsCount: 124,
+    image: new URL('../../Media/product_images/flexispot-c7-premium-ergonomic-chair/image-1.jpeg', import.meta.url).href,
+    category: "Ergonomic Chairs",
+    subcategory: "Mesh Task Chairs",
+    brand: "FlexiSpot",
+    vibe: "minimalist",
+    discount: "-25%",
+    live: "84 bought today"
+  },
+
+  // stress reliever
+  {
+    id: "stress-1",
+    title: "Kinetic Roller Coaster Perpetual Toy",
+    price: 14500,
+    rating: 4.7,
+    reviewsCount: 18,
+    image: new URL('../../Media/product_images/kinetic-roller-coaster-perpetual-motion-toy/image-1.webp', import.meta.url).href,
+    category: "Stress Reliever",
+    subcategory: "Kinetic Toys",
+    brand: "Kinetic",
+    vibe: "cyberpunk",
+    discount: "-15%",
+    live: "Relaxing desk toy"
+  },
+
+  // cable managers
+  {
+    id: "cable-1",
+    title: "Fasola Cable Management Box (White)",
+    price: 4500,
+    rating: 4.8,
+    reviewsCount: 22,
+    image: new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-1.webp', import.meta.url).href,
+    category: "Cable Managers",
+    subcategory: "Cable Boxes",
+    brand: "Fasola",
+    vibe: "minimalist",
+    discount: "-10%",
+    live: "9 left"
   }
 ];
 
@@ -217,11 +670,7 @@ export default function Product() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Navigation states
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('login');
+
 
   // Product purchase control states
   const [quantity, setQuantity] = useState(1);
@@ -229,6 +678,9 @@ export default function Product() {
   const [selectedVibe, setSelectedVibe] = useState('Stealth Black');
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [activeTab, setActiveTab] = useState('description');
+
+  // Interactive bundle selections
+  const [checkedBundleItems, setCheckedBundleItems] = useState({});
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState(null);
@@ -266,7 +718,13 @@ export default function Product() {
     };
     loadData();
 
+    const handleGlobalToast = (e) => {
+      showToast(e.detail);
+    };
+    window.addEventListener('show-toast', handleGlobalToast);
+
     return () => {
+      window.removeEventListener('show-toast', handleGlobalToast);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
@@ -340,12 +798,104 @@ export default function Product() {
       .slice(0, 4);
   }, [productInfo, allDbProducts]);
 
+  // Curated bundle items (must be different from the main product, match vibe or category)
+  const bundleItems = useMemo(() => {
+    const rawProducts = allDbProducts.length > 0 ? allDbProducts : STATIC_PRODUCTS_FALLBACK;
+    let items = rawProducts.filter(p => p.id !== productInfo.id && p.vibe === productInfo.vibe);
+    if (items.length < 2) {
+      const categoryItems = rawProducts.filter(p => p.id !== productInfo.id && p.category === productInfo.category && !items.find(it => it.id === p.id));
+      items = [...items, ...categoryItems];
+    }
+    if (items.length < 2) {
+      const otherItems = rawProducts.filter(p => p.id !== productInfo.id && !items.find(it => it.id === p.id));
+      items = [...items, ...otherItems];
+    }
+    return items.slice(0, 2);
+  }, [productInfo, allDbProducts]);
+
+  // Initialize bundle item selections when product changes
+  useEffect(() => {
+    if (bundleItems.length > 0) {
+      const initial = {};
+      bundleItems.forEach(item => {
+        initial[item.id] = true; // Pre-select to encourage purchases
+      });
+      setCheckedBundleItems(initial);
+    }
+  }, [productId, bundleItems]);
+
+  // Calculate bundle price and discount (10% off)
+  const bundlePrices = useMemo(() => {
+    const basePrice = Number(productInfo.price);
+    let extraPrice = 0;
+    bundleItems.forEach(item => {
+      if (checkedBundleItems[item.id]) {
+        extraPrice += Number(item.price);
+      }
+    });
+    const subtotal = basePrice + extraPrice;
+    const discount = subtotal * 0.10;
+    const total = subtotal - discount;
+    return { subtotal, discount, total };
+  }, [productInfo.price, bundleItems, checkedBundleItems]);
+
+  // Resolve dynamic colors and glows based on the vibe
+  const vibeStyle = useMemo(() => {
+    const vibe = (productInfo.vibe || 'minimalist').toLowerCase();
+    if (vibe.includes('walnut') || vibe.includes('wood') || vibe.includes('organic')) {
+      return {
+        glow: 'bg-amber-500/20',
+        glowLight: 'bg-amber-500/5',
+        text: 'text-amber-400',
+        textHover: 'hover:text-amber-300',
+        border: 'border-amber-500/30',
+        borderHover: 'hover:border-amber-500/50',
+        bg: 'bg-amber-500/10',
+        badge: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+        button: 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-lg shadow-amber-500/20 focus:ring-amber-500/50',
+        tabActive: 'text-amber-400 border-amber-500',
+        tabLine: 'bg-amber-500',
+        accentGlow: 'from-amber-600/10 to-transparent'
+      };
+    } else if (vibe.includes('cyberpunk') || vibe.includes('rgb')) {
+      return {
+        glow: 'bg-purple-500/20',
+        glowLight: 'bg-purple-500/5',
+        text: 'text-purple-400',
+        textHover: 'hover:text-purple-300',
+        border: 'border-purple-500/30',
+        borderHover: 'hover:border-purple-500/50',
+        bg: 'bg-purple-500/10',
+        badge: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+        button: 'bg-purple-600 hover:bg-purple-700 text-white font-black shadow-lg shadow-purple-600/20 focus:ring-purple-500/50',
+        tabActive: 'text-purple-400 border-purple-500',
+        tabLine: 'bg-purple-500',
+        accentGlow: 'from-purple-600/10 to-transparent'
+      };
+    } else { // minimalist / black / standard
+      return {
+        glow: 'bg-blue-500/20',
+        glowLight: 'bg-blue-500/5',
+        text: 'text-blue-400',
+        textHover: 'hover:text-blue-300',
+        border: 'border-white/10',
+        borderHover: 'hover:border-blue-500/35',
+        bg: 'bg-blue-500/10',
+        badge: 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
+        button: 'bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-600/20 focus:ring-blue-500/50',
+        tabActive: 'text-blue-400 border-blue-500',
+        tabLine: 'bg-blue-500',
+        accentGlow: 'from-blue-600/10 to-transparent'
+      };
+    }
+  }, [productInfo.vibe]);
+
   const handleAddToCart = () => {
     showToast(`Added ${quantity}x "${productInfo.title}" (${selectedColor}) to setup!`);
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-800">
+    <div className="min-h-screen bg-[#070a13] font-sans text-slate-100">
 
       {/* Toast Notification */}
       <AnimatePresence>
@@ -354,7 +904,7 @@ export default function Product() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 bg-[#0f172a] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/[0.08] max-w-sm"
+            className="fixed bottom-6 right-6 z-50 bg-[#0d1527] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/[0.08] max-w-sm"
           >
             <div className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Check className="w-4 h-4" />
@@ -364,184 +914,72 @@ export default function Product() {
         )}
       </AnimatePresence>
 
-      {/* Auth Modal */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-        initialTab={authModalTab} 
-      />
-
-      {/* 1. Header Navigation Bar */}
-      <nav className="bg-[#0b1021]/95 backdrop-blur-xl text-white py-2.5 lg:py-3.5 z-50 sticky top-0 w-full border-b border-white/[0.06] shadow-md transition-all duration-300">
-        <div className="max-w-[1720px] mx-auto w-full px-4 lg:px-8 2xl:px-12 flex items-center justify-between gap-3 lg:gap-5 xl:gap-7">
-          
-          {/* Logo */}
-          <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 min-w-0">
-            <Link to="/" className="flex items-center gap-2 shrink-0 hover:opacity-95">
-              <Zap className="text-yellow-400 w-6 h-6 fill-yellow-400" />
-              <span className="text-xl font-bold tracking-wide">Tech-Hub</span>
-            </Link>
-
-            {/* Menu Links */}
-            <div className="hidden xl:flex items-center gap-4 2xl:gap-6 text-[13px] font-medium text-slate-300 shrink-0 whitespace-nowrap">
-              <Link to="/" className="hover:text-white transition-colors">Home</Link>
-              <Link to="/category/All" className="hover:text-white transition-colors">Categories</Link>
-              <Link to="/" className="hover:text-white transition-colors">Deals</Link>
-              <Link to="/" className="hover:text-white transition-colors">Vendors</Link>
-              <Link to="/" className="hover:text-white transition-colors">AI Assistant</Link>
-              <Link to="/" className="hover:text-white transition-colors">Support</Link>
-            </div>
-          </div>
-
-          {/* Search Box */}
-          <div className="hidden lg:flex items-center gap-4 flex-1 max-w-[320px] xl:max-w-[390px] 2xl:max-w-[500px] mx-1 xl:mx-3 min-w-[220px]">
-            <div className="flex-1 bg-white rounded-md flex items-center overflow-hidden h-10">
-              <button className="px-3 text-slate-600 border-r border-slate-200 text-sm font-medium flex items-center gap-1 hover:bg-slate-50 h-full">
-                All <ChevronDown className="w-4 h-4" />
-              </button>
-              <input 
-                type="text" 
-                placeholder="Search for products, brands..." 
-                className="flex-1 px-3 text-sm text-slate-800 focus:outline-none"
-              />
-              <button className="bg-blue-600 h-full px-5 hover:bg-blue-700 transition-colors">
-                <Search className="w-4 h-4 text-white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Icons and Auth */}
-          <div className="flex items-center gap-2 xl:gap-4 2xl:gap-5 shrink-0">
-            <div className="flex flex-col items-center gap-1 cursor-pointer group relative">
-              <div className="relative">
-                <ShoppingCart className="w-5 h-5 text-slate-300 group-hover:text-white" />
-                <span className="absolute -top-1.5 -right-2 bg-yellow-400 text-[#0b1021] text-[10px] font-bold px-1.5 rounded-full border border-[#0b1021]">2</span>
-              </div>
-              <span className="text-[10px] text-slate-400 group-hover:text-white font-medium">Cart</span>
-            </div>
-
-            {user ? (
-              <div className="flex items-center gap-3.5">
-                <div className="relative profile-dropdown-container">
-                  <button 
-                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                    className="flex items-center gap-2 hover:opacity-90 transition-all focus:outline-none"
-                  >
-                    <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-xs font-black shadow-md ${user.avatarBg}`}>
-                      {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                    </div>
-                    <span className="hidden md:inline text-xs font-extrabold text-slate-200">{user.name.split(' ')[0]}</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                  </button>
-
-                  {isProfileDropdownOpen && (
-                    <div className="absolute right-0 mt-2.5 w-56 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl z-50 text-left">
-                      <div className="pb-2.5 border-b border-slate-800">
-                        <p className="text-xs font-black text-white">{user.name}</p>
-                        <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{user.email}</p>
-                        <span className="inline-block bg-slate-800 text-slate-300 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mt-1.5">
-                          {user.role}
-                        </span>
-                      </div>
-                      
-                      <div className="pt-2 flex flex-col gap-1">
-                        <button
-                          onClick={() => {
-                            logout();
-                            setIsProfileDropdownOpen(false);
-                          }}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-bold py-2 flex items-center gap-2 text-left w-full transition-colors"
-                        >
-                          <LogOut className="w-3.5 h-3.5" />
-                          Log Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Link
-                  to="/login"
-                  className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors"
-                >
-                  Log In
-                </Link>
-                <Link
-                  to="/login"
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-md transition-all shadow-md shadow-blue-600/10 hover:scale-[1.02] flex items-center justify-center"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
-
-            <button
-              className="xl:hidden inline-flex items-center justify-center w-9 h-9 rounded-md border border-white/15 text-slate-300 hover:text-white hover:border-white/40 transition-colors"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* 2. Breadcrumbs Bar */}
-      <div className="bg-white border-b border-slate-200/60 py-3.5">
-        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-          <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <Link to="/category/All" className="hover:text-blue-600 transition-colors">Categories</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <Link to={`/category/${encodeURIComponent(productInfo.category)}`} className="hover:text-blue-600 transition-colors">{productInfo.category}</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-slate-400">{productInfo.subcategory}</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-blue-600 font-bold">{productInfo.title}</span>
+      <div className="bg-[#0b1021]/50 border-b border-white/[0.06] py-3.5 backdrop-blur-md">
+        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
+          <Link to="/" className="hover:text-blue-400 transition-colors">Home</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+          <Link to="/category/All" className="hover:text-blue-400 transition-colors">Categories</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+          <Link to={`/category/${encodeURIComponent(productInfo.category)}`} className="hover:text-blue-400 transition-colors">{productInfo.category}</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+          <span className="text-slate-500">{productInfo.subcategory}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+          <span className={`${vibeStyle.text} font-bold`}>{productInfo.title}</span>
         </div>
       </div>
 
       {/* 3. Main Product details block (2 Column Grid) */}
-      <main className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 bg-white rounded-3xl border border-slate-200/60 p-6 md:p-8 shadow-sm">
+      <main className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-10 relative">
+        
+        {/* Dynamic Vibe ambient background glow */}
+        <div className={`absolute top-[10%] left-[20%] w-[350px] h-[350px] rounded-full blur-[130px] opacity-15 pointer-events-none transition-all duration-700 ${vibeStyle.glow}`}></div>
+        <div className={`absolute bottom-[20%] right-[10%] w-[400px] h-[400px] rounded-full blur-[140px] opacity-10 pointer-events-none transition-all duration-700 ${vibeStyle.glow}`}></div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 bg-[#0c1325]/40 border border-white/[0.08] rounded-3xl p-6 md:p-8 shadow-2xl relative z-10 backdrop-blur-xl">
           
           {/* Left Column: Image Gallery */}
           <div className="lg:col-span-6 xl:col-span-7 flex flex-col gap-4">
             
             {/* Large Active Preview Frame */}
-            <div className="border border-slate-200/60 rounded-2xl bg-gradient-to-b from-slate-50 to-white aspect-[4/3] flex items-center justify-center p-8 relative group overflow-hidden select-none">
+            <div className="border border-white/[0.08] rounded-2xl bg-gradient-to-b from-white/[0.04] to-transparent aspect-[4/3] flex items-center justify-center p-8 relative group overflow-hidden select-none">
+              
+              {/* Product Background reflection glow */}
+              <div className={`absolute w-[60%] h-[60%] rounded-full blur-[80px] opacity-10 pointer-events-none transition-all duration-700 ${vibeStyle.glow}`}></div>
+
               <motion.img 
                 key={activeImageIdx}
-                initial={{ opacity: 0, scale: 0.98 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 src={productImages[activeImageIdx]} 
                 alt={productInfo.title}
-                className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105 relative z-10"
               />
               
-              <div className="absolute right-4 top-4 flex flex-col gap-2">
-                <button className="rounded-full border border-slate-200 bg-white/95 p-2 text-slate-400 hover:text-rose-500 hover:scale-105 shadow-sm active:scale-95 transition-all">
+              <div className="absolute right-4 top-4 flex flex-col gap-2 z-20">
+                <button className="rounded-full border border-white/10 bg-slate-900/80 backdrop-blur-md p-2.5 text-slate-400 hover:text-rose-500 hover:scale-105 shadow-md active:scale-95 transition-all">
                   <Heart className="h-4.5 w-4.5" />
                 </button>
-                <button className="rounded-full border border-slate-200 bg-white/95 p-2 text-slate-400 hover:text-blue-500 hover:scale-105 shadow-sm active:scale-95 transition-all">
+                <button className="rounded-full border border-white/10 bg-slate-900/80 backdrop-blur-md p-2.5 text-slate-400 hover:text-blue-400 hover:scale-105 shadow-md active:scale-95 transition-all">
                   <Share2 className="h-4.5 w-4.5" />
                 </button>
               </div>
             </div>
 
             {/* Thumbnail selector row */}
-            <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200">
+            <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10">
               {productImages.map((imgUrl, idx) => {
                 const isSelected = activeImageIdx === idx;
                 return (
                   <button
                     key={idx}
                     onClick={() => setActiveImageIdx(idx)}
-                    className={`h-20 w-20 rounded-xl border-2 shrink-0 bg-white p-1 flex items-center justify-center overflow-hidden transition-all ${
+                    className={`h-20 w-20 rounded-xl border shrink-0 bg-white/[0.02] p-1 flex items-center justify-center overflow-hidden transition-all ${
                       isSelected 
-                        ? 'border-blue-500 ring-2 ring-blue-500/10' 
-                        : 'border-slate-200 hover:border-slate-400'
+                        ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-500/5' 
+                        : 'border-white/10 hover:border-white/20'
                     }`}
                   >
                     <img src={imgUrl} className="max-h-full max-w-full object-contain" alt="thumbnail" />
@@ -557,46 +995,46 @@ export default function Product() {
               {/* Brand and category info */}
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
                 <span>{productInfo.brand}</span>
-                <span className="h-2 w-[1px] bg-slate-300"></span>
+                <span className="h-2 w-[1px] bg-slate-700"></span>
                 <span>{productInfo.subcategory}</span>
               </div>
 
               {/* Product Title */}
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
                 {productInfo.title}
               </h1>
 
               {/* Rating block */}
-              <div className="flex items-center gap-3 mt-3 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-1 text-amber-500 bg-amber-50 border border-amber-100 px-2 py-1 rounded-lg">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-                  <span className="text-xs font-bold text-slate-800">{productInfo.rating}</span>
+              <div className="flex items-center gap-3 mt-3 pb-4 border-b border-white/[0.08]">
+                <div className="flex items-center gap-1 text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-lg">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <span className="text-xs font-bold text-white">{productInfo.rating}</span>
                 </div>
                 <span className="text-xs text-slate-400 font-semibold">{productInfo.reviewsCount} verified reviews</span>
-                <span className="h-3 w-[1px] bg-slate-200"></span>
-                <span className="text-xs text-rose-500 font-extrabold animate-pulse">{productInfo.live}</span>
+                <span className="h-3 w-[1px] bg-white/[0.08]"></span>
+                <span className="text-xs text-rose-400 font-extrabold animate-pulse">{productInfo.live}</span>
               </div>
 
               {/* Pricing section */}
-              <div className="mt-5 bg-slate-50/50 rounded-2xl border border-slate-100 p-4 flex items-center justify-between">
+              <div className="mt-5 bg-white/[0.03] rounded-2xl border border-white/10 p-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Store Price</p>
                   <div className="flex items-baseline gap-2.5">
-                    <span className="text-3xl font-black text-rose-600 tracking-tight">
+                    <span className="text-3xl font-black text-rose-500 tracking-tight">
                       LKR {Number(productInfo.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-xs text-slate-400 line-through">
+                    <span className="text-xs text-slate-500 line-through">
                       LKR {Number(productInfo.oldPrice).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </span>
                   </div>
                 </div>
-                <div className="bg-rose-500 text-white font-black text-xs px-3 py-1.5 rounded-lg shadow-sm">
+                <div className="bg-rose-500/20 text-rose-300 border border-rose-500/30 font-black text-xs px-3 py-1.5 rounded-lg shadow-sm">
                   {productInfo.discount} OFF
                 </div>
               </div>
 
               {/* Product summary */}
-              <p className="mt-5 text-sm leading-relaxed text-slate-500 font-medium">
+              <p className="mt-5 text-sm leading-relaxed text-slate-400 font-medium">
                 {productInfo.description}
               </p>
 
@@ -604,7 +1042,7 @@ export default function Product() {
               <div className="mt-6 space-y-4">
                 {/* Color option selection */}
                 <div>
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-2">Select Color</h3>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Select Color</h3>
                   <div className="flex gap-2">
                     {['Space Grey', 'Matte Black', 'Silver'].map(color => (
                       <button
@@ -612,8 +1050,8 @@ export default function Product() {
                         onClick={() => setSelectedColor(color)}
                         className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
                           selectedColor === color 
-                            ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-sm' 
-                            : 'border-slate-200 hover:border-slate-350 text-slate-600 bg-white'
+                            ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-sm' 
+                            : 'border-white/10 hover:border-white/20 text-slate-300 bg-white/[0.01]'
                         }`}
                       >
                         {color}
@@ -624,19 +1062,19 @@ export default function Product() {
 
                 {/* Aesthetic vibe style option */}
                 <div>
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-2">Setup Vibe Style</h3>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Setup Vibe Style</h3>
                   <div className="flex gap-2">
-                    {['Stealth Black', 'Cream Minimalist', 'Walnut & Wood'].map(vibeStyle => (
+                    {['Stealth Black', 'Cream Minimalist', 'Walnut & Wood'].map(vibeStyleOption => (
                       <button
-                        key={vibeStyle}
-                        onClick={() => setSelectedVibe(vibeStyle)}
+                        key={vibeStyleOption}
+                        onClick={() => setSelectedVibe(vibeStyleOption)}
                         className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                          selectedVibe === vibeStyle 
-                            ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-sm' 
-                            : 'border-slate-200 hover:border-slate-350 text-slate-600 bg-white'
+                          selectedVibe === vibeStyleOption 
+                            ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-sm' 
+                            : 'border-white/10 hover:border-white/20 text-slate-300 bg-white/[0.01]'
                         }`}
                       >
-                        {vibeStyle}
+                        {vibeStyleOption}
                       </button>
                     ))}
                   </div>
@@ -645,20 +1083,20 @@ export default function Product() {
             </div>
 
             {/* Quantity and CTA purchase blocks */}
-            <div className="mt-8 pt-6 border-t border-slate-100">
+            <div className="mt-8 pt-6 border-t border-white/[0.08]">
               <div className="flex flex-col sm:flex-row gap-4 items-center">
                 {/* Quantity adjuster */}
-                <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50/50 p-1 shrink-0">
+                <div className="flex items-center border border-white/10 rounded-xl bg-white/[0.02] p-1 shrink-0">
                   <button 
                     onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                    className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg transition-colors"
+                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="w-10 text-center text-sm font-extrabold text-slate-800">{quantity}</span>
+                  <span className="w-10 text-center text-sm font-extrabold text-white">{quantity}</span>
                   <button 
                     onClick={() => setQuantity(prev => prev + 1)}
-                    className="p-2 text-slate-500 hover:text-slate-800 hover:bg-white rounded-lg transition-colors"
+                    className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -667,26 +1105,26 @@ export default function Product() {
                 {/* Add to setup button */}
                 <button 
                   onClick={handleAddToCart}
-                  className="flex-1 w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm py-3 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-blue-600/10 active:scale-98 transition-all"
+                  className={`flex-1 w-full text-xs uppercase tracking-widest py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 active:scale-98 transition-all ${vibeStyle.button}`}
                 >
-                  <ShoppingCart className="w-4.5 h-4.5" />
+                  <ShoppingCart className="w-4.5 h-4.5 fill-current" />
                   Add to Setup
                 </button>
 
                 {/* Buy now button */}
                 <button 
                   onClick={() => showToast("Redirecting to checkout...")}
-                  className="w-full sm:w-auto bg-[#0f172a] hover:bg-slate-800 text-white font-extrabold text-sm py-3 px-6 rounded-2xl active:scale-98 transition-all whitespace-nowrap"
+                  className="w-full sm:w-auto bg-white hover:bg-slate-200 text-[#070a13] font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-2xl active:scale-98 transition-all whitespace-nowrap"
                 >
                   Buy Now
                 </button>
               </div>
 
               {/* Trust markers */}
-              <div className="flex items-center gap-5 mt-5 text-[11px] font-semibold text-slate-500">
-                <span className="flex items-center gap-1"><Truck className="w-4 h-4 text-emerald-500" /> Free Shipping</span>
-                <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-emerald-500" /> 1-Year Warranty</span>
-                <span className="flex items-center gap-1"><RotateCcw className="w-4 h-4 text-emerald-500" /> 30-Day returns</span>
+              <div className="flex items-center gap-5 mt-5 text-[11px] font-semibold text-slate-400">
+                <span className="flex items-center gap-1"><Truck className="w-4 h-4 text-emerald-400" /> Free Shipping</span>
+                <span className="flex items-center gap-1"><ShieldCheck className="w-4 h-4 text-emerald-400" /> 1-Year Warranty</span>
+                <span className="flex items-center gap-1"><RotateCcw className="w-4 h-4 text-emerald-400" /> 30-Day returns</span>
               </div>
             </div>
 
@@ -695,12 +1133,12 @@ export default function Product() {
       </main>
 
       {/* 4. Tabs & Stylist advice card grid */}
-      <section className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-6">
+      <section className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-6 relative z-10">
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
           
           {/* Left Block: Product Tabs details */}
-          <div className="xl:col-span-8 bg-white border border-slate-200/60 rounded-3xl p-6 md:p-8 shadow-sm">
-            <div className="flex border-b border-slate-100 pb-3 gap-6 mb-6">
+          <div className="xl:col-span-8 bg-[#0c1325]/40 border border-white/[0.08] backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-2xl">
+            <div className="flex border-b border-white/[0.08] pb-3 gap-6 mb-6">
               {[
                 { id: 'description', label: 'Description' },
                 { id: 'specs', label: 'Specifications' },
@@ -711,20 +1149,20 @@ export default function Product() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`text-sm font-black uppercase tracking-wider relative pb-3 transition-colors ${
                     activeTab === tab.id 
-                      ? 'text-blue-600' 
-                      : 'text-slate-400 hover:text-slate-600'
+                      ? vibeStyle.text 
+                      : 'text-slate-500 hover:text-slate-350'
                   }`}
                 >
                   {tab.label}
                   {activeTab === tab.id && (
-                    <motion.div layoutId="productTabLine" className="absolute bottom-0 inset-x-0 h-1 bg-blue-500 rounded-full" />
+                    <motion.div layoutId="productTabLine" className={`absolute bottom-0 inset-x-0 h-1 rounded-full ${vibeStyle.tabLine}`} />
                   )}
                 </button>
               ))}
             </div>
 
             {/* Tab Contents */}
-            <div className="text-sm leading-relaxed text-slate-600">
+            <div className="text-sm leading-relaxed text-slate-300">
               {activeTab === 'description' && (
                 <div className="space-y-4">
                   <p className="font-medium">{productInfo.description}</p>
@@ -738,13 +1176,13 @@ export default function Product() {
               )}
 
               {activeTab === 'specs' && (
-                <div className="overflow-hidden border border-slate-100 rounded-2xl">
+                <div className="overflow-hidden border border-white/[0.08] rounded-2xl">
                   <table className="w-full text-left text-xs md:text-sm font-medium">
                     <tbody>
                       {Object.entries(productInfo.specs).map(([key, val], idx) => (
-                        <tr key={key} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                          <td className="p-3.5 font-black text-slate-900 border-b border-slate-100/50 w-1/3">{key}</td>
-                          <td className="p-3.5 text-slate-500 border-b border-slate-100/50">{val}</td>
+                        <tr key={key} className={idx % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent'}>
+                          <td className="p-3.5 font-black text-white border-b border-white/[0.08] w-1/3">{key}</td>
+                          <td className="p-3.5 text-slate-400 border-b border-white/[0.08]">{val}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -755,19 +1193,19 @@ export default function Product() {
               {activeTab === 'reviews' && (
                 <div className="space-y-6">
                   {productInfo.reviews.map((rev, idx) => (
-                    <div key={idx} className="pb-6 border-b border-slate-100 last:pb-0 last:border-0">
+                    <div key={idx} className="pb-6 border-b border-white/[0.08] last:pb-0 last:border-0">
                       <div className="flex justify-between items-start gap-4 mb-2">
                         <div>
-                          <p className="font-extrabold text-slate-900">{rev.name}</p>
-                          <div className="flex gap-0.5 text-amber-500 mt-1">
+                          <p className="font-extrabold text-white">{rev.name}</p>
+                          <div className="flex gap-0.5 text-amber-400 mt-1">
                             {Array.from({ length: rev.rating }).map((_, i) => (
-                              <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                              <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                             ))}
                           </div>
                         </div>
-                        <span className="text-xs text-slate-400 font-semibold">{rev.date}</span>
+                        <span className="text-xs text-slate-500 font-semibold">{rev.date}</span>
                       </div>
-                      <p className="text-slate-500 font-medium">{rev.text}</p>
+                      <p className="text-slate-400 font-medium">{rev.text}</p>
                     </div>
                   ))}
                 </div>
@@ -776,36 +1214,50 @@ export default function Product() {
           </div>
 
           {/* Right Block: Mia Concierge advice card */}
-          <div className="xl:col-span-4 bg-gradient-to-br from-[#0e1732] to-[#16234b] text-white border border-white/[0.08] rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden shrink-0">
-            <div className="absolute top-[-10%] right-[-10%] w-48 h-48 bg-blue-600/10 rounded-full blur-[60px] pointer-events-none"></div>
+          <div className="xl:col-span-4 bg-gradient-to-br from-[#0e1732]/70 to-[#16234b]/70 border border-white/[0.1] rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl shrink-0">
+            {/* Hologram active overlay */}
+            <div className="absolute top-[-10%] right-[-10%] w-48 h-48 bg-blue-500/15 rounded-full blur-[60px] animate-pulse pointer-events-none"></div>
             
-            <div className="flex items-center gap-3 mb-6 relative z-10 pb-4 border-b border-white/[0.06]">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center">
-                <Brain className="w-5 h-5 text-blue-400" />
+            <div className="flex items-center justify-between mb-6 relative z-10 pb-4 border-b border-white/[0.08]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center relative overflow-hidden">
+                  <Brain className="w-5 h-5 text-blue-400" />
+                  <div className="absolute inset-0 bg-blue-400/10 animate-ping rounded-xl pointer-events-none"></div>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-blue-400 leading-none">Stylist Concierge</p>
+                  <h4 className="text-sm font-extrabold text-white mt-1">Mia's Workspace Advice</h4>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-widest text-blue-400 leading-none">Stylist Concierge</p>
-                <h4 className="text-sm font-extrabold text-white mt-1">Mia's Workspace Advice</h4>
+              
+              <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400">Hologram Active</span>
               </div>
             </div>
 
             {/* Bubble style advice */}
-            <div className="relative bg-white/[0.05] border border-white/10 rounded-2xl p-5 mb-6 text-sm leading-relaxed text-slate-200 font-medium">
+            <div className="relative bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-6 text-sm leading-relaxed text-slate-200 font-medium overflow-hidden shadow-inner">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-400/20 to-transparent animate-scan"></div>
               "{productInfo.miaAdvice}"
-              <div className="absolute bottom-[-8px] left-8 w-4 h-4 bg-[#121f43] border-r border-b border-white/10 rotate-45"></div>
+              <div className="absolute bottom-[-8px] left-8 w-4 h-4 bg-[#0e1732] border-r border-b border-white/10 rotate-45"></div>
             </div>
 
             {/* Concierge Avatar */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-[#21366d]/90 to-[#13224a] border border-white/10 overflow-hidden flex items-end justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-[#21366d]/90 to-[#13224a] border border-white/10 overflow-hidden flex items-end justify-center relative group">
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <img
                   src="https://res.cloudinary.com/ddarldtbb/image/upload/v1779814719/i_need_this_girl_alone_202605262138-removebg-preview_czgnx1.png"
                   alt="Mia Concierge Avatar"
-                  className="w-[124%] h-[124%] object-contain -mb-1"
+                  className="w-[124%] h-[124%] object-contain -mb-1 relative z-10 transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
               <div>
-                <p className="text-xs font-black text-white">Mia Concierge</p>
+                <p className="text-xs font-black text-white flex items-center gap-1">
+                  Mia Concierge
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 fill-blue-500/20" />
+                </p>
                 <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wide">Workspace Curation Specialist</p>
               </div>
             </div>
@@ -814,10 +1266,132 @@ export default function Product() {
         </div>
       </section>
 
-      {/* 5. Related Products */}
+      {/* 5. Dynamic Bundle Builder Section */}
+      {bundleItems.length > 0 && (
+        <section className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-10 relative z-10">
+          <div className="bg-[#0d1527]/40 backdrop-blur-xl border border-white/[0.08] rounded-3xl p-6 md:p-8 shadow-2xl">
+            <h3 className="text-xl font-black text-white tracking-tight mb-2">Complete the Workspace Setup</h3>
+            <p className="text-sm text-slate-400 mb-6 font-medium">Get Mia's handpicked aesthetic workspace accessories and save 10% on the bundle.</p>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              {/* Bundle items list */}
+              <div className="lg:col-span-8 flex flex-col md:flex-row items-center gap-6">
+                
+                {/* Main Product Card */}
+                <div className="w-full md:w-1/3 bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex flex-col items-center relative">
+                  <div className="absolute top-3 left-3 bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded">
+                    This Item
+                  </div>
+                  <div className="h-28 w-28 flex items-center justify-center p-2 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl">
+                    <img src={productInfo.image || productImages[0]} alt={productInfo.title} className="max-h-full max-w-full object-contain" />
+                  </div>
+                  <h4 className="text-xs font-black text-white text-center line-clamp-1 w-full">{productInfo.title}</h4>
+                  <p className="text-sm font-black text-rose-500 mt-2">LKR {Number(productInfo.price).toLocaleString('en-US')}</p>
+                </div>
+                
+                {/* Plus Icon */}
+                <Plus className="w-5 h-5 text-slate-500 shrink-0 hidden md:block" />
+                
+                {/* Extra Item 1 */}
+                {bundleItems[0] && (
+                  <div 
+                    onClick={() => {
+                      const id = bundleItems[0].id;
+                      setCheckedBundleItems(prev => ({ ...prev, [id]: !prev[id] }));
+                    }}
+                    className={`w-full md:w-1/3 border rounded-2xl p-4 flex flex-col items-center cursor-pointer transition-all duration-350 relative select-none ${
+                      checkedBundleItems[bundleItems[0].id] 
+                        ? 'border-blue-500 bg-blue-500/5 shadow-lg shadow-blue-500/5' 
+                        : 'border-white/10 hover:border-white/20 bg-white/[0.01]'
+                    }`}
+                  >
+                    <div className="absolute top-3 left-3">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                        checkedBundleItems[bundleItems[0].id] ? 'bg-blue-500 border-blue-500' : 'border-white/20'
+                      }`}>
+                        {checkedBundleItems[bundleItems[0].id] && <Check className="w-3 h-3 text-white stroke-[3px]" />}
+                      </div>
+                    </div>
+                    <div className="h-28 w-28 flex items-center justify-center p-2 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl">
+                      <img src={bundleItems[0].image} alt={bundleItems[0].title} className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <h4 className="text-xs font-black text-white text-center line-clamp-1 w-full">{bundleItems[0].title}</h4>
+                    <p className="text-sm font-black text-slate-300 mt-2">LKR {Number(bundleItems[0].price).toLocaleString('en-US')}</p>
+                  </div>
+                )}
+                
+                {/* Plus Icon */}
+                {bundleItems[1] && <Plus className="w-5 h-5 text-slate-500 shrink-0 hidden md:block" />}
+                
+                {/* Extra Item 2 */}
+                {bundleItems[1] && (
+                  <div 
+                    onClick={() => {
+                      const id = bundleItems[1].id;
+                      setCheckedBundleItems(prev => ({ ...prev, [id]: !prev[id] }));
+                    }}
+                    className={`w-full md:w-1/3 border rounded-2xl p-4 flex flex-col items-center cursor-pointer transition-all duration-350 relative select-none ${
+                      checkedBundleItems[bundleItems[1].id] 
+                        ? 'border-blue-500 bg-blue-500/5 shadow-lg shadow-blue-500/5' 
+                        : 'border-white/10 hover:border-white/20 bg-white/[0.01]'
+                    }`}
+                  >
+                    <div className="absolute top-3 left-3">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                        checkedBundleItems[bundleItems[1].id] ? 'bg-blue-500 border-blue-500' : 'border-white/20'
+                      }`}>
+                        {checkedBundleItems[bundleItems[1].id] && <Check className="w-3 h-3 text-white stroke-[3px]" />}
+                      </div>
+                    </div>
+                    <div className="h-28 w-28 flex items-center justify-center p-2 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl">
+                      <img src={bundleItems[1].image} alt={bundleItems[1].title} className="max-h-full max-w-full object-contain" />
+                    </div>
+                    <h4 className="text-xs font-black text-white text-center line-clamp-1 w-full">{bundleItems[1].title}</h4>
+                    <p className="text-sm font-black text-slate-300 mt-2">LKR {Number(bundleItems[1].price).toLocaleString('en-US')}</p>
+                  </div>
+                )}
+                
+              </div>
+              
+              {/* Bundle Checkout Box */}
+              <div className="lg:col-span-4 bg-white/[0.03] border border-white/10 rounded-2xl p-5 md:p-6 shadow-xl">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Setup Bundle Summary</p>
+                <div className="space-y-2.5 pb-4 border-b border-white/[0.08] text-xs">
+                  <div className="flex justify-between text-slate-400">
+                    <span>Selected Items Subtotal</span>
+                    <span>LKR {bundlePrices.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-400 font-extrabold">
+                    <span>Bundle Discount (10% Off)</span>
+                    <span>-LKR {bundlePrices.discount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+                <div className="pt-4 flex justify-between items-baseline mb-5">
+                  <span className="text-xs font-bold text-white">Final Bundle Price</span>
+                  <span className="text-2xl font-black text-emerald-400 tracking-tight">
+                    LKR {bundlePrices.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    const count = Object.values(checkedBundleItems).filter(Boolean).length + 1;
+                    showToast(`Added setup bundle (${count} items) to your cart!`);
+                  }}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-[#070a13] font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/10 active:scale-[0.98]"
+                >
+                  <ShoppingBag className="w-4 h-4 fill-current" />
+                  Add Setup Bundle to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 6. Related Products */}
       {relatedProducts.length > 0 && (
-        <section className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-10">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-6">Related Accessories</h2>
+        <section className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-10 relative z-10">
+          <h2 className="text-2xl font-black text-white tracking-tight mb-6">Related Accessories</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {relatedProducts.map(prod => {
               const priceFormatted = typeof prod.price === 'string' 
@@ -828,23 +1402,23 @@ export default function Product() {
                 <Link 
                   key={prod.id} 
                   to={`/product/${prod.id}`}
-                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+                  className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c1325]/40 p-3.5 shadow-sm hover:shadow-[0_12px_28px_rgba(0,0,0,0.2)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between backdrop-blur-md"
                 >
                   <div>
-                    <div className="h-44 rounded-xl border border-slate-100 bg-slate-50/50 p-3 flex items-center justify-center overflow-hidden">
-                      <img src={prod.image} alt={prod.title} className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105" />
+                    <div className="h-44 rounded-xl border border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent p-3 flex items-center justify-center overflow-hidden relative">
+                      <img src={prod.image} alt={prod.title} className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105 relative z-10" />
                     </div>
-                    <div className="mt-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    <div className="mt-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-slate-500">
                       <span>{prod.brand}</span>
                     </div>
-                    <h3 className="mt-1 text-xs font-bold leading-snug text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[32px]">
+                    <h3 className="mt-1 text-xs font-bold leading-snug text-slate-300 group-hover:text-blue-400 transition-colors line-clamp-2 min-h-[32px]">
                       {prod.title}
                     </h3>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-900">{priceFormatted}</span>
-                    <span className="text-[9px] font-black bg-blue-50 border border-blue-100 px-2 py-0.5 rounded text-blue-700 uppercase tracking-widest">
+                  <div className="mt-4 pt-3 border-t border-white/[0.08] flex items-center justify-between">
+                    <span className="text-xs font-black text-white">{priceFormatted}</span>
+                    <span className="text-[9px] font-black bg-white/5 border border-white/10 px-2 py-0.5 rounded text-slate-300 uppercase tracking-widest">
                       {prod.vibe}
                     </span>
                   </div>
@@ -855,48 +1429,7 @@ export default function Product() {
         </section>
       )}
 
-      {/* 6. Footer */}
-      <footer className="bg-[#0b1021] text-slate-400 py-12 border-t border-white/[0.05]">
-        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div>
-            <div className="flex items-center gap-2 text-white mb-4">
-              <Zap className="text-yellow-400 w-5 h-5 fill-yellow-400" />
-              <span className="text-lg font-bold">Tech-Hub</span>
-            </div>
-            <p className="text-xs leading-relaxed text-slate-500">
-              Tech-Hub is an AI-powered marketplace specializing in custom workspace aesthetics. Build your dream setup today.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-white text-xs font-black uppercase tracking-wider mb-4">Categories</h4>
-            <div className="flex flex-col gap-2 text-xs">
-              <Link to="/category/Stands%20%26%20Holders" className="hover:text-white transition-colors">Stands & Holders</Link>
-              <Link to="/category/Desk%20Organizers" className="hover:text-white transition-colors">Desk Organizers</Link>
-              <Link to="/category/Desk%20Mats" className="hover:text-white transition-colors">Desk Mats</Link>
-              <Link to="/category/Lighting" className="hover:text-white transition-colors">Lighting</Link>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-white text-xs font-black uppercase tracking-wider mb-4">Support</h4>
-            <div className="flex flex-col gap-2 text-xs">
-              <span className="hover:text-white transition-colors cursor-pointer">Help Center</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Returns & Exchanges</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Shipping Rates</span>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-white text-xs font-black uppercase tracking-wider mb-4">Company</h4>
-            <div className="flex flex-col gap-2 text-xs">
-              <span className="hover:text-white transition-colors cursor-pointer">About Us</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Our Story</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Careers</span>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 mt-12 pt-6 border-t border-white/[0.05] flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-600 gap-4">
-          <p>© 2026 Tech-Hub Inc. All rights reserved. Built with Advanced AI.</p>
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   );

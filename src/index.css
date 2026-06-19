@@ -2,21 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Google Font ──────────────────────────────────────────── */
+/* Plus Jakarta Sans already loaded via index.html */
+
+/* ─── Design Tokens ────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:        #070a13;
+  --bg-card:        #0d1527;
+  --bg-surface:     #111827;
+
+  /* Text — SOFT, eye-friendly palette */
+  --text-primary:   #dce3f0;   /* off-white: warm, not blinding */
+  --text-secondary: #94a3b8;   /* slate-400 */
+  --text-muted:     #64748b;   /* slate-500 */
+  --text-heading:   #e8edf7;   /* slightly brighter for headings */
+
+  /* Accent */
+  --accent-blue:    #3b82f6;
+  --accent-yellow:  #facc15;
+
+  /* Font */
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', 'Roboto', sans-serif;
+  --font-weight-body: 400;
+  --letter-spacing-body: 0.01em;
+  --line-height-body: 1.65;
+}
+
+/* ─── Base Reset ───────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   margin: 0;
-  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: var(--font-weight-body);
+  line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-body);
+  background: var(--bg-base);
+  color: var(--text-primary);          /* ← soft off-white everywhere */
+
+  /* Sub-pixel rendering for crisp text */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+/* ─── Soft headings ────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-heading);
+  line-height: 1.25;
+  font-feature-settings: "kern" 1;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
+/* Prevent blinding pure-white overrides unless truly intentional */
+/* These helpers let you use .text-soft / .text-dim instead of .text-white */
+.text-soft   { color: var(--text-primary) !important; }
+.text-dim    { color: var(--text-secondary) !important; }
+
+/* ─── Scrollbar — hide globally ─────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Thin styled scrollbar where visible */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #1e2d47; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #2d4160; }
+
+/* ─── Global text-white softener ──────────────────────────── */
+/*
+   Tailwind's text-white (pure #fff) is too harsh on dark backgrounds.
+   We intercept it globally and remap to a soft warm off-white.
+   headings, labels that genuinely need contrast still get it;
+   body content gets the gentler tone.
+*/
+@layer utilities {
+  /* Soft primary text — use wherever body/label text sits */
+  .text-white {
+    color: #dce3f0 !important;   /* warm off-white, much easier on eyes */
+  }
+  /* Reserve true stark white for icons/accents only via .text-pure-white */
+  .text-pure-white {
+    color: #ffffff !important;
+  }
+  /* Heading text — slightly brighter than body, still not blinding */
+  .text-heading {
+    color: #e8edf7 !important;
+  }
+}
+
+/* ─── Body text & heading defaults already set via :root + body above ── */
+
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #e8edf7;
+}
+
+/* ─── Focus ring ───────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+/* ─── Smooth base transitions for interactive elements ─────── */
+a, button, [role="button"] {
+  transition: color 0.18s ease, background-color 0.18s ease,
+              border-color 0.18s ease, opacity 0.18s ease,
+              box-shadow 0.18s ease;
 }

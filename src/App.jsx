@@ -5,9 +5,11 @@ import Home from './pages/Home';
 import Category from './pages/Category';
 import Product from './pages/Product';
 import Login from './pages/Login';
+import Vendors from './pages/Vendors';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import VendorPortal from './pages/vendor/VendorPortal';
 import { ProtectedRoute } from './routes/ProtectedRoute';
+
 
 export default function App() {
   return (
@@ -16,6 +18,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/vendors" element={<Vendors />} />
           <Route path="/category/:categoryName" element={<Category />} />
           <Route path="/product/:productId" element={<Product />} />
           <Route 
@@ -35,6 +38,7 @@ export default function App() {
             } 
           />
         </Routes>
+
       </Router>
     </AuthProvider>
   );
