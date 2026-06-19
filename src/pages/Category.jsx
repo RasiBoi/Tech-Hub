@@ -8,9 +8,10 @@ import {
   SlidersHorizontal, ArrowUpDown, Tag, Info, Check, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { AuthModal } from '../components/AuthModal';
 import { requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 // Dynamic subcategories mapping matching the reference image's layout and exact product lists
 const SUBCATEGORIES_MAP = {
@@ -575,14 +576,7 @@ const STATIC_PRODUCTS_FALLBACK = [
 
 export default function Category() {
   const { categoryName } = useParams();
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  // Navigation states
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('login');
 
   // Interactive filtering states
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
@@ -630,7 +624,13 @@ export default function Category() {
     };
     loadData();
     
+    const handleGlobalToast = (e) => {
+      showToast(e.detail);
+    };
+    window.addEventListener('show-toast', handleGlobalToast);
+    
     return () => {
+      window.removeEventListener('show-toast', handleGlobalToast);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
@@ -744,7 +744,7 @@ export default function Category() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-800">
+    <div className="min-h-screen bg-[#070a13] font-sans text-slate-200">
       
       {/* Toast Notification */}
       <AnimatePresence>
@@ -753,7 +753,7 @@ export default function Category() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 bg-[#0f172a] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/[0.08] max-w-sm"
+            className="fixed bottom-6 right-6 z-50 bg-[#0d1527]/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/[0.08] max-w-sm"
           >
             <div className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Check className="w-4 h-4" />
@@ -763,218 +763,54 @@ export default function Category() {
         )}
       </AnimatePresence>
 
-      {/* Auth Modal integration */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-        initialTab={authModalTab} 
-      />
-
-      {/* 1. Header Navigation Bar (Consistent with Home.jsx) */}
-      <nav className="bg-[#0b1021]/95 backdrop-blur-xl text-white py-2.5 lg:py-3.5 z-50 sticky top-0 w-full border-b border-white/[0.06] shadow-md transition-all duration-300">
-        <div className="max-w-[1720px] mx-auto w-full px-4 lg:px-8 2xl:px-12 flex items-center justify-between gap-3 lg:gap-5 xl:gap-7">
-          
-          {/* Logo */}
-          <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 min-w-0">
-            <Link to="/" className="flex items-center gap-2 shrink-0 hover:opacity-95">
-              <Zap className="text-yellow-400 w-6 h-6 fill-yellow-400" />
-              <span className="text-xl font-bold tracking-wide">Tech-Hub</span>
-            </Link>
-
-            {/* Menu Links */}
-            <div className="hidden xl:flex items-center gap-4 2xl:gap-6 text-[13px] font-medium text-slate-300 shrink-0 whitespace-nowrap">
-              <Link to="/" className="hover:text-white transition-colors">Home</Link>
-              <Link to="/category/All" className="text-white relative">Categories<span className="absolute -bottom-4 left-0 w-full h-1 bg-blue-500 rounded-t-md"></span></Link>
-              <Link to="/" className="hover:text-white transition-colors">Deals</Link>
-              <Link to="/" className="hover:text-white transition-colors">Vendors</Link>
-              <Link to="/" className="hover:text-white transition-colors">AI Assistant</Link>
-              <Link to="/" className="hover:text-white transition-colors">Support</Link>
-            </div>
-          </div>
-
-          {/* Search Box */}
-          <div className="hidden lg:flex items-center gap-4 flex-1 max-w-[320px] xl:max-w-[390px] 2xl:max-w-[500px] mx-1 xl:mx-3 min-w-[220px]">
-            <div className="flex-1 bg-white rounded-md flex items-center overflow-hidden h-10">
-              <button className="px-3 text-slate-600 border-r border-slate-200 text-sm font-medium flex items-center gap-1 hover:bg-slate-50 h-full">
-                All <ChevronDown className="w-4 h-4" />
-              </button>
-              <input 
-                type="text" 
-                placeholder="Search for products, brands..." 
-                className="flex-1 px-3 text-sm text-slate-800 focus:outline-none"
-              />
-              <button className="bg-blue-600 h-full px-5 hover:bg-blue-700 transition-colors">
-                <Search className="w-4 h-4 text-white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Icons and Auth */}
-          <div className="flex items-center gap-2 xl:gap-4 2xl:gap-5 shrink-0">
-            <div className="flex flex-col items-center gap-1 cursor-pointer group relative">
-              <div className="relative">
-                <ShoppingCart className="w-5 h-5 text-slate-300 group-hover:text-white" />
-                <span className="absolute -top-1.5 -right-2 bg-yellow-400 text-[#0b1021] text-[10px] font-bold px-1.5 rounded-full border border-[#0b1021]">2</span>
-              </div>
-              <span className="text-[10px] text-slate-400 group-hover:text-white font-medium">Cart</span>
-            </div>
-
-            {user ? (
-              <div className="flex items-center gap-3.5">
-                <div className="relative profile-dropdown-container">
-                  <button 
-                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                    className="flex items-center gap-2 hover:opacity-90 transition-all focus:outline-none"
-                  >
-                    <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-xs font-black shadow-md ${user.avatarBg}`}>
-                      {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                    </div>
-                    <span className="hidden md:inline text-xs font-extrabold text-slate-200">{user.name.split(' ')[0]}</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                  </button>
-
-                  {isProfileDropdownOpen && (
-                    <div className="absolute right-0 mt-2.5 w-56 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl z-50 text-left">
-                      <div className="pb-2.5 border-b border-slate-800">
-                        <p className="text-xs font-black text-white">{user.name}</p>
-                        <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{user.email}</p>
-                        <span className="inline-block bg-slate-800 text-slate-300 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mt-1.5">
-                          {user.role}
-                        </span>
-                      </div>
-                      
-                      <div className="pt-2 flex flex-col gap-1">
-                        {user.role === 'admin' && (
-                          <Link to="/admin" className="text-xs text-slate-300 hover:text-white font-bold py-2 flex items-center gap-2 transition-colors">
-                            <Cpu className="w-3.5 h-3.5 text-rose-500" />
-                            Admin Dashboard
-                          </Link>
-                        )}
-                        {user.role === 'vendor' && (
-                          <Link to="/vendor" className="text-xs text-slate-300 hover:text-white font-bold py-2 flex items-center gap-2 transition-colors">
-                            <Store className="w-3.5 h-3.5 text-blue-500" />
-                            Vendor Portal
-                          </Link>
-                        )}
-                        <button
-                          onClick={() => {
-                            logout();
-                            setIsProfileDropdownOpen(false);
-                          }}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-bold py-2 flex items-center gap-2 text-left w-full transition-colors"
-                        >
-                          <LogOut className="w-3.5 h-3.5" />
-                          Log Out
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => {
-                    setAuthModalTab('signup');
-                    setIsAuthModalOpen(true);
-                  }}
-                  className="hidden md:inline-block border border-yellow-400/40 text-yellow-400 text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-md hover:bg-yellow-400 hover:text-[#0b1021] transition-all whitespace-nowrap"
-                >
-                  Become Seller
-                </button>
-                <Link
-                  to="/login"
-                  className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors"
-                >
-                  Log In
-                </Link>
-                <Link
-                  to="/login"
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 py-1.5 rounded-md transition-all shadow-md shadow-blue-600/10 hover:scale-[1.02] flex items-center justify-center"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
-
-            <button
-              className="xl:hidden inline-flex items-center justify-center w-9 h-9 rounded-md border border-white/15 text-slate-300 hover:text-white hover:border-white/40 transition-colors"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <motion.div 
-            className="xl:hidden border-t border-white/10 mt-2 px-4 pt-3 pb-3"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-          >
-            <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm font-medium text-slate-200">
-              {['Home', 'Categories', 'Deals', 'Vendors', 'AI Assistant', 'Support'].map((item) => (
-                <Link
-                  key={item}
-                  to={item === 'Categories' ? '/category/All' : '/'}
-                  className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors text-left"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item}
-                </Link>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </nav>
+      <Navbar />
 
       {/* 2. Breadcrumbs Bar (Matching Reference Screenshot) */}
-      <div className="bg-white border-b border-slate-200/60 py-3.5">
-        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-          <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <Link to="/category/All" className="hover:text-blue-600 transition-colors">Categories</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+      <div className="bg-[#0b1021]/60 border-b border-white/[0.06] py-3.5">
+        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
+          <Link to="/" className="hover:text-blue-400 transition-colors">Home</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+          <Link to="/category/All" className="hover:text-blue-400 transition-colors">Categories</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
           {activeCategoryName !== 'All Categories' && (
             <>
-              <span className="text-slate-400">Workspace curation</span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-500">Workspace curation</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
             </>
           )}
-          <span className="text-blue-600 font-bold">{activeCategoryName}</span>
+          <span className="text-blue-400 font-bold">{activeCategoryName}</span>
         </div>
       </div>
 
-      {/* 3. Category Header Title & Filter Meta Row (Reference: Stands & Holders header) */}
-      <header className="bg-white pt-8 pb-6 border-b border-slate-200/50">
+      {/* 3. Category Header Title & Filter Meta Row */}
+      <header className="bg-transparent pt-8 pb-6 border-b border-white/[0.06]">
         <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-none">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-none">
               {activeCategoryName}
             </h1>
-            <p className="mt-2 text-sm text-slate-500 font-medium">
+            <p className="mt-2 text-sm text-slate-400 font-medium">
               Curate your premium workstation with selected, high-performance office design accessories.
             </p>
           </div>
 
-          <div className="flex items-center justify-between md:justify-end gap-5 border-t border-slate-100 pt-4 md:pt-0 md:border-0">
-            <span className="text-xs sm:text-sm text-slate-500 font-bold bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+          <div className="flex items-center justify-between md:justify-end gap-5 border-t border-white/[0.06] pt-4 md:pt-0 md:border-0">
+            <span className="text-xs sm:text-sm text-slate-350 font-bold bg-white/[0.05] border border-white/[0.08] px-3 py-1.5 rounded-lg flex items-center gap-1.5">
               <Info className="w-4 h-4 text-slate-400" />
               Showing 1-{categoryProducts.length} of {categoryProducts.length} results
             </span>
 
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm">
-              <ArrowUpDown className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center gap-2 bg-[#0d1527]/70 backdrop-blur-xl border border-white/[0.08] rounded-xl px-3 py-1.5 shadow-sm">
+              <ArrowUpDown className="w-4 h-4 text-slate-450" />
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-xs sm:text-sm font-semibold bg-transparent text-slate-700 focus:outline-none cursor-pointer"
+                className="text-xs sm:text-sm font-semibold bg-transparent text-slate-300 focus:outline-none cursor-pointer"
               >
-                <option value="popularity">Sort by popularity</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="rating">Sort by rating</option>
+                <option value="popularity" className="bg-[#0b1021] text-slate-200">Sort by popularity</option>
+                <option value="price-asc" className="bg-[#0b1021] text-slate-200">Price: Low to High</option>
+                <option value="price-desc" className="bg-[#0b1021] text-slate-200">Price: High to Low</option>
+                <option value="rating" className="bg-[#0b1021] text-slate-200">Sort by rating</option>
               </select>
             </div>
           </div>
@@ -983,10 +819,10 @@ export default function Category() {
 
       {/* 4. Subcategories Grid or Main Categories Grid */}
       {activeCategoryName === 'All Categories' ? (
-        <section className="bg-white py-10 border-b border-slate-200/60 shadow-inner">
+        <section className="bg-transparent py-10 border-b border-white/[0.06] shadow-inner">
           <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12">
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-405 flex items-center gap-2">
                 <Tag className="w-4 h-4 text-slate-400" />
                 Explore Premium Workspace Categories
               </h2>
@@ -997,10 +833,10 @@ export default function Category() {
                 <Link
                   key={cat.name}
                   to={`/category/${encodeURIComponent(cat.name)}`}
-                  className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/20 group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm hover:border-slate-350 hover:shadow-md hover:-translate-y-1.5 transition-all duration-300"
+                  className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1527]/40 group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm hover:border-white/[0.2] hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300"
                 >
                   {/* Centered Preview Image */}
-                  <div className="absolute inset-0 flex items-center justify-center p-6 pb-20 bg-white">
+                  <div className="absolute inset-0 flex items-center justify-center p-6 pb-20 bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80">
                     <img 
                       src={cat.image} 
                       alt={cat.name}
@@ -1008,12 +844,12 @@ export default function Category() {
                     />
                   </div>
 
-                  {/* Bottom White Overlay Panel */}
-                  <div className="relative bg-white border-t border-slate-100 p-4 text-center z-10 shadow-lg">
-                    <h3 className="text-xs font-black text-slate-900 tracking-wide uppercase">
+                  {/* Bottom Panel */}
+                  <div className="relative bg-[#0b1021]/90 border-t border-white/[0.08] p-4 text-center z-10 shadow-lg">
+                    <h3 className="text-xs font-black text-white tracking-wide uppercase">
                       {cat.name}
                     </h3>
-                    <p className="mt-1 text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none flex items-center justify-center gap-1 group-hover:text-blue-700">
+                    <p className="mt-1 text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none flex items-center justify-center gap-1 group-hover:text-blue-300">
                       Explore category <ArrowRight className="w-3.5 h-3.5" />
                     </p>
                   </div>
@@ -1024,17 +860,17 @@ export default function Category() {
         </section>
       ) : (
         subcategories.length > 0 && (
-          <section className="bg-white py-10 border-b border-slate-200/60 shadow-inner">
+          <section className="bg-transparent py-10 border-b border-white/[0.06] shadow-inner">
             <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-slate-400" />
+                  <Tag className="w-4 h-4 text-slate-450" />
                   Select Subcategory Inside {activeCategoryName}
                 </h2>
                 {selectedSubcategory && (
                   <button 
                     onClick={() => setSelectedSubcategory(null)}
-                    className="text-xs font-extrabold text-blue-600 hover:text-blue-700 flex items-center gap-1 border border-blue-200 rounded-lg px-2.5 py-1 bg-blue-50/50"
+                    className="text-xs font-extrabold text-blue-400 hover:text-blue-300 flex items-center gap-1 border border-blue-500/30 rounded-lg px-2.5 py-1 bg-blue-500/10"
                   >
                     Clear filter
                   </button>
@@ -1049,15 +885,15 @@ export default function Category() {
                       key={sub.name}
                       whileHover={{ y: -6 }}
                       transition={{ duration: 0.2 }}
-                      className={`relative overflow-hidden rounded-2xl border bg-slate-50/20 group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm transition-all duration-300 ${
+                      className={`relative overflow-hidden rounded-2xl border bg-[#0d1527]/40 group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm transition-all duration-300 ${
                         isActive 
-                          ? 'border-blue-500 shadow-blue-500/10 shadow-md ring-2 ring-blue-500/20' 
-                          : 'border-slate-200/80 hover:border-slate-350 hover:shadow-md'
+                          ? 'border-blue-500 shadow-blue-500/20 shadow-md ring-2 ring-blue-500/20' 
+                          : 'border-white/[0.08] hover:border-white/[0.2] hover:shadow-md'
                       }`}
                       onClick={() => setSelectedSubcategory(isActive ? null : sub.name)}
                     >
                       {/* Centered Preview Image */}
-                      <div className="absolute inset-0 flex items-center justify-center p-6 pb-20 bg-white">
+                      <div className="absolute inset-0 flex items-center justify-center p-6 pb-20 bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80">
                         <img 
                           src={sub.image} 
                           alt={sub.name}
@@ -1065,9 +901,9 @@ export default function Category() {
                         />
                       </div>
 
-                      {/* Bottom White Overlay Panel */}
-                      <div className="relative bg-white border-t border-slate-100 p-4 text-center z-10 shadow-lg">
-                        <h3 className="text-xs font-black text-slate-900 tracking-wide uppercase">
+                      {/* Bottom Overlay Panel */}
+                      <div className="relative bg-[#0b1021]/90 border-t border-white/[0.08] p-4 text-center z-10 shadow-lg">
+                        <h3 className="text-xs font-black text-white tracking-wide uppercase">
                           {sub.name}
                         </h3>
                         <p className="mt-1 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
@@ -1093,10 +929,10 @@ export default function Category() {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           
           {/* Left Sidebar Filter Section */}
-          <aside className="w-full lg:w-72 bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm sticky top-24 shrink-0 z-20">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-              <span className="text-sm font-black text-slate-900 flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-blue-500" />
+          <aside className="w-full lg:w-72 bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 shadow-2xl sticky top-24 shrink-0 z-20">
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-6">
+              <span className="text-sm font-black text-white flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-blue-400" />
                 Refine Workspace Setup
               </span>
               <button 
@@ -1106,15 +942,15 @@ export default function Category() {
                   setSelectedBrand('all');
                   setPriceRange(200000);
                 }}
-                className="text-[11px] font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                className="text-[11px] font-bold text-slate-400 hover:text-rose-450 transition-colors"
               >
                 Clear all
               </button>
             </div>
 
             {/* Price Filter */}
-            <div className="mb-6 pb-6 border-b border-slate-100">
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3">Price Limit (LKR)</h3>
+            <div className="mb-6 pb-6 border-b border-white/[0.08]">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider mb-3">Price Limit (LKR)</h3>
               <input 
                 type="range" 
                 min="1000" 
@@ -1122,55 +958,67 @@ export default function Category() {
                 step="5000"
                 value={priceRange} 
                 onChange={(e) => setPriceRange(Number(e.target.value))}
-                className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
-              <div className="flex justify-between items-center mt-2 text-xs font-semibold text-slate-500">
+              <div className="flex justify-between items-center mt-2 text-xs font-semibold text-slate-400">
                 <span>LKR 1,000</span>
-                <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md border border-blue-100">Max: LKR {priceRange.toLocaleString()}</span>
+                <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded-md border border-blue-500/20">Max: LKR {priceRange.toLocaleString()}</span>
               </div>
             </div>
 
-            {/* Vibes Filter (Aligning with Homepage curate hub) */}
-            <div className="mb-6 pb-6 border-b border-slate-100">
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3">Workspace Vibe</h3>
+            {/* Vibes Filter */}
+            <div className="mb-6 pb-6 border-b border-white/[0.08]">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider mb-3">Workspace Vibe</h3>
               <div className="flex flex-col gap-2">
                 {[
-                  { id: 'all', label: 'All Vibes', bg: 'bg-slate-100 text-slate-700' },
-                  { id: 'walnut', label: 'Walnut & Organic', bg: 'bg-amber-100 text-amber-800' },
-                  { id: 'minimalist', label: 'Cream Minimalist', bg: 'bg-slate-100 text-slate-800 border-slate-300' },
-                  { id: 'black', label: 'Stealth Matte Black', bg: 'bg-slate-900 text-white' },
-                  { id: 'cyberpunk', label: 'Cyberpunk RGB', bg: 'bg-purple-100 text-purple-800' }
-                ].map(vibe => (
-                  <button
-                    key={vibe.id}
-                    onClick={() => setSelectedVibe(vibe.id)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all ${
-                      selectedVibe === vibe.id 
-                        ? 'border-blue-500 bg-blue-50 text-blue-800 shadow-sm' 
-                        : 'border-slate-100 hover:bg-slate-50 text-slate-600'
-                    }`}
-                  >
-                    <span>{vibe.label}</span>
-                    {selectedVibe === vibe.id && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                  </button>
-                ))}
+                  { id: 'all', label: 'All Vibes', bg: 'bg-white/5 border-white/5 text-slate-300' },
+                  { id: 'walnut', label: 'Walnut & Organic', bg: 'bg-amber-500/10 border-amber-500/20 text-amber-300' },
+                  { id: 'minimalist', label: 'Cream Minimalist', bg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300' },
+                  { id: 'black', label: 'Stealth Matte Black', bg: 'bg-slate-900 border-slate-800 text-slate-400' },
+                  { id: 'cyberpunk', label: 'Cyberpunk RGB', bg: 'bg-purple-500/10 border-purple-500/20 text-purple-300' }
+                ].map(vibe => {
+                  const isSelected = selectedVibe === vibe.id;
+                  let selectedBorder = '';
+                  if (isSelected) {
+                    if (vibe.id === 'walnut') selectedBorder = 'border-amber-500 ring-2 ring-amber-500/20';
+                    else if (vibe.id === 'minimalist') selectedBorder = 'border-cyan-400 ring-2 ring-cyan-400/20';
+                    else if (vibe.id === 'black') selectedBorder = 'border-slate-400 ring-2 ring-slate-450/20';
+                    else if (vibe.id === 'cyberpunk') selectedBorder = 'border-purple-500 ring-2 ring-purple-500/20';
+                    else selectedBorder = 'border-blue-500 ring-2 ring-blue-500/20';
+                  }
+
+                  return (
+                    <button
+                      key={vibe.id}
+                      onClick={() => setSelectedVibe(vibe.id)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all ${
+                        isSelected 
+                          ? `${vibe.bg} ${selectedBorder} shadow-sm` 
+                          : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
+                      }`}
+                    >
+                      <span>{vibe.label}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-inherit" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Brand Filter */}
             <div>
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3">Brands</h3>
-              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+              <h3 className="text-xs font-black text-white uppercase tracking-wider mb-3">Brands</h3>
+              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 <button
                   onClick={() => setSelectedBrand('all')}
                   className={`px-3 py-2 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all ${
                     selectedBrand === 'all' 
-                      ? 'border-blue-500 bg-blue-50 text-blue-800' 
-                      : 'border-slate-100 hover:bg-slate-50 text-slate-600'
+                      ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                      : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
                   }`}
                 >
                   All Brands
-                  {selectedBrand === 'all' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                  {selectedBrand === 'all' && <Check className="w-3.5 h-3.5 text-blue-400" />}
                 </button>
                 {uniqueBrands.map(brand => (
                   <button
@@ -1178,12 +1026,12 @@ export default function Category() {
                     onClick={() => setSelectedBrand(brand)}
                     className={`px-3 py-2 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all ${
                       selectedBrand === brand 
-                        ? 'border-blue-500 bg-blue-50 text-blue-800' 
-                        : 'border-slate-100 hover:bg-slate-50 text-slate-600'
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                        : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
                     }`}
                   >
                     {brand}
-                    {selectedBrand === brand && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                    {selectedBrand === brand && <Check className="w-3.5 h-3.5 text-blue-400" />}
                   </button>
                 ))}
               </div>
@@ -1203,13 +1051,25 @@ export default function Category() {
                     ? prod.oldPrice 
                     : `LKR ${(Number(prod.price) * 1.25).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
+                  // Resolve style vibe tag styles dynamically
+                  let vibeTagStyle = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+                  if (prod.vibe === 'walnut') {
+                    vibeTagStyle = 'bg-amber-500/10 text-amber-300 border border-amber-500/20';
+                  } else if (prod.vibe === 'minimalist') {
+                    vibeTagStyle = 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20';
+                  } else if (prod.vibe === 'black') {
+                    vibeTagStyle = 'bg-slate-800 text-slate-300 border border-slate-700';
+                  } else if (prod.vibe === 'cyberpunk') {
+                    vibeTagStyle = 'bg-purple-500/10 text-purple-300 border border-purple-500/20';
+                  }
+
                   return (
                     <motion.article
                       key={prod.id}
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.4) }}
-                      className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-3.5 shadow-sm hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+                      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1527]/40 p-3.5 shadow-xl hover:border-white/[0.2] hover:shadow-[0_12px_30px_rgba(30,50,90,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
                     >
                       <Link to={`/product/${prod.id}`} className="block">
                         {/* Discount Tag */}
@@ -1218,7 +1078,7 @@ export default function Category() {
                         </div>
 
                         {/* Product Image Frame */}
-                        <div className="h-48 rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50 to-white p-3 flex items-center justify-center relative overflow-hidden">
+                        <div className="h-48 rounded-xl border border-white/[0.06] bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 p-3 flex items-center justify-center relative overflow-hidden">
                           <img 
                             src={prod.image} 
                             alt={prod.title} 
@@ -1229,29 +1089,29 @@ export default function Category() {
                         {/* Category and brand meta */}
                         <div className="mt-3 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-slate-400">
                           <span>{prod.brand || 'Premium Brand'}</span>
-                          <span className="h-1.5 w-[1px] bg-slate-300"></span>
+                          <span className="h-1.5 w-[1px] bg-white/[0.15]"></span>
                           <span>{prod.subcategory || activeCategoryName}</span>
                         </div>
 
-                        <h4 className="mt-1 text-sm font-bold leading-snug text-slate-800 min-h-[42px] group-hover:text-blue-600 transition-colors">
+                        <h4 className="mt-1 text-sm font-bold leading-snug text-white min-h-[42px] group-hover:text-blue-400 transition-colors">
                           {prod.title}
                         </h4>
 
                         {/* Rating block */}
-                        <div className="mt-2.5 flex items-center gap-1 text-[11px] text-amber-500">
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
-                          <span className="font-semibold text-slate-700">{prod.rating || '4.8'}</span>
+                        <div className="mt-2.5 flex items-center gap-1 text-[11px] text-amber-400">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          <span className="font-semibold text-slate-200">{prod.rating || '4.8'}</span>
                           <span className="text-slate-400 font-medium">({prod.live || 'Active deal'})</span>
                         </div>
 
                         {/* Pricing and Action bottom */}
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-end justify-between">
+                        <div className="mt-4 pt-3 border-t border-white/[0.08] flex items-end justify-between">
                           <div>
-                            <p className="text-lg font-black text-rose-600 tracking-tight leading-none">{priceFormatted}</p>
-                            <p className="text-[10px] text-slate-400 line-through mt-1">{oldPriceFormatted}</p>
+                            <p className="text-lg font-black text-rose-400 tracking-tight leading-none">{priceFormatted}</p>
+                            <p className="text-[10px] text-slate-500 line-through mt-1">{oldPriceFormatted}</p>
                           </div>
 
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-blue-50 text-blue-700 uppercase tracking-widest border border-blue-100">
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${vibeTagStyle}`}>
                             {prod.vibe || 'minimalist'}
                           </span>
                         </div>
@@ -1264,7 +1124,7 @@ export default function Category() {
                             e.stopPropagation();
                             handleQuickAdd(prod.title);
                           }}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-600 hover:text-white px-3 py-2.5 text-xs font-extrabold text-blue-700 transition-all shadow-sm active:scale-95"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#0d1527]/85 hover:bg-blue-600 hover:text-white px-3 py-2.5 text-xs font-extrabold text-white transition-all shadow-sm active:scale-95"
                         >
                           <ShoppingCart className="h-4 w-4" />
                           Add to Setup
@@ -1275,7 +1135,7 @@ export default function Category() {
                             e.stopPropagation();
                             showToast("Added to wishlist!");
                           }}
-                          className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all"
+                          className="rounded-xl border border-white/[0.08] bg-[#0d1527]/85 p-2.5 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all"
                         >
                           <Heart className="h-4 w-4" />
                         </button>
@@ -1285,11 +1145,11 @@ export default function Category() {
                 })}
               </div>
             ) : (
-              <div className="bg-white rounded-3xl border border-slate-200/60 p-12 text-center shadow-sm">
-                <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+              <div className="bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-12 text-center shadow-2xl">
+                <div className="w-16 h-16 rounded-full bg-white/[0.02] border border-white/[0.08] flex items-center justify-center text-slate-400 mx-auto mb-4">
                   <SlidersHorizontal className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-slate-800">No products match your filters</h3>
+                <h3 className="text-base font-bold text-white">No products match your filters</h3>
                 <p className="mt-1.5 text-sm text-slate-400">Try adjusting your price slider or choosing a different style vibe.</p>
                 <button
                   onClick={() => {
@@ -1309,55 +1169,7 @@ export default function Category() {
         </div>
       </main>
 
-      {/* 6. Footer (Matching existing design structure) */}
-      <footer className="bg-[#0b1021] text-slate-400 py-12 border-t border-white/[0.05]">
-        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div>
-            <div className="flex items-center gap-2 text-white mb-4">
-              <Zap className="text-yellow-400 w-5 h-5 fill-yellow-400" />
-              <span className="text-lg font-bold">Tech-Hub</span>
-            </div>
-            <p className="text-xs leading-relaxed text-slate-500">
-              Tech-Hub is an AI-powered marketplace specializing in custom workspace aesthetics. Build your dream setup today.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-white text-xs font-black uppercase tracking-wider mb-4">Categories</h4>
-            <div className="flex flex-col gap-2 text-xs">
-              <Link to="/category/Stands%20%26%20Holders" className="hover:text-white transition-colors">Stands & Holders</Link>
-              <Link to="/category/Desk%20Organizers" className="hover:text-white transition-colors">Desk Organizers</Link>
-              <Link to="/category/Desk%20Mats" className="hover:text-white transition-colors">Desk Mats</Link>
-              <Link to="/category/Lighting" className="hover:text-white transition-colors">Lighting</Link>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-white text-xs font-black uppercase tracking-wider mb-4">Support</h4>
-            <div className="flex flex-col gap-2 text-xs">
-              <span className="hover:text-white transition-colors cursor-pointer">Help Center</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Live Chat</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Returns & Exchanges</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Shipping Rates</span>
-            </div>
-          </div>
-          <div>
-            <h4 className="text-white text-xs font-black uppercase tracking-wider mb-4">Company</h4>
-            <div className="flex flex-col gap-2 text-xs">
-              <span className="hover:text-white transition-colors cursor-pointer">About Us</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Our Story</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Careers</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Press kit</span>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 mt-12 pt-6 border-t border-white/[0.05] flex flex-col md:flex-row items-center justify-between text-[11px] text-slate-600 gap-4">
-          <p>© 2026 Tech-Hub Inc. All rights reserved. Built with Advanced AI.</p>
-          <div className="flex gap-4">
-            <span className="hover:text-slate-400 transition-colors cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-400 transition-colors cursor-pointer">Terms of Service</span>
-            <span className="hover:text-slate-400 transition-colors cursor-pointer">Sitemap</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
     </div>
   );
