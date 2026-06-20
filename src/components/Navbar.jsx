@@ -4,7 +4,6 @@ import {
   Zap, Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { AuthModal } from './AuthModal';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -13,8 +12,6 @@ export default function Navbar() {
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('login');
 
   // Close menus on path changes or desktop resize
   useEffect(() => {
@@ -239,30 +236,21 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => {
-                    setAuthModalTab('signup');
-                    setIsAuthModalOpen(true);
-                  }}
+                <Link
+                  to="/become-seller"
                   className="hidden md:inline-block border border-yellow-400/40 text-yellow-400 text-xs sm:text-sm font-semibold px-3 xl:px-4 py-1.5 sm:py-2 rounded-md hover:bg-yellow-400 hover:text-[#0b1021] transition-all whitespace-nowrap"
                 >
                   Become Seller
-                </button>
+                </Link>
                 <div className="h-4 w-[1px] bg-white/10 hidden md:block" />
                 <button
-                  onClick={() => {
-                    setAuthModalTab('login');
-                    setIsAuthModalOpen(true);
-                  }}
+                  onClick={() => navigate('/login?tab=login')}
                   className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors focus:outline-none"
                 >
                   Log In
                 </button>
                 <button
-                  onClick={() => {
-                    setAuthModalTab('signup');
-                    setIsAuthModalOpen(true);
-                  }}
+                  onClick={() => navigate('/login?tab=signup')}
                   className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all whitespace-nowrap shadow-md shadow-blue-600/10 hover:scale-[1.02] flex items-center justify-center focus:outline-none"
                 >
                   Sign Up
@@ -357,8 +345,7 @@ export default function Navbar() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
-                      setAuthModalTab('login');
-                      setIsAuthModalOpen(true);
+                      navigate('/login?tab=login');
                       setIsMobileMenuOpen(false);
                     }}
                     className="bg-white/[0.04] hover:bg-white/[0.1] text-white text-xs font-extrabold py-2.5 rounded-xl transition-all border border-white/5 text-center flex items-center justify-center"
@@ -367,8 +354,7 @@ export default function Navbar() {
                   </button>
                   <button
                     onClick={() => {
-                      setAuthModalTab('signup');
-                      setIsAuthModalOpen(true);
+                      navigate('/login?tab=signup');
                       setIsMobileMenuOpen(false);
                     }}
                     className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold py-2.5 rounded-xl transition-all shadow-md shadow-blue-600/10 text-center flex items-center justify-center"
@@ -408,13 +394,6 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-
-      {/* Global Auth Modal integration */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialTab={authModalTab}
-      />
     </>
   );
 }

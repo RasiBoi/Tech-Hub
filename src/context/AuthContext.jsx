@@ -11,6 +11,7 @@ const formatUser = (user) => {
     ...user,
     storeName: user.store_name || user.storeName,
     avatarBg: user.avatar_bg || user.avatarBg,
+    status: user.status,
   };
 };
 
@@ -93,6 +94,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUser) => {
+    const formatted = formatUser(updatedUser);
+    setUser(formatted);
+    localStorage.setItem('techhub_session', JSON.stringify(formatted));
+  };
+
   const logout = async () => {
     try {
       await requestJson(`${serviceRegistry.catalog}/logout`, { method: 'POST' });
@@ -105,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

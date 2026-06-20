@@ -18,6 +18,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 const heroVideoUrl = new URL('../../Media/3a9ee91e97524aa3be25136c7e08ec15.HD-1080p-7.2Mbps-42808719.mp4', import.meta.url).href;
+const sellerVideoUrl = new URL('../../Media/2ce03433-a612-48e7-9c75-05b1c7704e60.webm', import.meta.url).href;
 
 /* ── Smooth floating wrapper ─────────────────────────────── */
 const FloatingElement = ({ children, className, delay = 0, yOffset = 15 }) => (
@@ -1247,140 +1248,194 @@ export default function Home() {
       </section>
 
       {/* 4. Categories + Flash Deals Section */}
-      <section id="deals" className="relative bg-transparent overflow-hidden pt-4 sm:pt-5 pb-10 sm:pb-12 border-t border-white/[0.06]">
+      <section id="deals" className="relative bg-transparent overflow-hidden pt-8 sm:pt-10 pb-12 sm:pb-16 border-t border-white/[0.06]">
+        {/* Ambient glows matching hero */}
+        <div className="absolute top-0 left-[15%] w-[500px] h-[300px] bg-blue-500/[0.04] rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 right-[10%] w-[400px] h-[300px] bg-indigo-500/[0.04] rounded-full blur-[80px] pointer-events-none" />
         <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
-          <div className="mb-3 flex items-center justify-end">
+
+          {/* ── Section Header ───────────────────────────────── */}
+          <div className="mb-6 sm:mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Browse Categories</h3>
+              <span className="hidden sm:inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">
+                <Sparkles className="w-3 h-3" />
+                Curated
+              </span>
+            </div>
             <Link
               to="/category/All"
-              className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-[#0d1527]/70 text-slate-300 px-4 py-2 text-sm font-semibold hover:border-white/[0.2] hover:bg-[#0d1527]/90 hover:text-white transition-all shadow-sm backdrop-blur-md"
+              className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-300 px-4 py-2 text-sm font-semibold hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-400 transition-all backdrop-blur-md"
             >
-              View More Categories
+              View All
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="grid min-w-max grid-flow-col auto-cols-[140px] sm:auto-cols-[152px] lg:auto-cols-[164px]">
-                {(dbCategories.length > 0 ? dbCategories : curatedCategories).map((category, index) => (
-                  <Link
-                    key={category.name}
-                    to={`/category/${encodeURIComponent(category.name)}`}
-                    className="block"
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: 16 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.3 }}
-                      transition={{ duration: 0.35, delay: index * 0.04 }}
-                      whileHover={{ y: -2 }}
-                      className="group px-3 sm:px-3.5 py-2 text-center border-r border-white/[0.08] last:border-r-0 cursor-pointer"
-                    >
-                      <div className="h-[112px] sm:h-[124px] w-full rounded-xl bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 p-2 flex items-center justify-center border border-white/[0.06] shadow-lg">
-                        <img
-                          src={category.image}
-                          alt={category.name}
-                          className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-[1.04]"
-                        />
-                      </div>
-                      <p className="mt-3 text-[12px] sm:text-[13px] font-semibold leading-tight text-slate-300 group-hover:text-blue-400 transition-colors">{category.name}</p>
-                    </motion.div>
-                  </Link>
-                ))}
-
-                <Link to="/category/All" className="inline-block">
+          {/* ── Category Pills Row ───────────────────────────── */}
+          <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-2">
+            <div className="flex gap-3 sm:gap-4 min-w-max">
+              {(dbCategories.length > 0 ? dbCategories : curatedCategories).map((category, index) => (
+                <Link
+                  key={category.name}
+                  to={`/category/${encodeURIComponent(category.name)}`}
+                  className="block flex-shrink-0"
+                >
                   <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.35, delay: 0.38 }}
-                    whileHover={{ y: -2 }}
-                    className="px-3 py-2 text-center cursor-pointer"
+                    transition={{ duration: 0.3, delay: index * 0.04 }}
+                    whileHover={{ y: -5, scale: 1.05 }}
+                    className="group relative flex flex-col items-center gap-3 cursor-pointer"
                   >
-                    <div className="h-[112px] sm:h-[124px] w-full flex items-center justify-center">
-                      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-                        <ArrowRight className="h-7 w-7" />
-                      </span>
+                    {/* Image tile with premium hover glow */}
+                    <div className="relative w-[120px] sm:w-[136px] lg:w-[150px] h-[100px] sm:h-[114px] lg:h-[126px] rounded-2xl overflow-hidden border border-white/[0.1] shadow-xl group-hover:border-blue-500/60 group-hover:shadow-[0_0_24px_rgba(59,130,246,0.25)] transition-all duration-300">
+                      {/* Dark tint that fades on hover to reveal bright image */}
+                      <div className="absolute inset-0 bg-[#0d1527]/55 z-10 pointer-events-none group-hover:opacity-0 transition-opacity duration-350" />
+                      <img
+                        src={category.image}
+                        alt={category.name}
+                        className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.12] mix-blend-luminosity opacity-80 group-hover:mix-blend-normal group-hover:opacity-100"
+                      />
+                      {/* Bottom gradient — lightens on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#050810]/75 via-[#0a1020]/30 to-transparent z-20 pointer-events-none group-hover:from-[#050810]/30 group-hover:via-transparent transition-all duration-350" />
+                      {/* Active glow ring */}
+                      <div className="absolute inset-0 rounded-2xl ring-0 group-hover:ring-2 group-hover:ring-blue-500/70 ring-offset-0 transition-all duration-300 z-30 pointer-events-none" />
                     </div>
-                    <p className="mt-3 text-[12px] sm:text-[13px] font-semibold text-slate-300">More Categories</p>
+                    {/* Label */}
+                    <p className="text-[12px] sm:text-[13px] font-semibold leading-tight text-slate-400 group-hover:text-blue-400 transition-colors text-center whitespace-nowrap">{category.name}</p>
                   </motion.div>
                 </Link>
-              </div>
+              ))}
+
+              {/* See More tile */}
+              <Link to="/category/All" className="flex-shrink-0 block">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.3, delay: 0.44 }}
+                  whileHover={{ y: -4, scale: 1.03 }}
+                  className="group flex flex-col items-center gap-3 cursor-pointer"
+                >
+                  <div className="relative w-[120px] sm:w-[136px] lg:w-[150px] h-[100px] sm:h-[114px] lg:h-[126px] rounded-2xl overflow-hidden border border-white/[0.1] bg-gradient-to-br from-blue-600/20 to-indigo-600/10 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-600/90 text-white shadow-lg shadow-blue-600/30 group-hover:bg-blue-500 transition-colors">
+                        <ArrowRight className="h-6 w-6" />
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 rounded-2xl border-2 border-blue-500/0 group-hover:border-blue-500/40 transition-all duration-300 pointer-events-none" />
+                  </div>
+                  <p className="text-[12px] sm:text-[13px] font-semibold text-slate-400 group-hover:text-blue-400 transition-colors text-center whitespace-nowrap">All Categories</p>
+                </motion.div>
+              </Link>
+            </div>
           </div>
 
-          <div className="mt-6 p-1 sm:p-0">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* ── Flash Deals ──────────────────────────────────── */}
+          <div className="mt-12 sm:mt-14">
+
+            {/* Header with live countdown */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-7">
               <div className="flex flex-wrap items-center gap-3">
-                <h3 className="text-[26px] leading-none font-bold text-white">
-                  Today's Flash Deals
-                </h3>
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-450">
-                  {["05", "42", "18"].map((unit) => (
-                    <span key={unit} className="rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-1 leading-none">{unit}</span>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/25 flex items-center justify-center shrink-0">
+                    <Flame className="w-4 h-4 text-rose-400 fill-rose-500/50" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Today's Flash Deals</h3>
+                </div>
+                {/* Countdown timer — dramatic version */}
+                <div className="flex items-center gap-1.5">
+                  {['05', '42', '18'].map((unit, i) => (
+                    <React.Fragment key={unit}>
+                      <span className="flex flex-col items-center justify-center w-9 h-9 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-400 text-sm font-black tabular-nums leading-none">
+                        {unit}
+                      </span>
+                      {i < 2 && <span className="text-rose-400/60 font-bold text-sm">:</span>}
+                    </React.Fragment>
                   ))}
                 </div>
               </div>
               <a
                 href="#"
-                className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-[#0d1527]/70 text-slate-300 px-4 py-2 text-sm font-semibold hover:border-white/[0.2] hover:bg-[#0d1527]/90 hover:text-white transition-all shadow-sm backdrop-blur-md"
+                className="self-start sm:self-auto inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-300 px-4 py-2 text-sm font-semibold hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400 transition-all backdrop-blur-md"
               >
                 View All Deals
                 <ArrowRight className="h-4 w-4" />
               </a>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
+            {/* Deal Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
               {(allDbProducts.length > 0 ? compileDeals(allDbProducts) : flashDeals).map((deal, index) => (
                 <motion.article
                   key={deal.id}
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 28 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.22 }}
-                  transition={{ duration: 0.42, delay: index * 0.05 }}
-                  whileHover={{ y: -8 }}
-                  className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1527]/40 p-3 shadow-xl backdrop-blur-sm flex flex-col justify-between hover:border-white/[0.2] hover:shadow-[0_12px_30px_rgba(30,50,90,0.15)] transition-all duration-300"
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{ duration: 0.4, delay: index * 0.06 }}
+                  whileHover={{ y: -6 }}
+                  className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-gradient-to-b from-[#0e1528]/80 to-[#070a13]/90 shadow-xl backdrop-blur-sm flex flex-col hover:border-white/[0.18] hover:shadow-[0_16px_40px_rgba(15,30,70,0.3)] transition-all duration-300"
                 >
-                  <Link to={`/product/${deal.id}`} className="block">
-                    <div className="absolute left-3 top-3 rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white z-10">
-                      {deal.discount}
+                  {/* Subtle inner glow on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 via-transparent to-blue-500/0 group-hover:from-blue-500/[0.04] group-hover:to-indigo-500/[0.04] transition-all duration-500 pointer-events-none rounded-2xl" />
+
+                  <Link to={`/product/${deal.id}`} className="block flex-1 p-3">
+                    {/* Discount Badge */}
+                    <div className="absolute left-3 top-3 z-20 flex items-center gap-1">
+                      <span className="rounded-lg bg-rose-500 px-2 py-1 text-[10px] font-extrabold text-white shadow-lg shadow-rose-500/30">
+                        {deal.discount}
+                      </span>
                     </div>
 
-                    <div className="h-44 rounded-xl border border-white/[0.06] bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 p-2 flex items-center justify-center">
-                      <img src={deal.image} alt={deal.title} className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-300 group-hover:scale-105" />
+                    {/* Product Image — premium dark card treatment */}
+                    <div className="relative h-40 sm:h-44 rounded-xl overflow-hidden" style={{background: 'linear-gradient(135deg, #0f1a2e 0%, #0a1220 100%)'}}>
+                      {/* Subtle vignette for depth */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#07091a]/50 via-transparent to-transparent z-10 pointer-events-none" />
+                      {/* Dark semi-transparent overlay that mutes white backgrounds without hiding the product */}
+                      <div className="absolute inset-0 bg-[#08102a]/35 z-[8] pointer-events-none group-hover:bg-transparent transition-colors duration-300" />
+                      <img
+                        src={deal.image}
+                        alt={deal.title}
+                        className="absolute inset-0 w-full h-full object-contain p-4 transition-all duration-400 group-hover:scale-[1.07] opacity-85 group-hover:opacity-100"
+                      />
                     </div>
 
-                    <h4 className="mt-2.5 text-[12px] font-semibold leading-snug text-white min-h-[38px] group-hover:text-blue-400 transition-colors">{deal.title}</h4>
+                    <h4 className="mt-3 text-[12px] font-semibold leading-snug text-slate-200 min-h-[36px] group-hover:text-white transition-colors">{deal.title}</h4>
 
-                    <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-400">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      <span className="font-semibold text-slate-350">{deal.rating}</span>
-                      <span className="text-slate-500">({deal.live})</span>
+                    <div className="mt-2 flex items-center gap-1 text-[11px]">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />
+                      <span className="font-bold text-amber-400">{deal.rating}</span>
+                      <span className="text-slate-500 ml-0.5 truncate">· {deal.live}</span>
                     </div>
 
-                    <div className="mt-2 flex items-end gap-2 pb-1">
-                      <p className="text-base font-extrabold text-rose-450">{deal.price}</p>
-                      <p className="pb-0.5 text-[11px] text-slate-500 line-through">{deal.oldPrice}</p>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <p className="text-[15px] font-extrabold text-white">{deal.price}</p>
+                      <p className="text-[11px] text-slate-500 line-through">{deal.oldPrice}</p>
                     </div>
                   </Link>
 
-                  <div className="mt-2.5 flex gap-2 relative z-10">
-                    <button 
+                  {/* Action bar */}
+                  <div className="px-3 pb-3 pt-2 border-t border-white/[0.06] flex gap-2">
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        showToast(`"${deal.title}" added to setup!`);
+                        showToast(`"${deal.title}" added to cart!`);
                       }}
-                      className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-white/[0.08] bg-[#0d1527]/85 px-2 py-2 text-[11px] font-bold text-white transition-all hover:bg-blue-600 hover:text-white active:scale-95 shadow-sm"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600/90 hover:bg-blue-500 py-2 text-[11px] font-bold text-white transition-all active:scale-95 shadow-sm shadow-blue-600/20"
                     >
                       <ShoppingCart className="h-3.5 w-3.5" />
                       Quick add
                     </button>
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        showToast("Added to wishlist!");
+                        showToast('Added to wishlist!');
                       }}
-                      className="rounded-xl border border-white/[0.08] bg-[#0d1527]/85 p-2 text-slate-400 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+                      className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2 text-slate-500 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/[0.08] transition-all"
                     >
                       <Heart className="h-3.5 w-3.5" />
                     </button>
@@ -1388,13 +1443,18 @@ export default function Home() {
                 </motion.article>
               ))}
             </div>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#0d1527]/60 px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs sm:text-sm text-slate-400">
-                312 deals were updated in the last hour. Prices can shift in real-time.
-              </p>
+
+            {/* Bottom status bar */}
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-gradient-to-r from-[#0d1527]/70 via-[#0a1122]/60 to-[#0d1527]/70 px-5 py-3.5 backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <p className="text-xs sm:text-sm text-slate-400">
+                  <span className="text-emerald-400 font-bold">312 deals</span> were updated in the last hour. Prices shift in real-time.
+                </p>
+              </div>
               <a
                 href="#"
-                className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-[#0d1527]/70 text-slate-300 px-4 py-2 text-sm font-semibold hover:border-white/[0.2] hover:bg-[#0d1527]/90 hover:text-white transition-all shadow-sm backdrop-blur-md"
+                className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-300 px-4 py-2 text-sm font-semibold hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all backdrop-blur-md"
               >
                 See all live deals
                 <ArrowRight className="h-4 w-4" />
@@ -1404,329 +1464,119 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5. Curate Your Workspace — Setup Curation Hub */}
-      <section id="curation-hub" className="relative bg-transparent pb-16 pt-12 border-t border-white/[0.06]">
-        
-        {/* Soft Radial Ambient Glow */}
-        <div className="absolute top-[10%] left-[-10%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[80px] pointer-events-none" />
-        <div className="absolute bottom-[10%] right-[-10%] w-[450px] h-[450px] bg-indigo-400/5 rounded-full blur-[100px] pointer-events-none" />
+      {/* 5. Become a Seller — CTA Section */}
+      <section className="relative overflow-hidden border-t border-white/[0.06] py-14 sm:py-16">
+        {/* Single subtle ambient glow matching the hero */}
+        <div className="absolute top-0 right-[20%] w-[500px] h-[400px] bg-blue-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
 
-        <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12 relative z-10">
-          
-          {/* Header */}
-          <div className="mb-10 flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-3">
-              <h3 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2.5 tracking-tight">
-                Curate Your Workspace
-              </h3>
-              <span className="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm">
-                <Brain className="w-3.5 h-3.5 text-blue-400" />
-                Concierge picks
-              </span>
+        <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12 z-10">
+
+          {/* Main banner — video background card */}
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.12]">
+            {/* Background video */}
+            <video
+              src={sellerVideoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* Dark overlay — keeps text readable, matches site navy palette */}
+            <div className="absolute inset-0 bg-[#060c1a]/80 backdrop-blur-[1px]" />
+            {/* Subtle dot-grid texture on top of video */}
+            <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '28px 28px'}} />
+            {/* Left accent bar */}
+            <div className="absolute left-0 top-6 bottom-6 w-[3px] bg-blue-400/80 rounded-full z-20" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row">
+
+              {/* Left — content */}
+              <div className="flex-1 px-10 sm:px-12 lg:px-14 py-12 sm:py-14">
+
+                {/* Section badge — exact same style as other sections */}
+                <div className="flex items-center gap-2 mb-6">
+                  <span className="inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">
+                    <Store className="w-3 h-3" />
+                    Vendor Programme
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                    Applications open
+                  </span>
+                </div>
+
+                {/* Headline — same weight/size as other section headings */}
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight tracking-tight mb-3">
+                  Sell on Tech-Hub.<br />
+                  <span className="text-blue-400">Reach more customers.</span>
+                </h2>
+
+                <p className="text-sm text-slate-400 leading-relaxed mb-8 max-w-[440px]">
+                  List your products, manage orders, and track earnings — all from a single seller dashboard built for Sri Lanka's growing tech market.
+                </p>
+
+                {/* Feature list — clean, icon-led rows matching site style */}
+                <div className="space-y-3 mb-9">
+                  {[
+                    { icon: <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />, text: 'No setup fee. Approved and live within 24 hours.' },
+                    { icon: <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />, text: 'Payouts every 14 days with full fraud protection.' },
+                    { icon: <Brain className="w-3.5 h-3.5 text-blue-400 shrink-0" />, text: 'AI-powered product recommendations drive your sales.' },
+                  ].map((item) => (
+                    <div key={item.text} className="flex items-center gap-3 text-[13px] text-slate-300">
+                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center shrink-0">
+                        {item.icon}
+                      </div>
+                      {item.text}
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTAs — primary matches site's blue button style */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    to="/become-seller"
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/25"
+                  >
+                    <Store className="w-4 h-4" />
+                    Start Selling
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link
+                    to="/vendors"
+                    className="inline-flex items-center gap-2 border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.15] text-slate-300 hover:text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all"
+                  >
+                    View Partners
+                  </Link>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="hidden lg:block w-px bg-white/[0.06] my-10" />
+
+              {/* Right — stats in the same dark card style */}
+              <div className="hidden lg:flex flex-col justify-center px-12 py-12 gap-6 min-w-[280px]">
+                {[
+                  { icon: <Store className="w-4 h-4 text-blue-400" />, value: '5,000+', label: 'Active Vendors' },
+                  { icon: <ShoppingCart className="w-4 h-4 text-blue-400" />, value: '1M+ Orders', label: 'Processed' },
+                  { icon: <Star className="w-4 h-4 text-blue-400 fill-blue-400/30" />, value: '98%', label: 'Seller Satisfaction' },
+                  { icon: <ShieldCheck className="w-4 h-4 text-blue-400" />, value: '14-day', label: 'Guaranteed Payout' },
+                ].map((stat) => (
+                  <div key={stat.label} className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-xl bg-[#0a1020] border border-white/[0.07] flex items-center justify-center shrink-0">
+                      {stat.icon}
+                    </div>
+                    <div>
+                      <p className="text-base font-extrabold text-white leading-none">{stat.value}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
             </div>
-            <span className="h-6 w-[1px] bg-white/10 hidden sm:block"></span>
-            <p className="text-xs sm:text-sm font-semibold text-slate-400">
-              Pick a theme below and watch our desk stylists handpick the perfect gear for your setup.
-            </p>
           </div>
 
-          {/* 5-Column Grid Layout: Beautiful cover image cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-            
-            {/* Card 1: Recently Viewed */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.42, delay: 0.05 }}
-              className="bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-4 shadow-2xl hover:border-white/[0.2] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
-            >
-              <div className="flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[9px] uppercase font-black tracking-widest text-slate-505">Your Activity</span>
-                    <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md">Recently Viewed</span>
-                  </div>
-                  <h4 className="text-base font-extrabold text-white mb-3 leading-snug">Still thinking about this?</h4>
-                </div>
-
-                <div className="my-2 relative rounded-2xl overflow-hidden border border-white/[0.06] bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 p-2 flex flex-col items-center justify-center">
-                  <div className="h-48 w-full rounded-xl overflow-hidden bg-transparent border border-white/[0.08] flex items-center justify-center relative">
-                    <img src={activeVibe.recentlyViewed.image} alt={activeVibe.recentlyViewed.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
-                    <span className="absolute bottom-2 left-2 text-[8px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-900/80 text-white backdrop-blur-sm">
-                      {activeVibe.recentlyViewed.timeText}
-                    </span>
-                  </div>
-                  <div className="w-full mt-3 text-left">
-                    <p className="text-[9px] font-bold text-slate-500 leading-none uppercase tracking-wider">{activeVibe.recentlyViewed.category}</p>
-                    <h5 className="text-[13px] font-bold text-white truncate mt-1">{activeVibe.recentlyViewed.title}</h5>
-                    <p className="text-[13px] font-black text-blue-400 mt-0.5">{activeVibe.recentlyViewed.price}</p>
-                  </div>
-                </div>
-
-                <div className="mt-2 bg-blue-500/5 border border-blue-500/10 rounded-xl p-2.5 text-[10px] text-slate-400 italic leading-relaxed">
-                  "You viewed this item recently. It complements your current {activeVibe.name} space configuration perfectly."
-                </div>
-              </div>
-
-              <button className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-white/[0.08] bg-[#0d1527]/85 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors">
-                View Specs
-              </button>
-            </motion.div>
-
-            {/* Card 2: Handpicked For You */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.42, delay: 0.1 }}
-              className="bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-4 shadow-2xl hover:border-white/[0.2] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
-            >
-              <div className="flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[9px] uppercase font-black tracking-widest text-slate-505">Stylist's Selection</span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
-                      <Zap className="w-2.5 h-2.5 fill-indigo-500/10 text-indigo-400" />
-                      Handpicked For You
-                    </span>
-                  </div>
-                  <h4 className="text-base font-extrabold text-white mb-3 leading-snug">Matches your aesthetic vibe</h4>
-                </div>
-
-                <div className="my-2 relative rounded-2xl overflow-hidden border border-white/[0.06] bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 p-2 flex flex-col items-center justify-center">
-                  <div className="h-48 w-full rounded-xl overflow-hidden bg-transparent border border-white/[0.08] flex items-center justify-center">
-                    <img src={activeVibe.handpicked.image} alt={activeVibe.handpicked.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
-                  </div>
-                  <div className="w-full mt-3 text-left">
-                    <h5 className="text-[13px] font-bold text-white truncate">{activeVibe.handpicked.title}</h5>
-                    <p className="text-[13px] font-black text-indigo-400 mt-0.5">{activeVibe.handpicked.price}</p>
-                  </div>
-                </div>
-
-                <div className="mt-2 bg-indigo-50/5 border border-indigo-500/10 rounded-xl p-2.5 text-[10px] text-slate-400 leading-relaxed">
-                  <strong>Stylist Tip:</strong> {activeVibe.handpicked.tip}
-                </div>
-              </div>
-
-              <button className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-white/[0.08] bg-[#0d1527]/85 py-2.5 text-xs font-bold text-white hover:bg-indigo-600 transition-colors">
-                <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart
-              </button>
-            </motion.div>
-
-            {/* Card 3: Frequently Bought Together */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.42, delay: 0.15 }}
-              className="bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-4 shadow-2xl hover:border-white/[0.2] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
-            >
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-slate-505">Workspace Set</span>
-                  <span className="text-[10px] font-bold text-amber-455 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">Perfect Desk Bundle</span>
-                </div>
-                <h4 className="text-base font-extrabold text-white mb-2.5 leading-snug">Bundle setup and save 15%</h4>
-                
-                {/* Connected list of items */}
-                <div className="space-y-2 relative">
-                  {currentBundleItems.map((item) => {
-                    const isChecked = selectedBundleItems.includes(item.id);
-                    return (
-                      <div
-                        key={item.id}
-                        className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all ${
-                          isChecked 
-                            ? 'border-amber-500/40 bg-amber-500/10' 
-                            : 'border-white/[0.06] bg-white/[0.02] opacity-60 hover:opacity-90'
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 border border-white/[0.08] overflow-hidden shrink-0 flex items-center justify-center p-1">
-                          <img src={item.image} alt={item.title} className="max-h-full max-w-full object-contain" />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h5 className="text-[11px] font-bold text-white truncate leading-tight">{item.title}</h5>
-                          <p className="text-[10px] font-semibold text-slate-405 mt-0.5">LKR {item.price.toLocaleString()}</p>
-                        </div>
-
-                        <button
-                          onClick={() => handleToggleBundleItem(item.id)}
-                          className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all shrink-0 ${
-                            isChecked 
-                              ? 'bg-amber-500 border-amber-400 text-white' 
-                              : 'border-white/20 bg-transparent hover:border-white/40'
-                          }`}
-                        >
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Price Details */}
-              <div className="mt-2 bg-white/[0.02] border border-white/[0.08] rounded-2xl p-2.5">
-                <div className="space-y-1 text-[10px] font-semibold text-slate-400">
-                  <div className="flex justify-between">
-                    <span>Items Checked ({selectedBundleItems.length}):</span>
-                    <span>LKR {rawBundleTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-emerald-455">
-                    <span>Desk Set Discount (15%):</span>
-                    <span>- LKR {bundleSavings.toLocaleString()}</span>
-                  </div>
-                  <hr className="border-white/[0.08] my-1" />
-                  <div className="flex justify-between items-end text-white">
-                    <span className="font-extrabold">Total Setup Price:</span>
-                    <span className="text-[13px] font-black text-slate-200 leading-none">
-                      LKR {bundleFinalTotal.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  disabled={selectedBundleItems.length === 0}
-                  onClick={handleBuyBundle}
-                  className={`w-full mt-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    isBundleAdded
-                      ? 'bg-emerald-600 text-white'
-                      : selectedBundleItems.length === 0
-                        ? 'bg-white/5 border border-white/[0.08] text-slate-500 cursor-not-allowed'
-                        : 'bg-amber-500 hover:bg-amber-600 text-white active:scale-98 shadow-sm'
-                  }`}
-                >
-                  {isBundleAdded ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      Bundle Added!
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-4 h-4" />
-                      Buy Setup Set
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Card 4: Trending Now */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.42, delay: 0.2 }}
-              className="bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-4 shadow-2xl hover:border-white/[0.2] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-[540px] group overflow-hidden"
-            >
-              <div className="flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[9px] uppercase font-black tracking-widest text-slate-505">Trending Choice</span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-455 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md">
-                      <Flame className="w-3 h-3 fill-rose-500 text-rose-500 animate-pulse" />
-                      Trending Setup Item
-                    </span>
-                  </div>
-                  <h4 className="text-base font-extrabold text-white mb-3 leading-snug">Popular in this setup style</h4>
-                </div>
-
-                <div className="my-2 relative rounded-2xl overflow-hidden border border-white/[0.06] bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 p-2 flex flex-col items-center justify-center">
-                  <div className="h-48 w-full rounded-xl overflow-hidden bg-transparent border border-white/[0.08] flex items-center justify-center">
-                    <img src={activeVibe.trending.image} alt={activeVibe.trending.title} className="max-h-full max-w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" />
-                  </div>
-                  <div className="w-full mt-3 text-left">
-                    <h5 className="text-[13px] font-bold text-white truncate">{activeVibe.trending.title}</h5>
-                    <p className="text-[13px] font-black text-rose-455 mt-0.5">{activeVibe.trending.price}</p>
-                  </div>
-                </div>
-
-                <div className="mt-2 bg-rose-500/5 border border-rose-500/10 rounded-xl p-2.5 text-[10px] text-slate-400 leading-relaxed flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                  <span>{activeVibe.trending.socialText}</span>
-                </div>
-              </div>
-
-              <button className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-white/[0.08] bg-[#0d1527]/85 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors">
-                Quick Look
-              </button>
-            </motion.div>
-
-            {/* Card 5: Vibe Selector */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.42, delay: 0.25 }}
-              className="rounded-3xl relative overflow-hidden bg-gradient-to-b from-[#0d1527]/70 to-[#070a13]/70 text-slate-200 p-4 shadow-2xl border border-white/[0.08] flex flex-col justify-between h-[540px] backdrop-blur-xl"
-            >
-              {/* Decorative blobs */}
-              <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
-              <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
-              
-              <div className="relative z-10 w-full flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-blue-500/10 p-1.5 rounded-lg border border-blue-500/20">
-                        <Brain className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-xs tracking-wide text-white">Workspace Stylist</h4>
-                        <p className="text-[9px] text-slate-500">Interactive Curation</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 rounded-full">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                      <span className="text-[8px] font-bold text-emerald-400 tracking-wider">ACTIVE</span>
-                    </div>
-                  </div>
-
-                  <p className="text-[11.5px] text-slate-400 leading-normal my-2.5">
-                    Pick your preferred setup theme. Our visual catalog will automatically filter and update setup items in real-time.
-                  </p>
-
-                  {/* Curation Buttons */}
-                  <div className="space-y-2 mt-3">
-                    {[
-                      { id: 'walnut', name: '🌿 Walnut & Organic' },
-                      { id: 'minimalist', name: '☁️ Cream Minimalist' },
-                      { id: 'black', name: '🖤 Stealth Matte Black' },
-                      { id: 'cyberpunk', name: '🌈 Cyberpunk RGB' }
-                    ].map((theme) => {
-                      const isSelected = workspaceVibe === theme.id;
-                      return (
-                        <button
-                          key={theme.id}
-                          onClick={() => handleVibeChange(theme.id)}
-                          className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
-                            isSelected
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-[0_4px_12px_rgba(37,99,235,0.3)]'
-                              : 'bg-white/[0.02] border-white/[0.08] text-slate-300 hover:border-white/[0.15] hover:bg-white/[0.04]'
-                          }`}
-                        >
-                          <span className="text-xs font-bold">{theme.name}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Styled explanation box */}
-                <div className="mt-4 bg-white/[0.02] border border-white/[0.08] rounded-2xl p-3 text-[10px] text-slate-400 leading-normal min-h-[96px] flex items-center">
-                  {isCurationLoading ? (
-                    <span className="text-slate-400 italic animate-pulse w-full text-center">Loading setup options...</span>
-                  ) : (
-                    <span>{activeVibe.description}</span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-          </div>
         </div>
       </section>
 
