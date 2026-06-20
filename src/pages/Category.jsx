@@ -1078,11 +1078,11 @@ export default function Category() {
                         </div>
 
                         {/* Product Image Frame */}
-                        <div className="h-48 rounded-xl border border-white/[0.06] bg-gradient-to-b from-[#111827]/90 to-[#0d1527]/90 p-3 flex items-center justify-center relative overflow-hidden">
+                        <div className="h-48 rounded-xl border border-white/[0.06] bg-[#111827] relative overflow-hidden">
                           <img 
                             src={prod.image} 
                             alt={prod.title} 
-                            className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-500 group-hover:scale-105" 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                           />
                         </div>
 

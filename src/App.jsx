@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Home from './pages/Home';
+import BecomeSeller from './pages/BecomeSeller';
 import Category from './pages/Category';
 import Product from './pages/Product';
 import Login from './pages/Login';
@@ -17,6 +18,7 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/become-seller" element={<BecomeSeller />} />
           <Route path="/login" element={<Login />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/category/:categoryName" element={<Category />} />
