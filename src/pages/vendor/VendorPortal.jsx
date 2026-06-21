@@ -120,6 +120,24 @@ export default function VendorPortal() {
     fetchData();
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!user || user.status !== 'pending') return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const profile = await requestJson(`${serviceRegistry.catalog}/me`);
+        if (profile && profile.status !== 'pending') {
+          updateUser(profile);
+          showToast('Your merchant account has been approved! Dashboard unlocked.');
+        }
+      } catch (e) {
+        console.error('Failed to poll user status:', e);
+      }
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [user?.status, updateUser]);
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
