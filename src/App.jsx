@@ -8,6 +8,7 @@ import Category from './pages/Category';
 import Product from './pages/Product';
 import Login from './pages/Login';
 import Vendors from './pages/Vendors';
+import VendorStore from './pages/VendorStore';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import VendorPortal from './pages/vendor/VendorPortal';
 import { ProtectedRoute } from './routes/ProtectedRoute';
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/become-seller" element={<BecomeSeller />} />
           <Route path="/login" element={<Login />} />
           <Route path="/vendors" element={<Vendors />} />
+          <Route path="/vendors/:vendorId" element={<VendorStore />} />
           <Route path="/category/:categoryName" element={<Category />} />
           <Route path="/product/:productId" element={<Product />} />
           <Route 
