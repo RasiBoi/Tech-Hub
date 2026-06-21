@@ -241,29 +241,29 @@ export const CircularTestimonials = ({
 
                 {/* Stats Row (if vendor) */}
                 {(activeTestimonial.rating || activeTestimonial.baseFollowers || activeTestimonial.productsCount) && (
-                  <div className="grid grid-cols-3 gap-2 py-4 my-6 border-t border-b border-slate-200/80 text-left">
+                  <div className="grid grid-cols-3 gap-2 py-4 my-6 border-t border-b border-white/[0.08] text-left">
                     {activeTestimonial.rating && (
                       <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Rating</p>
+                        <p className="text-[9px] font-bold text-dim uppercase tracking-wider">Rating</p>
                         <div className="flex items-center gap-1 mt-0.5">
                           <FaStar className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          <span className="text-xs font-black text-slate-800">{activeTestimonial.rating}</span>
-                          <span className="text-[9px] text-slate-400 font-bold">({activeTestimonial.reviews})</span>
+                          <span className="text-xs font-black text-soft">{activeTestimonial.rating}</span>
+                          <span className="text-[9px] text-dim font-bold">({activeTestimonial.reviews})</span>
                         </div>
                       </div>
                     )}
                     {activeTestimonial.baseFollowers && (
-                      <div className="border-l border-slate-200/80 pl-3">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Followers</p>
-                        <p className="text-xs font-black text-slate-800 mt-0.5">
+                      <div className="border-l border-white/[0.08] pl-3">
+                        <p className="text-[9px] font-bold text-dim uppercase tracking-wider">Followers</p>
+                        <p className="text-xs font-black text-soft mt-0.5">
                           {(activeTestimonial.baseFollowers + (activeTestimonial.isFollowed ? 1 : 0)).toLocaleString()}
                         </p>
                       </div>
                     )}
                     {activeTestimonial.productsCount && (
-                      <div className="border-l border-slate-200/80 pl-3">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Hardware</p>
-                        <p className="text-xs font-black text-slate-800 mt-0.5">
+                      <div className="border-l border-white/[0.08] pl-3">
+                        <p className="text-[9px] font-bold text-dim uppercase tracking-wider">Hardware</p>
+                        <p className="text-xs font-black text-soft mt-0.5">
                           {activeTestimonial.productsCount}+ Items
                         </p>
                       </div>

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Zap, Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search 
+  Zap, Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -154,6 +156,22 @@ export default function Navbar() {
               <span className="text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Notifications</span>
             </div>
 
+            {/* Theme Switcher Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="flex flex-col items-center gap-1 cursor-pointer group focus:outline-none"
+              aria-label="Toggle Theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-slate-350 group-hover:text-yellow-400 transition-colors" />
+              ) : (
+                <Moon className="w-5 h-5 text-slate-350 group-hover:text-blue-500 transition-colors" />
+              )}
+              <span className="text-[10px] text-slate-450 group-hover:text-white font-semibold transition-colors capitalize">
+                {theme === 'dark' ? 'light' : 'dark'}
+              </span>
+            </button>
+
             {user ? (
               <div className="flex items-center gap-3.5">
                 {user.role === 'admin' && (
@@ -294,6 +312,13 @@ export default function Navbar() {
               <a href="#ai" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={triggerAiAssistant}>AI Assistant</a>
               <Link to="/category/All" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Support</Link>
               <Link to="/" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+              <button 
+                onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }}
+                className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] text-left transition-colors flex items-center gap-1.5 focus:outline-none"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-blue-550" />}
+                <span className="capitalize">{theme === 'dark' ? 'Light Theme' : 'Dark Theme'}</span>
+              </button>
             </div>
 
             {/* Mobile Auth actions */}

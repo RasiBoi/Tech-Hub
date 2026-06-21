@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Home from './pages/Home';
 import BecomeSeller from './pages/BecomeSeller';
 import Category from './pages/Category';
@@ -14,8 +15,9 @@ import { ProtectedRoute } from './routes/ProtectedRoute';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/become-seller" element={<BecomeSeller />} />
@@ -43,5 +45,6 @@ export default function App() {
 
       </Router>
     </AuthProvider>
+  </ThemeProvider>
   );
 }
