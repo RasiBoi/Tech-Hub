@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { requestJson } from '../../services/httpClient';
 import { serviceRegistry } from '../../config/serviceRegistry';
 import { 
   LogOut, LayoutGrid, Plus, BarChart3, RotateCcw, PackageCheck, 
   AlertCircle, RefreshCw, Cpu, Award, ShoppingBag, Settings, 
   Hammer, Loader2, Search, Edit3, Trash2, CheckCircle2, ChevronRight, Truck,
-  Tag, Sliders, Info, ShoppingCart, HelpCircle
+  Tag, Sliders, Info, ShoppingCart, HelpCircle, Sun, Moon
 } from 'lucide-react';
 
 export default function VendorPortal() {
   const { user, logout, updateUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   
   // Navigation State
   const [activeTab, setActiveTab] = useState('overview'); // overview | products | add | maker | orders | customize
@@ -492,6 +494,14 @@ export default function VendorPortal() {
             <span className="font-semibold text-slate-350 capitalize">{user?.role} Mode : <strong>{user?.name}</strong></span>
           </div>
           
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center p-1.5 rounded-xl bg-[#12192a] hover:bg-[#1a233b] text-slate-300 hover:text-white border border-white/[0.04] transition-all focus:outline-none"
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-blue-550" />}
+          </button>
+
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 bg-[#12192a] hover:bg-[#1a233b] text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border border-white/[0.04]"

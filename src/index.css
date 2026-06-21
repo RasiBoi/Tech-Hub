@@ -124,3 +124,381 @@ a, button, [role="button"] {
               border-color 0.18s ease, opacity 0.18s ease,
               box-shadow 0.18s ease;
 }
+
+/* ─── Apple-style Light Theme Overrides ──────────────────────── */
+:root.light {
+  --bg-base:        #f5f5f7;   /* Apple light gray background */
+  --bg-card:        #ffffff;   /* Pure white card */
+  --bg-surface:     #ffffff;   /* Pure white surface */
+
+  --text-primary:   #1d1d1f;   /* Apple charcoal text */
+  --text-secondary: #6e6e73;   /* Apple medium gray text */
+  --text-muted:     #86868b;
+  --text-heading:   #1d1d1f;   /* Apple charcoal heading */
+}
+
+:root.light body,
+:root.light .min-h-screen,
+:root.light .bg-\[\#070a13\],
+:root.light .bg-slate-950,
+:root.light .bg-slate-900 {
+  background-color: var(--bg-base) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Card and container backgrounds */
+:root.light .bg-\[\#0d1527\],
+:root.light .bg-\[\#0c1325\],
+:root.light .bg-\[\#0e162b\],
+:root.light .bg-\[\#111827\],
+:root.light .bg-slate-800 {
+  background-color: var(--bg-card) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Navbars & Sidebars */
+:root.light nav.bg-\[\#0b1021\]\/85,
+:root.light nav.bg-\[\#0b1021\]\/80,
+:root.light nav.bg-\[\#0b1021\],
+:root.light .bg-\[\#0b1021\]\/60 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+:root.light aside.bg-\[\#090e1c\]\/40,
+:root.light aside.bg-\[\#090e1c\] {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Text overrides */
+:root.light .text-\[\#dce3f0\],
+:root.light .text-slate-205,
+:root.light .text-slate-200,
+:root.light .text-slate-250,
+:root.light .text-slate-300,
+:root.light .text-white {
+  color: var(--text-primary) !important;
+}
+
+:root.light .text-slate-350,
+:root.light .text-slate-355,
+:root.light .text-slate-400,
+:root.light .text-slate-450,
+:root.light .text-slate-455,
+:root.light .text-slate-500 {
+  color: var(--text-secondary) !important;
+}
+
+/* Ensure headings are dark charcoal */
+:root.light h1,
+:root.light h2,
+:root.light h3,
+:root.light h4,
+:root.light h5,
+:root.light h6,
+:root.light .text-heading {
+  color: var(--text-heading) !important;
+}
+
+/* Soft dark borders replacing glowing white borders */
+:root.light .border-white\/\[0\.08\],
+:root.light .border-white\/\[0\.06\],
+:root.light .border-white\/\[0\.04\],
+:root.light .border-white\/10,
+:root.light .border-white\/15,
+:root.light .border-white\/\[0\.15\],
+:root.light .border-white\/20,
+:root.light .border-white\/\[0\.2\],
+:root.light .border-white\/\[0\.08\] {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+:root.light .divide-white\/\[0\.04\],
+:root.light .divide-white\/\[0\.06\] > * + * {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Maintain proper white text for colored accents and buttons */
+:root.light .bg-blue-600,
+:root.light .bg-blue-500,
+:root.light .bg-rose-600,
+:root.light .bg-rose-500,
+:root.light .bg-emerald-600,
+:root.light .bg-emerald-500,
+:root.light .bg-amber-500,
+:root.light .bg-indigo-600,
+:root.light .bg-yellow-400,
+:root.light .bg-gradient-to-tr,
+:root.light .bg-blue-650 {
+  color: #ffffff !important;
+}
+
+:root.light .bg-blue-600 *,
+:root.light .bg-blue-500 *,
+:root.light .bg-rose-600 *,
+:root.light .bg-rose-500 *,
+:root.light .bg-emerald-600 *,
+:root.light .bg-emerald-500 *,
+:root.light .bg-amber-500 *,
+:root.light .bg-indigo-600 *,
+:root.light .bg-yellow-400 *,
+:root.light .bg-blue-650 * {
+  color: #ffffff !important;
+}
+
+/* For links / links hover */
+:root.light a:hover {
+  color: var(--accent-blue) !important;
+}
+
+/* Specific component fixes for inputs in forms */
+:root.light input,
+:root.light select,
+:root.light textarea {
+  background-color: #ffffff !important;
+  color: #1d1d1f !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+:root.light input::placeholder {
+  color: #86868b !important;
+}
+
+/* Badges and small elements */
+:root.light .bg-white\/\[0\.02\],
+:root.light .bg-white\/\[0\.03\],
+:root.light .bg-white\/\[0\.04\],
+:root.light .bg-white\/5,
+:root.light .bg-\[\#12192a\],
+:root.light .bg-\[\#0a0f1d\]\/60,
+:root.light .bg-\[\#12192c\]\/55 {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Active links and selections */
+:root.light .bg-rose-600\/10 {
+  background-color: rgba(225, 29, 72, 0.08) !important;
+}
+
+:root.light .bg-blue-600\/10 {
+  background-color: rgba(37, 99, 235, 0.08) !important;
+}
+
+/* Hero Section adjustments */
+:root.light .bg-slate-950 {
+  background-color: #ffffff !important;
+}
+:root.light .from-slate-950\/85 {
+  --tw-gradient-from: rgba(245, 245, 247, 0.45) var(--tw-gradient-from-position) !important;
+}
+:root.light .via-slate-950\/40 {
+  --tw-gradient-via: rgba(245, 245, 247, 0.15) var(--tw-gradient-via-position) !important;
+  --tw-gradient-to: rgba(245, 245, 247, 0.15) var(--tw-gradient-to-position) !important;
+}
+:root.light .to-slate-950\/85 {
+  --tw-gradient-to: rgba(245, 245, 247, 0.45) var(--tw-gradient-to-position) !important;
+}
+:root.light .to-\[\#070a13\] {
+  --tw-gradient-to: #f5f5f7 var(--tw-gradient-to-position) !important;
+}
+
+/* Video Background Overlays (Hero Sections) */
+.video-overlay {
+  background-color: rgba(7, 10, 19, 0.6) !important;
+  backdrop-filter: blur(1px);
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+:root.light .video-overlay {
+  background-color: rgba(245, 245, 247, 0.35) !important;
+}
+
+/* Footer Section specific adjustments */
+:root.light footer.bg-\[\#070a13\] {
+  background-color: #ffffff !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+:root.light footer * {
+  color: #1d1d1f !important;
+}
+:root.light footer .text-slate-400,
+:root.light footer .text-slate-450,
+:root.light footer .text-slate-500 {
+  color: #6e6e73 !important;
+}
+:root.light footer .text-white\/90,
+:root.light footer svg.text-white\/90 {
+  color: #1d1d1f !important;
+}
+
+/* Page Specific Overrides for product cards, CTA banners, and Become Seller page */
+
+/* 1. Product cards background and inner gradients */
+:root.light .bg-gradient-to-b.from-\[\#0e1528\]\/80 {
+  background: var(--bg-card) !important;
+}
+:root.light div[style*="linear-gradient"] {
+  background: var(--bg-card) !important;
+}
+
+/* 2. Banner gradients and newsletter card */
+:root.light .bg-gradient-to-r.from-\[\#0d1527\]\/70,
+:root.light .bg-gradient-to-br.from-\[\#0d1527\]\/90 {
+  background: var(--bg-card) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* 3. Section divider backgrounds */
+:root.light .bg-\[\#090e1a\]\/30 {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* 4. Calculators, widgets and blocks in BecomeSeller page */
+:root.light .bg-\[\#0d1527\]\/70,
+:root.light .bg-\[\#0d1527\]\/50,
+:root.light .bg-\[\#0d1527\]\/30,
+:root.light .bg-\[\#0d1527\]\/80,
+:root.light .bg-\[\#0d1527\]\/90 {
+  background-color: var(--bg-card) !important;
+  background: var(--bg-card) !important;
+}
+
+:root.light .bg-\[\#070a13\]\/80,
+:root.light .bg-\[\#070a13\]\/90,
+:root.light .bg-\[\#070a13\]\/60 {
+  background-color: var(--bg-base) !important;
+  background: var(--bg-base) !important;
+}
+
+/* 5. Background overlays in BecomeSeller hero section - reduced opacity for video visibility */
+:root.light .bg-\[\#070a13\]\/85 {
+  background-color: rgba(245, 245, 247, 0.35) !important;
+}
+
+/* 6. Gradients to transparent in BecomeSeller hero */
+:root.light .bg-gradient-to-b.from-\[\#070a13\]\/40 {
+  background-image: linear-gradient(to bottom, rgba(245, 245, 247, 0.25), transparent) !important;
+}
+:root.light .bg-gradient-to-b.to-\[\#070a13\] {
+  --tw-gradient-to: #f5f5f7 !important;
+}
+
+/* 7. Image background overlays (to keep dark text readable) - reduced opacity for video visibility */
+:root.light .bg-\[\#08102a\]\/35 {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+:root.light .bg-\[\#060c1a\]\/80 {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* 8. Slider / range inputs background */
+:root.light .bg-slate-900 {
+  background-color: #e5e7eb !important;
+}
+
+/* ─── Premium Light Theme Fixes ─── */
+
+/* 1. Hero Section Metrics & Capsules */
+:root.light .bg-white\/\[0\.06\] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+:root.light .border-white\/\[0\.08\] {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+:root.light .border-white\/15 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+:root.light .divide-white\/15 > * + * {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+:root.light .xl\:divide-white\/15 > * + * {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+:root.light p.text-white .AnimatedStat,
+:root.light p.text-white span {
+  color: #1d1d1f !important;
+}
+
+/* 2. Browse Categories labels */
+:root.light .group p.text-slate-400 {
+  color: #1d1d1f !important;
+}
+:root.light .group:hover p.text-slate-400 {
+  color: var(--accent-blue) !important;
+}
+
+/* 3. Today's Flash Deals Cards & Prices */
+:root.light .group p.text-white {
+  color: #1d1d1f !important;
+}
+:root.light .group:hover h4.text-slate-200 {
+  color: var(--accent-blue) !important;
+}
+:root.light .group p.text-slate-500.line-through {
+  color: #86868b !important;
+}
+:root.light .group span.text-slate-500 {
+  color: #86868b !important;
+}
+
+/* 4. Overlapping Merchant Cards (Become Seller) */
+:root.light .from-\[\#070a13\] {
+  --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important;
+}
+:root.light .via-\[\#070a13\]\/70 {
+  --tw-gradient-via: rgba(255, 255, 255, 0.7) var(--tw-gradient-via-position) !important;
+}
+
+/* 5. Force white text color for colored buttons/badges (override text-white) */
+:root.light .bg-blue-600,
+:root.light .bg-blue-600 *,
+:root.light .bg-blue-600\/90,
+:root.light .bg-blue-600\/90 *,
+:root.light .bg-blue-550,
+:root.light .bg-blue-550 *,
+:root.light .bg-blue-500,
+:root.light .bg-blue-500 *,
+:root.light .bg-blue-500\/90,
+:root.light .bg-blue-500\/90 *,
+:root.light .bg-rose-500,
+:root.light .bg-rose-500 *,
+:root.light .bg-rose-600,
+:root.light .bg-rose-600 *,
+:root.light .bg-emerald-500,
+:root.light .bg-emerald-500 *,
+:root.light .bg-emerald-600,
+:root.light .bg-emerald-600 * {
+  color: #ffffff !important;
+}
+
+/* 6. Login & Signup Modals in Light Theme */
+:root.light .bg-\[\#070a13\]\/70 {
+  background-color: rgba(245, 245, 247, 0.6) !important;
+}
+:root.light .bg-\[\#0d1527\]\/95 {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+:root.light .bg-\[\#0a0f1d\]\/50 {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+}
+:root.light .bg-\[\#070a13\]\/60 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+:root.light .hover\:text-white:hover {
+  color: #1d1d1f !important;
+}
+:root.light .hover\:bg-white\/\[0\.06\]:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+:root.light .hover\:bg-white\/\[0\.04\]:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+:root.light .hover\:border-white\/\[0\.15\]:hover {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}

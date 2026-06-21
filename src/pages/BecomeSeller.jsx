@@ -134,7 +134,7 @@ export default function BecomeSeller() {
             <source src={sellerVideoUrl} type="video/webm" />
           </video>
           {/* High-quality dark glassmorphic overlays */}
-          <div className="absolute inset-0 bg-[#070a13]/85 backdrop-blur-[1px]" />
+          <div className="absolute inset-0 video-overlay" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#070a13]/40 via-transparent to-[#070a13]" />
         </div>
 

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAiServiceStatus } from '../hooks/useAiServiceStatus';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
@@ -759,6 +760,7 @@ const HERO_SLIDES = [
 
 export default function Home() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const aiServiceStatus = useAiServiceStatus();
   const [followedVendors, setFollowedVendors] = useState({});
@@ -1643,12 +1645,12 @@ export default function Home() {
               })}
               autoplay={true}
               colors={{
-                name: "#ffffff", // white
-                designation: "#60a5fa", // blue-400
-                testimony: "#cbd5e1", // slate-300
-                arrowBackground: "#0d1527", // dark slate-900
-                arrowForeground: "#ffffff", // white
-                arrowHoverBackground: "#2563eb", // blue-650
+                name: theme === 'light' ? '#1d1d1f' : '#ffffff',
+                designation: theme === 'light' ? '#3b82f6' : '#60a5fa',
+                testimony: theme === 'light' ? '#6e6e73' : '#cbd5e1',
+                arrowBackground: theme === 'light' ? '#ffffff' : '#0d1527',
+                arrowForeground: theme === 'light' ? '#1d1d1f' : '#ffffff',
+                arrowHoverBackground: theme === 'light' ? '#3b82f6' : '#2563eb',
               }}
               fontSizes={{
                 name: "30px",
