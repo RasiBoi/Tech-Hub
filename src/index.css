@@ -42,6 +42,21 @@ html {
   text-rendering: optimizeLegibility;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

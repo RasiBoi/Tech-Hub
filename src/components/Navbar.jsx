@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Zap, Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon
+  Zap, Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { isRequestAbortError, requestJson } from '../services/httpClient';
+import { serviceRegistry } from '../config/serviceRegistry';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -14,6 +16,12 @@ export default function Navbar() {
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [suggestionPool, setSuggestionPool] = useState([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const searchBoxRef = useRef(null);
 
   // Close menus on path changes or desktop resize
   useEffect(() => {
@@ -37,26 +45,113 @@ export default function Navbar() {
       if (!e.target.closest('.profile-dropdown-container')) {
         setIsProfileDropdownOpen(false);
       }
+
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setIsSuggestionsOpen(false);
+      }
     };
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
+
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      try {
+        const data = await requestJson(`${serviceRegistry.catalog}/products`, {
+          timeoutMs: 15000,
+          omitAuth: true,
+        });
+
+        if (!Array.isArray(data)) return;
+
+        const normalized = data.slice(0, 240).map((item) => ({
+          id: item.id,
+          title: item.title || 'Untitled Product',
+          image: item.image || '',
+          brand: item.brand || 'Tech-Hub',
+          category: item.category?.name || item.category || 'Accessories',
+        }));
+
+        setSuggestionPool(normalized);
+      } catch (error) {
+        if (!isRequestAbortError(error)) {
+          console.error('Failed to preload navbar search suggestions:', error);
+        }
+      }
+    };
+
+    loadSuggestions();
+  }, []);
+
+  useEffect(() => {
+    const query = searchInput.trim().toLowerCase();
+
+    if (suggestionPool.length === 0) {
+      setFilteredSuggestions([]);
+      return;
+    }
+
+    if (query.length === 0) {
+      setFilteredSuggestions(suggestionPool.slice(0, 8));
+      return;
+    }
+
+    const ranked = suggestionPool
+      .filter((item) => {
+        return (
+          item.title.toLowerCase().includes(query) ||
+          item.brand.toLowerCase().includes(query) ||
+          item.category.toLowerCase().includes(query)
+        );
+      })
+      .sort((a, b) => {
+        const aStarts = a.title.toLowerCase().startsWith(query) ? 1 : 0;
+        const bStarts = b.title.toLowerCase().startsWith(query) ? 1 : 0;
+        return bStarts - aStarts;
+      })
+      .slice(0, 8);
+
+    setFilteredSuggestions(ranked);
+  }, [searchInput, suggestionPool]);
 
 
   const isActive = (path) => location.pathname === path;
   const isCategoriesActive = location.pathname.startsWith('/category');
   const isVendorsActive = location.pathname.startsWith('/vendors');
 
+  const openDealsView = () => {
+    navigate('/category/All?deals=true&sort=rating');
+    setIsMobileMenuOpen(false);
+  };
+
+  const submitSearch = () => {
+    const query = searchInput.trim();
+    setIsSuggestionsOpen(false);
+    setIsMobileSearchOpen(false);
+    if (!query) {
+      navigate('/category/All');
+      return;
+    }
+    navigate(`/category/All?q=${encodeURIComponent(query)}`);
+    setIsMobileMenuOpen(false);
+  };
+
+  const goToSuggestion = (productId) => {
+    setIsSuggestionsOpen(false);
+    setIsMobileMenuOpen(false);
+    navigate(`/product/${productId}`);
+  };
+
   return (
     <>
       <nav className="bg-[#0b1021]/85 backdrop-blur-xl text-white py-2.5 lg:py-3.5 z-50 sticky top-0 w-full border-b border-white/[0.06] shadow-md transition-all duration-300">
-        <div className="max-w-[1720px] mx-auto w-full px-4 lg:px-8 2xl:px-12 flex items-center justify-between gap-3 lg:gap-5 xl:gap-7">
+        <div className="max-w-[1720px] mx-auto w-full px-3 sm:px-4 lg:px-8 2xl:px-12 flex items-center justify-between gap-2 sm:gap-3 lg:gap-5 xl:gap-7">
           
           {/* Logo and Main Desktop Links */}
-          <div className="flex items-center gap-4 lg:gap-6 xl:gap-8 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 xl:gap-8 min-w-0">
             <Link to="/" className="flex items-center gap-2 shrink-0 hover:opacity-95">
-              <Zap className="text-yellow-400 w-6 h-6 fill-yellow-400" />
-              <span className="text-xl font-bold tracking-wide">Tech-Hub</span>
+              <Zap className="text-yellow-400 w-5 h-5 sm:w-6 sm:h-6 fill-yellow-400" />
+              <span className="hidden sm:inline text-lg sm:text-xl font-bold tracking-wide">Tech-Hub</span>
             </Link>
 
             <div className="hidden xl:flex items-center gap-4 2xl:gap-6 text-[13px] font-medium text-slate-350 shrink-0 whitespace-nowrap">
@@ -79,16 +174,12 @@ export default function Navbar() {
               </Link>
               
               {/* Deals */}
-              <Link 
-                to="/#deals" 
-                className="hover:text-white transition-colors text-slate-400 py-1"
-                onClick={() => {
-                  const el = document.getElementById('deals');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
+              <button
+                onClick={openDealsView}
+                className="hover:text-white transition-colors text-slate-400 py-1 bg-transparent border-0"
               >
                 Deals
-              </Link>
+              </button>
               
               {/* Vendors */}
               <Link 
@@ -101,13 +192,14 @@ export default function Navbar() {
               
               
               <Link to="/category/All" className="hover:text-white transition-colors text-slate-400 py-1">Support</Link>
-              <Link to="/" className="hover:text-white transition-colors text-slate-400 py-1">About</Link>
+              <Link to="/about" className="hover:text-white transition-colors text-slate-400 py-1">About</Link>
             </div>
           </div>
 
           {/* Search Box */}
-          <div className="hidden lg:flex items-center gap-4 flex-1 max-w-[320px] xl:max-w-[390px] 2xl:max-w-[500px] mx-1 xl:mx-3 min-w-[220px]">
-            <div className="flex-1 bg-white rounded-md flex items-center overflow-hidden h-10">
+          <div className="hidden xl:flex items-center gap-4 flex-1 max-w-[390px] 2xl:max-w-[500px] mx-1 xl:mx-3 min-w-[220px]">
+            <div ref={searchBoxRef} className="relative flex-1">
+              <div className="bg-white rounded-md flex items-center overflow-hidden h-10">
               <button 
                 onClick={() => navigate('/category/All')}
                 className="px-3 text-slate-600 border-r border-slate-200 text-sm font-medium flex items-center gap-1 hover:bg-slate-50 h-full shrink-0"
@@ -118,29 +210,84 @@ export default function Navbar() {
                 type="text" 
                 placeholder="Search for products, brands and more..." 
                 className="flex-1 px-3 text-sm text-slate-800 focus:outline-none min-w-0"
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  setIsSuggestionsOpen(true);
+                }}
+                onFocus={() => {
+                  setIsSuggestionsOpen(true);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    navigate(`/category/All`);
+                    submitSearch();
                   }
                 }}
               />
               <button 
-                onClick={() => navigate('/category/All')}
+                onClick={submitSearch}
                 className="bg-blue-600 h-full px-5 hover:bg-blue-700 transition-colors shrink-0"
               >
                 <Search className="w-4 h-4 text-white" />
               </button>
+              </div>
+
+              {isSuggestionsOpen && suggestionPool.length > 0 && (
+                <div className="absolute top-[calc(100%+8px)] left-0 right-0 rounded-xl border border-slate-200 bg-white shadow-2xl z-[70] overflow-hidden">
+                  <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      {searchInput.trim().length === 0 ? 'Popular products' : 'Matching products'}
+                    </p>
+                  </div>
+
+                  {filteredSuggestions.length > 0 ? (
+                    <div className="max-h-80 overflow-y-auto">
+                      {filteredSuggestions.map((item) => (
+                        <button
+                          key={`suggestion-${item.id}`}
+                          onClick={() => goToSuggestion(item.id)}
+                          className="w-full px-3 py-2.5 flex items-center gap-2.5 hover:bg-slate-50 text-left transition-colors"
+                        >
+                          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
+                            {item.image ? (
+                              <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <Search className="w-4 h-4 text-slate-400" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-slate-800 truncate">{item.title}</p>
+                            <p className="text-[11px] text-slate-500 truncate">{item.brand} • {item.category}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-350 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-3 py-5 text-center">
+                      <p className="text-xs font-medium text-slate-500">No direct match. Press Enter to search all results.</p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={submitSearch}
+                    className="w-full text-left px-3 py-2.5 border-t border-slate-100 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    {searchInput.trim().length > 0 ? `View all results for "${searchInput.trim()}"` : 'Browse all products'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Icons and User Actions */}
-          <div className="flex items-center gap-2 xl:gap-4 2xl:gap-5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-4 2xl:gap-5 shrink-0">
             <div className="hidden xl:flex flex-col items-center gap-1 cursor-pointer group">
               <Heart className="w-5 h-5 text-slate-350 group-hover:text-white transition-colors" />
               <span className="text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Wishlist</span>
             </div>
             
-            <div className="flex flex-col items-center gap-1 cursor-pointer group relative">
+            <div className="hidden sm:flex flex-col items-center gap-1 cursor-pointer group relative">
               <div className="relative">
                 <ShoppingCart className="w-5 h-5 text-slate-350 group-hover:text-white transition-colors" />
                 <span className="absolute -top-1.5 -right-2 bg-yellow-400 text-[#0b1021] text-[10px] font-bold px-1.5 rounded-full border border-[#0b1021]">2</span>
@@ -159,7 +306,7 @@ export default function Navbar() {
             {/* Theme Switcher Toggle */}
             <button
               onClick={toggleTheme}
-              className="flex flex-col items-center gap-1 cursor-pointer group focus:outline-none"
+              className="flex flex-col items-center gap-0.5 sm:gap-1 cursor-pointer group focus:outline-none"
               aria-label="Toggle Theme"
             >
               {theme === 'dark' ? (
@@ -167,7 +314,7 @@ export default function Navbar() {
               ) : (
                 <Moon className="w-5 h-5 text-slate-350 group-hover:text-blue-500 transition-colors" />
               )}
-              <span className="text-[10px] text-slate-450 group-hover:text-white font-semibold transition-colors capitalize">
+              <span className="hidden sm:inline text-[10px] text-slate-450 group-hover:text-white font-semibold transition-colors capitalize">
                 {theme === 'dark' ? 'light' : 'dark'}
               </span>
             </button>
@@ -253,7 +400,7 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3">
                 <Link
                   to="/become-seller"
                   className="hidden md:inline-block border border-yellow-400/40 text-yellow-400 text-xs sm:text-sm font-semibold px-3 xl:px-4 py-1.5 sm:py-2 rounded-md hover:bg-yellow-400 hover:text-[#0b1021] transition-all whitespace-nowrap"
@@ -263,22 +410,23 @@ export default function Navbar() {
                 <div className="h-4 w-[1px] bg-white/10 hidden md:block" />
                 <button
                   onClick={() => navigate('/login?tab=login')}
-                  className="text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors focus:outline-none"
+                  className="hidden sm:inline text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-colors focus:outline-none"
                 >
                   Log In
                 </button>
                 <button
                   onClick={() => navigate('/login?tab=signup')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all whitespace-nowrap shadow-md shadow-blue-600/10 hover:scale-[1.02] flex items-center justify-center focus:outline-none"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all whitespace-nowrap shadow-md shadow-blue-600/10 hover:scale-[1.02] flex items-center justify-center focus:outline-none"
                 >
-                  Sign Up
+                  <span className="sm:hidden">Login</span>
+                  <span className="hidden sm:inline">Sign Up</span>
                 </button>
               </div>
             )}
 
             {/* Mobile menu trigger */}
             <button
-              className="xl:hidden inline-flex items-center justify-center w-9 h-9 rounded-md border border-white/15 text-slate-300 hover:text-white hover:border-white/40 transition-colors focus:outline-none"
+              className="xl:hidden inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-md border border-white/15 text-slate-300 hover:text-white hover:border-white/40 transition-colors focus:outline-none"
               onClick={() => setIsMobileMenuOpen((prev) => !prev)}
               aria-label="Toggle mobile menu"
             >
@@ -294,24 +442,16 @@ export default function Navbar() {
               <Link to="/" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
               <Link to="/category/All" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Categories</Link>
               
-              <Link 
-                to="/#deals" 
-                className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" 
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setTimeout(() => {
-                    const el = document.getElementById('deals');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
-                }}
+              <button
+                onClick={openDealsView}
+                className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors text-left"
               >
                 Deals
-              </Link>
+              </button>
               
               <Link to="/vendors" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Vendors</Link>
-              <a href="#ai" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={triggerAiAssistant}>AI Assistant</a>
               <Link to="/category/All" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Support</Link>
-              <Link to="/" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+              <Link to="/about" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
               <button 
                 onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }}
                 className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] text-left transition-colors flex items-center gap-1.5 focus:outline-none"
@@ -402,20 +542,57 @@ export default function Navbar() {
                 type="text"
                 placeholder="Search products..."
                 className="flex-1 px-3 text-sm text-slate-800 focus:outline-none min-w-0"
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  setIsMobileSearchOpen(true);
+                }}
+                onFocus={() => setIsMobileSearchOpen(true)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    navigate('/category/All');
-                    setIsMobileMenuOpen(false);
+                    submitSearch();
                   }
                 }}
               />
               <button 
-                onClick={() => { navigate('/category/All'); setIsMobileMenuOpen(false); }}
+                onClick={submitSearch}
                 className="bg-blue-600 h-full px-4 hover:bg-blue-700 transition-colors"
               >
                 <Search className="w-4 h-4 text-white" />
               </button>
             </div>
+
+            {isMobileSearchOpen && suggestionPool.length > 0 && (
+              <div className="mt-2 rounded-xl border border-white/10 bg-[#0d1527]/95 backdrop-blur-xl overflow-hidden">
+                <div className="px-3 py-2 border-b border-white/10">
+                  <p className="text-[10px] font-bold tracking-wider uppercase text-slate-400">
+                    {searchInput.trim().length === 0 ? 'Popular products' : 'Matching products'}
+                  </p>
+                </div>
+                <div className="max-h-56 overflow-y-auto">
+                  {(filteredSuggestions.length > 0 ? filteredSuggestions : suggestionPool.slice(0, 6)).map((item) => (
+                    <button
+                      key={`mobile-suggestion-${item.id}`}
+                      onClick={() => goToSuggestion(item.id)}
+                      className="w-full px-3 py-2.5 flex items-center gap-2.5 hover:bg-white/[0.06] text-left transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-md bg-white/[0.05] border border-white/10 shrink-0 overflow-hidden flex items-center justify-center">
+                        {item.image ? (
+                          <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <Search className="w-4 h-4 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-200 truncate">{item.title}</p>
+                        <p className="text-[11px] text-slate-450 truncate">{item.brand} • {item.category}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </nav>

@@ -253,7 +253,7 @@ export default function BecomeSeller() {
               },
               {
                 icon: <Zap className="w-6 h-6 text-yellow-400" />,
-                title: "AI-Powered Product Matches",
+                title: "Smart Product Matches",
                 desc: "Our matching engine pairs your listed items with customers searching for matching vibes (minimalist, walnut desk setup, etc.)."
               },
               {

@@ -318,7 +318,7 @@ export function MorphingCardStack({
   }
 
   const containerStyles = {
-    stack: "relative h-[320px] w-[340px]",
+    stack: "relative h-[300px] sm:h-[320px] w-full max-w-[340px]",
     grid: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full",
     list: "flex flex-col gap-4 w-full",
   }
@@ -396,7 +396,7 @@ export function MorphingCardStack({
                     "transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/5",
                     "bg-[#0d1527] border-white/10 hover:border-white/20",
                     isStack 
-                      ? "absolute w-[320px] h-[280px]" 
+                      ? "absolute w-[calc(100%-16px)] sm:w-[320px] h-[260px] sm:h-[280px]" 
                       : "w-full",
                     isStack && isTopCard && "cursor-grab active:cursor-grabbing",
                     isGrid && "min-h-[290px]",
