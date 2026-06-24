@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Heart, ShoppingCart, Bell, MapPin, Truck, 
@@ -8,7 +8,8 @@ import {
   SlidersHorizontal, ArrowUpDown, Tag, Info, Check, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { requestJson } from '../services/httpClient';
+import { useTheme } from '../context/ThemeContext';
+import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -577,6 +578,9 @@ const STATIC_PRODUCTS_FALLBACK = [
 export default function Category() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   // Interactive filtering states
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
@@ -584,6 +588,8 @@ export default function Category() {
   const [selectedBrand, setSelectedBrand] = useState('all');
   const [sortBy, setSortBy] = useState('popularity');
   const [priceRange, setPriceRange] = useState(200000); // max default
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dealsOnly, setDealsOnly] = useState(false);
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState(null);
@@ -603,6 +609,20 @@ export default function Category() {
   }, [categoryName]);
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const nextSearch = (params.get('q') || '').trim();
+    const nextDeals = params.get('deals') === 'true';
+    const nextSort = params.get('sort');
+
+    setSearchTerm(nextSearch);
+    setDealsOnly(nextDeals);
+
+    if (nextSort && ['popularity', 'price-asc', 'price-desc', 'rating'].includes(nextSort)) {
+      setSortBy(nextSort);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
     const loadData = async () => {
       try {
         const prodData = await requestJson(`${serviceRegistry.catalog}/products`);
@@ -610,7 +630,9 @@ export default function Category() {
           setAllDbProducts(prodData);
         }
       } catch (e) {
-        console.error('Failed to load products from database', e);
+        if (!isRequestAbortError(e)) {
+          console.error('Failed to load products from database', e);
+        }
       }
 
       try {
@@ -619,7 +641,9 @@ export default function Category() {
           setDbCategories(catData);
         }
       } catch (e) {
-        console.error('Failed to load categories from database', e);
+        if (!isRequestAbortError(e)) {
+          console.error('Failed to load categories from database', e);
+        }
       }
     };
     loadData();
@@ -708,6 +732,29 @@ export default function Category() {
       filtered = filtered.filter(p => (p.brand || '').toLowerCase().includes(selectedBrand.toLowerCase()));
     }
 
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter((p) => {
+        const title = (p.title || '').toLowerCase();
+        const brand = (p.brand || '').toLowerCase();
+        const sub = (p.subcategory || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return title.includes(term) || brand.includes(term) || sub.includes(term) || desc.includes(term);
+      });
+    }
+
+    if (dealsOnly) {
+      filtered = filtered.filter((p) => {
+        const discountRaw = p.discount || p.discount_percentage || p.discountPercent || 0;
+        const discountValue =
+          typeof discountRaw === 'string'
+            ? Number.parseFloat(discountRaw.replace(/[^\d.]/g, ''))
+            : Number(discountRaw || 0);
+        const ratingVal = Number(p.rating || p.avg_rating || 0);
+        return discountValue > 0 || ratingVal >= 4.5;
+      });
+    }
+
     // Filter by Price Range
     filtered = filtered.filter(p => {
       const priceVal = typeof p.price === 'string' ? parseFloat(p.price.replace(/[^\d.]/g, '')) : Number(p.price);
@@ -725,7 +772,17 @@ export default function Category() {
       // default: popularity (highest ratings/reviews count first)
       return (b.reviewsCount || 0) - (a.reviewsCount || 0);
     });
-  }, [allDbProducts, activeCategoryName, selectedSubcategory, selectedVibe, selectedBrand, sortBy, priceRange]);
+  }, [
+    allDbProducts,
+    activeCategoryName,
+    selectedSubcategory,
+    selectedVibe,
+    selectedBrand,
+    sortBy,
+    priceRange,
+    searchTerm,
+    dealsOnly,
+  ]);
 
   // Extract unique brands for filtering sidebar
   const uniqueBrands = useMemo(() => {
@@ -744,7 +801,7 @@ export default function Category() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070a13] font-sans text-slate-200">
+    <div className={`category-page min-h-screen font-sans ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-[#070a13] text-slate-200'}`}>
       
       {/* Toast Notification */}
       <AnimatePresence>
@@ -753,7 +810,11 @@ export default function Category() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 bg-[#0d1527]/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/[0.08] max-w-sm"
+            className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl flex items-center gap-3 border max-w-sm ${
+              isLight
+                ? 'bg-white/95 backdrop-blur-md text-slate-900 border-slate-200 shadow-xl'
+                : 'bg-[#0d1527]/90 backdrop-blur-md text-white border-white/[0.08] shadow-2xl'
+            }`}
           >
             <div className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
               <Check className="w-4 h-4" />
@@ -766,51 +827,58 @@ export default function Category() {
       <Navbar />
 
       {/* 2. Breadcrumbs Bar (Matching Reference Screenshot) */}
-      <div className="bg-[#0b1021]/60 border-b border-white/[0.06] py-3.5">
-        <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
-          <Link to="/" className="hover:text-blue-400 transition-colors">Home</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-          <Link to="/category/All" className="hover:text-blue-400 transition-colors">Categories</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+      <div className={`py-3.5 border-b ${isLight ? 'bg-white/90 border-slate-200' : 'bg-[#0b1021]/60 border-white/[0.06]'}`}>
+        <div className={`max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-wrap items-center gap-2 text-xs font-semibold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+          <Link to="/" className="hover:text-blue-500 transition-colors">Home</Link>
+          <ChevronRight className={`w-3.5 h-3.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`} />
+          <Link to="/category/All" className="hover:text-blue-500 transition-colors">Categories</Link>
+          <ChevronRight className={`w-3.5 h-3.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`} />
           {activeCategoryName !== 'All Categories' && (
             <>
-              <span className="text-slate-500">Workspace curation</span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>Workspace curation</span>
+              <ChevronRight className={`w-3.5 h-3.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`} />
             </>
           )}
-          <span className="text-blue-400 font-bold">{activeCategoryName}</span>
+          <span className={`font-bold ${isLight ? 'text-blue-600' : 'text-blue-400'}`}>{activeCategoryName}</span>
         </div>
       </div>
 
       {/* 3. Category Header Title & Filter Meta Row */}
-      <header className="bg-transparent pt-8 pb-6 border-b border-white/[0.06]">
+      <header className={`bg-transparent pt-8 pb-6 border-b ${isLight ? 'border-slate-200' : 'border-white/[0.06]'}`}>
         <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-none">
-              {activeCategoryName}
+            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-none ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              {dealsOnly ? 'Deals Hub' : activeCategoryName}
             </h1>
-            <p className="mt-2 text-sm text-slate-400 font-medium">
-              Curate your premium workstation with selected, high-performance office design accessories.
+            <p className={`mt-2 text-sm font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+              {dealsOnly
+                ? 'Hot offers, top-rated picks, and limited-time promotions across the full catalog.'
+                : 'Curate your premium workstation with selected, high-performance office design accessories.'}
             </p>
+            {searchTerm && (
+              <p className={`mt-2 text-xs font-semibold ${isLight ? 'text-blue-700' : 'text-blue-350'}`}>
+                Search results for: "{searchTerm}"
+              </p>
+            )}
           </div>
 
-          <div className="flex items-center justify-between md:justify-end gap-5 border-t border-white/[0.06] pt-4 md:pt-0 md:border-0">
-            <span className="text-xs sm:text-sm text-slate-350 font-bold bg-white/[0.05] border border-white/[0.08] px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-              <Info className="w-4 h-4 text-slate-400" />
+          <div className={`flex items-center justify-between md:justify-end gap-5 border-t pt-4 md:pt-0 md:border-0 ${isLight ? 'border-slate-200' : 'border-white/[0.06]'}`}>
+            <span className={`text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${isLight ? 'text-slate-600 bg-slate-100 border border-slate-200' : 'text-slate-350 bg-white/[0.05] border border-white/[0.08]'}`}>
+              <Info className={`w-4 h-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
               Showing 1-{categoryProducts.length} of {categoryProducts.length} results
             </span>
 
-            <div className="flex items-center gap-2 bg-[#0d1527]/70 backdrop-blur-xl border border-white/[0.08] rounded-xl px-3 py-1.5 shadow-sm">
-              <ArrowUpDown className="w-4 h-4 text-slate-450" />
+            <div className={`flex items-center gap-2 rounded-xl px-3 py-1.5 shadow-sm border ${isLight ? 'bg-white border-slate-200' : 'bg-[#0d1527]/70 backdrop-blur-xl border-white/[0.08]'}`}>
+              <ArrowUpDown className={`w-4 h-4 ${isLight ? 'text-slate-500' : 'text-slate-450'}`} />
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-xs sm:text-sm font-semibold bg-transparent text-slate-300 focus:outline-none cursor-pointer"
+                className={`text-xs sm:text-sm font-semibold bg-transparent focus:outline-none cursor-pointer ${isLight ? 'text-slate-700' : 'text-slate-300'}`}
               >
-                <option value="popularity" className="bg-[#0b1021] text-slate-200">Sort by popularity</option>
-                <option value="price-asc" className="bg-[#0b1021] text-slate-200">Price: Low to High</option>
-                <option value="price-desc" className="bg-[#0b1021] text-slate-200">Price: High to Low</option>
-                <option value="rating" className="bg-[#0b1021] text-slate-200">Sort by rating</option>
+                <option value="popularity" className={isLight ? 'bg-white text-slate-900' : 'bg-[#0b1021] text-slate-200'}>Sort by popularity</option>
+                <option value="price-asc" className={isLight ? 'bg-white text-slate-900' : 'bg-[#0b1021] text-slate-200'}>Price: Low to High</option>
+                <option value="price-desc" className={isLight ? 'bg-white text-slate-900' : 'bg-[#0b1021] text-slate-200'}>Price: High to Low</option>
+                <option value="rating" className={isLight ? 'bg-white text-slate-900' : 'bg-[#0b1021] text-slate-200'}>Sort by rating</option>
               </select>
             </div>
           </div>
@@ -818,12 +886,12 @@ export default function Category() {
       </header>
 
       {/* 4. Subcategories Grid or Main Categories Grid */}
-      {activeCategoryName === 'All Categories' ? (
-        <section className="bg-transparent py-10 border-b border-white/[0.06] shadow-inner">
+      {!dealsOnly && (activeCategoryName === 'All Categories' ? (
+        <section className={`bg-transparent py-10 border-b ${isLight ? 'border-slate-200' : 'border-white/[0.06] shadow-inner'}`}>
           <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12">
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-sm font-black uppercase tracking-widest text-slate-405 flex items-center gap-2">
-                <Tag className="w-4 h-4 text-slate-400" />
+              <h2 className={`text-sm font-black uppercase tracking-widest flex items-center gap-2 ${isLight ? 'text-slate-700' : 'text-slate-405'}`}>
+                <Tag className={`w-4 h-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
                 Explore Premium Workspace Categories
               </h2>
             </div>
@@ -833,10 +901,14 @@ export default function Category() {
                 <Link
                   key={cat.name}
                   to={`/category/${encodeURIComponent(cat.name)}`}
-                  className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1527]/40 group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm hover:border-white/[0.2] hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300"
+                  className={`relative overflow-hidden rounded-2xl border group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm hover:-translate-y-1.5 transition-all duration-300 ${
+                    isLight
+                      ? 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-lg'
+                      : 'border-white/[0.08] bg-[#0d1527]/40 hover:border-white/[0.2] hover:shadow-lg'
+                  }`}
                 >
                   {/* Centered Preview Image */}
-                  <div className="absolute inset-0 flex items-center justify-center p-6 pb-20 bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80">
+                  <div className={`absolute inset-0 flex items-center justify-center p-6 pb-20 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
                     <img 
                       src={cat.image} 
                       alt={cat.name}
@@ -845,11 +917,11 @@ export default function Category() {
                   </div>
 
                   {/* Bottom Panel */}
-                  <div className="relative bg-[#0b1021]/90 border-t border-white/[0.08] p-4 text-center z-10 shadow-lg">
-                    <h3 className="text-xs font-black text-white tracking-wide uppercase">
+                  <div className={`relative p-4 text-center z-10 shadow-lg border-t ${isLight ? 'bg-white/95 border-slate-200' : 'bg-[#0b1021]/90 border-white/[0.08]'}`}>
+                    <h3 className={`text-xs font-black tracking-wide uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       {cat.name}
                     </h3>
-                    <p className="mt-1 text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none flex items-center justify-center gap-1 group-hover:text-blue-300">
+                    <p className={`mt-1 text-[10px] font-black uppercase tracking-widest leading-none flex items-center justify-center gap-1 ${isLight ? 'text-blue-600 group-hover:text-blue-500' : 'text-blue-400 group-hover:text-blue-300'}`}>
                       Explore category <ArrowRight className="w-3.5 h-3.5" />
                     </p>
                   </div>
@@ -860,17 +932,17 @@ export default function Category() {
         </section>
       ) : (
         subcategories.length > 0 && (
-          <section className="bg-transparent py-10 border-b border-white/[0.06] shadow-inner">
+          <section className={`bg-transparent py-10 border-b ${isLight ? 'border-slate-200' : 'border-white/[0.06] shadow-inner'}`}>
             <div className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-slate-450" />
+                <h2 className={`text-sm font-black uppercase tracking-widest flex items-center gap-2 ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>
+                  <Tag className={`w-4 h-4 ${isLight ? 'text-slate-500' : 'text-slate-450'}`} />
                   Select Subcategory Inside {activeCategoryName}
                 </h2>
                 {selectedSubcategory && (
                   <button 
                     onClick={() => setSelectedSubcategory(null)}
-                    className="text-xs font-extrabold text-blue-400 hover:text-blue-300 flex items-center gap-1 border border-blue-500/30 rounded-lg px-2.5 py-1 bg-blue-500/10"
+                    className={`text-xs font-extrabold flex items-center gap-1 rounded-lg px-2.5 py-1 ${isLight ? 'text-blue-600 hover:text-blue-500 border border-blue-200 bg-blue-50' : 'text-blue-400 hover:text-blue-300 border border-blue-500/30 bg-blue-500/10'}`}
                   >
                     Clear filter
                   </button>
@@ -885,15 +957,17 @@ export default function Category() {
                       key={sub.name}
                       whileHover={{ y: -6 }}
                       transition={{ duration: 0.2 }}
-                      className={`relative overflow-hidden rounded-2xl border bg-[#0d1527]/40 group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm transition-all duration-300 ${
+                      className={`relative overflow-hidden rounded-2xl border group cursor-pointer aspect-[4/3] flex flex-col justify-end shadow-sm transition-all duration-300 ${
                         isActive 
-                          ? 'border-blue-500 shadow-blue-500/20 shadow-md ring-2 ring-blue-500/20' 
-                          : 'border-white/[0.08] hover:border-white/[0.2] hover:shadow-md'
+                          ? 'border-blue-500 shadow-blue-500/20 shadow-md ring-2 ring-blue-500/20'
+                          : isLight
+                            ? 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                            : 'border-white/[0.08] bg-[#0d1527]/40 hover:border-white/[0.2] hover:shadow-md'
                       }`}
                       onClick={() => setSelectedSubcategory(isActive ? null : sub.name)}
                     >
                       {/* Centered Preview Image */}
-                      <div className="absolute inset-0 flex items-center justify-center p-6 pb-20 bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80">
+                      <div className={`absolute inset-0 flex items-center justify-center p-6 pb-20 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
                         <img 
                           src={sub.image} 
                           alt={sub.name}
@@ -902,11 +976,11 @@ export default function Category() {
                       </div>
 
                       {/* Bottom Overlay Panel */}
-                      <div className="relative bg-[#0b1021]/90 border-t border-white/[0.08] p-4 text-center z-10 shadow-lg">
-                        <h3 className="text-xs font-black text-white tracking-wide uppercase">
+                      <div className={`relative p-4 text-center z-10 shadow-lg border-t ${isLight ? 'bg-white/95 border-slate-200' : 'bg-[#0b1021]/90 border-white/[0.08]'}`}>
+                        <h3 className={`text-xs font-black tracking-wide uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
                           {sub.name}
                         </h3>
-                        <p className="mt-1 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                        <p className={`mt-1 text-[10px] font-black uppercase tracking-widest leading-none ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                           {sub.count} Products
                         </p>
                       </div>
@@ -922,16 +996,16 @@ export default function Category() {
             </div>
           </section>
         )
-      )}
+      ))}
 
       {/* 5. Main Content: Filter Sidebar + Products Grid */}
       <main className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-10">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           
           {/* Left Sidebar Filter Section */}
-          <aside className="w-full lg:w-72 bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 shadow-2xl sticky top-24 shrink-0 z-20">
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-6">
-              <span className="text-sm font-black text-white flex items-center gap-2">
+          <aside className={`w-full lg:w-72 rounded-3xl border p-6 sticky top-24 shrink-0 z-20 ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-[#0d1527]/70 backdrop-blur-xl border-white/[0.08] shadow-2xl'}`}>
+            <div className={`flex items-center justify-between pb-4 mb-6 border-b ${isLight ? 'border-slate-200' : 'border-white/[0.08]'}`}>
+              <span className={`text-sm font-black flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 <SlidersHorizontal className="w-4 h-4 text-blue-400" />
                 Refine Workspace Setup
               </span>
@@ -942,15 +1016,15 @@ export default function Category() {
                   setSelectedBrand('all');
                   setPriceRange(200000);
                 }}
-                className="text-[11px] font-bold text-slate-400 hover:text-rose-450 transition-colors"
+                className={`text-[11px] font-bold transition-colors ${isLight ? 'text-slate-500 hover:text-rose-500' : 'text-slate-400 hover:text-rose-450'}`}
               >
                 Clear all
               </button>
             </div>
 
             {/* Price Filter */}
-            <div className="mb-6 pb-6 border-b border-white/[0.08]">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider mb-3">Price Limit (LKR)</h3>
+            <div className={`mb-6 pb-6 border-b ${isLight ? 'border-slate-200' : 'border-white/[0.08]'}`}>
+              <h3 className={`text-xs font-black uppercase tracking-wider mb-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>Price Limit (LKR)</h3>
               <input 
                 type="range" 
                 min="1000" 
@@ -958,20 +1032,20 @@ export default function Category() {
                 step="5000"
                 value={priceRange} 
                 onChange={(e) => setPriceRange(Number(e.target.value))}
-                className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-blue-500 ${isLight ? 'bg-slate-200' : 'bg-white/10'}`}
               />
-              <div className="flex justify-between items-center mt-2 text-xs font-semibold text-slate-400">
+              <div className={`flex justify-between items-center mt-2 text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 <span>LKR 1,000</span>
-                <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded-md border border-blue-500/20">Max: LKR {priceRange.toLocaleString()}</span>
+                <span className={`px-2 py-1 rounded-md border ${isLight ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>Max: LKR {priceRange.toLocaleString()}</span>
               </div>
             </div>
 
             {/* Vibes Filter */}
-            <div className="mb-6 pb-6 border-b border-white/[0.08]">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider mb-3">Workspace Vibe</h3>
+            <div className={`mb-6 pb-6 border-b ${isLight ? 'border-slate-200' : 'border-white/[0.08]'}`}>
+              <h3 className={`text-xs font-black uppercase tracking-wider mb-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>Workspace Vibe</h3>
               <div className="flex flex-col gap-2">
                 {[
-                  { id: 'all', label: 'All Vibes', bg: 'bg-white/5 border-white/5 text-slate-300' },
+                  { id: 'all', label: 'All Vibes', bg: isLight ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-white/5 border-white/5 text-slate-300' },
                   { id: 'walnut', label: 'Walnut & Organic', bg: 'bg-amber-500/10 border-amber-500/20 text-amber-300' },
                   { id: 'minimalist', label: 'Cream Minimalist', bg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300' },
                   { id: 'black', label: 'Stealth Matte Black', bg: 'bg-slate-900 border-slate-800 text-slate-400' },
@@ -994,7 +1068,9 @@ export default function Category() {
                       className={`px-3 py-2 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all ${
                         isSelected 
                           ? `${vibe.bg} ${selectedBorder} shadow-sm` 
-                          : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
+                          : isLight
+                            ? 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
+                            : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
                       }`}
                     >
                       <span>{vibe.label}</span>
@@ -1007,14 +1083,18 @@ export default function Category() {
 
             {/* Brand Filter */}
             <div>
-              <h3 className="text-xs font-black text-white uppercase tracking-wider mb-3">Brands</h3>
+              <h3 className={`text-xs font-black uppercase tracking-wider mb-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>Brands</h3>
               <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 <button
                   onClick={() => setSelectedBrand('all')}
                   className={`px-3 py-2 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all ${
                     selectedBrand === 'all' 
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                      : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
+                      ? isLight
+                        ? 'border-blue-300 bg-blue-50 text-blue-600'
+                        : 'border-blue-500 bg-blue-500/10 text-blue-400'
+                      : isLight
+                        ? 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
+                        : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
                   }`}
                 >
                   All Brands
@@ -1026,8 +1106,12 @@ export default function Category() {
                     onClick={() => setSelectedBrand(brand)}
                     className={`px-3 py-2 rounded-xl text-xs font-bold text-left border flex items-center justify-between transition-all ${
                       selectedBrand === brand 
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
-                        : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
+                        ? isLight
+                          ? 'border-blue-300 bg-blue-50 text-blue-600'
+                          : 'border-blue-500 bg-blue-500/10 text-blue-400'
+                        : isLight
+                          ? 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
+                          : 'border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.06] text-slate-400'
                     }`}
                   >
                     {brand}
@@ -1069,7 +1153,11 @@ export default function Category() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.4) }}
-                      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d1527]/40 p-3.5 shadow-xl hover:border-white/[0.2] hover:shadow-[0_12px_30px_rgba(30,50,90,0.15)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+                      className={`group relative overflow-hidden rounded-2xl border p-3.5 transition-all duration-300 flex flex-col justify-between hover:-translate-y-1.5 ${
+                        isLight
+                          ? 'border-slate-200 bg-white shadow-md hover:border-slate-300 hover:shadow-[0_12px_28px_rgba(15,23,42,0.14)]'
+                          : 'border-white/[0.08] bg-[#0d1527]/40 shadow-xl hover:border-white/[0.2] hover:shadow-[0_12px_30px_rgba(30,50,90,0.15)]'
+                      }`}
                     >
                       <Link to={`/product/${prod.id}`} className="block">
                         {/* Discount Tag */}
@@ -1078,7 +1166,7 @@ export default function Category() {
                         </div>
 
                         {/* Product Image Frame */}
-                        <div className="h-48 rounded-xl border border-white/[0.06] bg-[#111827] relative overflow-hidden">
+                        <div className={`h-48 rounded-xl border relative overflow-hidden ${isLight ? 'border-slate-200 bg-slate-100' : 'border-white/[0.06] bg-[#111827]'}`}>
                           <img 
                             src={prod.image} 
                             alt={prod.title} 
@@ -1087,28 +1175,28 @@ export default function Category() {
                         </div>
 
                         {/* Category and brand meta */}
-                        <div className="mt-3 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        <div className={`mt-3 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                           <span>{prod.brand || 'Premium Brand'}</span>
-                          <span className="h-1.5 w-[1px] bg-white/[0.15]"></span>
+                          <span className={`h-1.5 w-[1px] ${isLight ? 'bg-slate-300' : 'bg-white/[0.15]'}`}></span>
                           <span>{prod.subcategory || activeCategoryName}</span>
                         </div>
 
-                        <h4 className="mt-1 text-sm font-bold leading-snug text-white min-h-[42px] group-hover:text-blue-400 transition-colors">
+                        <h4 className={`mt-1 text-sm font-bold leading-snug min-h-[42px] transition-colors ${isLight ? 'text-slate-900 group-hover:text-blue-600' : 'text-white group-hover:text-blue-400'}`}>
                           {prod.title}
                         </h4>
 
                         {/* Rating block */}
                         <div className="mt-2.5 flex items-center gap-1 text-[11px] text-amber-400">
                           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          <span className="font-semibold text-slate-200">{prod.rating || '4.8'}</span>
-                          <span className="text-slate-400 font-medium">({prod.live || 'Active deal'})</span>
+                          <span className={`font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{prod.rating || '4.8'}</span>
+                          <span className={`font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>({prod.live || 'Active deal'})</span>
                         </div>
 
                         {/* Pricing and Action bottom */}
-                        <div className="mt-4 pt-3 border-t border-white/[0.08] flex items-end justify-between">
+                        <div className={`mt-4 pt-3 border-t flex items-end justify-between ${isLight ? 'border-slate-200' : 'border-white/[0.08]'}`}>
                           <div>
                             <p className="text-lg font-black text-rose-400 tracking-tight leading-none">{priceFormatted}</p>
-                            <p className="text-[10px] text-slate-500 line-through mt-1">{oldPriceFormatted}</p>
+                            <p className={`text-[10px] line-through mt-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>{oldPriceFormatted}</p>
                           </div>
 
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${vibeTagStyle}`}>
@@ -1124,7 +1212,11 @@ export default function Category() {
                             e.stopPropagation();
                             handleQuickAdd(prod.title);
                           }}
-                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-[#0d1527]/85 hover:bg-blue-600 hover:text-white px-3 py-2.5 text-xs font-extrabold text-white transition-all shadow-sm active:scale-95"
+                          className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-extrabold transition-all shadow-sm active:scale-95 ${
+                            isLight
+                              ? 'border-slate-200 bg-slate-100 text-slate-800 hover:bg-blue-600 hover:text-white'
+                              : 'border-white/[0.08] bg-[#0d1527]/85 text-white hover:bg-blue-600 hover:text-white'
+                          }`}
                         >
                           <ShoppingCart className="h-4 w-4" />
                           Add to Setup
@@ -1135,7 +1227,11 @@ export default function Category() {
                             e.stopPropagation();
                             showToast("Added to wishlist!");
                           }}
-                          className="rounded-xl border border-white/[0.08] bg-[#0d1527]/85 p-2.5 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all"
+                          className={`rounded-xl border p-2.5 transition-all ${
+                            isLight
+                              ? 'border-slate-200 bg-slate-100 text-slate-500 hover:text-rose-500 hover:border-rose-300'
+                              : 'border-white/[0.08] bg-[#0d1527]/85 text-slate-400 hover:text-rose-400 hover:border-rose-500/30'
+                          }`}
                         >
                           <Heart className="h-4 w-4" />
                         </button>
@@ -1145,12 +1241,12 @@ export default function Category() {
                 })}
               </div>
             ) : (
-              <div className="bg-[#0d1527]/70 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-12 text-center shadow-2xl">
-                <div className="w-16 h-16 rounded-full bg-white/[0.02] border border-white/[0.08] flex items-center justify-center text-slate-400 mx-auto mb-4">
+              <div className={`rounded-3xl border p-12 text-center ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-[#0d1527]/70 backdrop-blur-xl border-white/[0.08] shadow-2xl'}`}>
+                <div className={`w-16 h-16 rounded-full border flex items-center justify-center mx-auto mb-4 ${isLight ? 'bg-slate-100 border-slate-200 text-slate-500' : 'bg-white/[0.02] border-white/[0.08] text-slate-400'}`}>
                   <SlidersHorizontal className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-white">No products match your filters</h3>
-                <p className="mt-1.5 text-sm text-slate-400">Try adjusting your price slider or choosing a different style vibe.</p>
+                <h3 className={`text-base font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>No products match your filters</h3>
+                <p className={`mt-1.5 text-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Try adjusting your price slider or choosing a different style vibe.</p>
                 <button
                   onClick={() => {
                     setSelectedSubcategory(null);

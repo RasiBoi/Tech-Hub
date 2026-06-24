@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Store, ChevronRight, Search, Users, ShoppingBag, Loader2
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { requestJson } from '../services/httpClient';
+import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import { InfiniteSlider } from '../components/ui/infinite-slider';
 import { MorphingCardStack } from '../components/ui/morphing-card-stack';
@@ -15,23 +15,77 @@ export default function Vendors() {
   const [vendors, setVendors] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [isUsingCachedData, setIsUsingCachedData] = useState(false);
 
-  useEffect(() => {
-    const loadVendors = async () => {
+  const loadVendors = useCallback(async () => {
+    const cacheKey = 'techhub:vendors:approved:v1';
+    const cacheTtlMs = 5 * 60 * 1000;
+
+    let hasCachedData = false;
+
+    try {
+      const raw = localStorage.getItem(cacheKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const isValid = parsed && Array.isArray(parsed.data) && typeof parsed.timestamp === 'number';
+
+        if (isValid && parsed.data.length > 0) {
+          setVendors(parsed.data);
+          setLoading(false);
+          setSyncing(true);
+          setIsUsingCachedData(Date.now() - parsed.timestamp >= cacheTtlMs);
+          hasCachedData = true;
+        }
+      }
+    } catch {
+      // Ignore cache parsing errors and continue with a network request.
+    }
+
+    let lastError = null;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        setLoading(true);
-        const data = await requestJson(`${serviceRegistry.catalog}/vendors`);
+        if (!hasCachedData) {
+          setLoading(true);
+        }
+
+        const data = await requestJson(`${serviceRegistry.catalog}/vendors`, {
+          timeoutMs: 20000,
+          omitAuth: true,
+        });
+
         if (Array.isArray(data)) {
           setVendors(data);
+          setLoadError('');
+          setIsUsingCachedData(false);
+          localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+          break;
         }
       } catch (e) {
-        console.error('Failed to load vendors:', e);
-      } finally {
-        setLoading(false);
+        lastError = e;
+        if (isRequestAbortError(e) && attempt === 0) {
+          continue;
+        }
+        if (attempt === 0) {
+          continue;
+        }
       }
-    };
-    loadVendors();
+    }
+
+    if (lastError && !hasCachedData) {
+      setLoadError('Unable to load partner directory right now. Please retry.');
+      console.error('Failed to load vendors:', lastError);
+    }
+
+    setLoading(false);
+    setSyncing(false);
   }, []);
+
+  useEffect(() => {
+    loadVendors();
+  }, [loadVendors]);
 
   const filteredVendors = vendors.filter(vendor => {
     const searchLower = searchQuery.toLowerCase();
@@ -111,6 +165,12 @@ export default function Vendors() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-[#0d1527] border border-white/[0.06] hover:border-white/15 focus:border-blue-500/50 rounded-2xl text-sm font-semibold text-white transition-all outline-none placeholder:text-slate-500"
               />
+              {syncing && (
+                <p className="mt-2 text-[11px] font-semibold text-slate-500">Refreshing partner directory...</p>
+              )}
+              {isUsingCachedData && !syncing && (
+                <p className="mt-2 text-[11px] font-semibold text-amber-500">Showing cached partners while live sync is unavailable.</p>
+              )}
             </div>
           </div>
         </header>
@@ -149,10 +209,22 @@ export default function Vendors() {
 
         {/* Main Content Area */}
         <main className="max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-12">
-          {loading ? (
+          {loading && vendors.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
               <p className="text-sm font-medium text-slate-400">Loading verified hub directory...</p>
+            </div>
+          ) : loadError && vendors.length === 0 ? (
+            <div className="text-center py-20 bg-[#0d1527]/20 border border-white/[0.04] rounded-3xl p-8">
+              <Store className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+              <h3 className="text-lg font-extrabold text-white mb-1">Directory Unavailable</h3>
+              <p className="text-sm text-slate-400">{loadError}</p>
+              <button
+                onClick={loadVendors}
+                className="mt-5 inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black px-4 py-2.5 transition-colors"
+              >
+                Retry Loading Partners
+              </button>
             </div>
           ) : filteredVendors.length === 0 ? (
             <div className="text-center py-20 bg-[#0d1527]/20 border border-white/[0.04] rounded-3xl p-8">

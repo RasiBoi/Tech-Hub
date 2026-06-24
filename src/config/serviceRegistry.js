@@ -10,6 +10,6 @@ export const serviceRegistry = Object.freeze({
 });
 
 export const serviceRuntimeConfig = Object.freeze({
-  requestTimeoutMs: Number(import.meta.env.VITE_API_TIMEOUT_MS || 8000),
+  requestTimeoutMs: Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000),
   healthPollIntervalMs: Number(import.meta.env.VITE_AI_HEALTH_POLL_MS || 25000),
 });

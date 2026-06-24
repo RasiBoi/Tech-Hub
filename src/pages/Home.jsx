@@ -4,14 +4,13 @@ import {
   Search, Heart, ShoppingCart, Bell, MapPin, Truck, 
   Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown, ChevronLeft, ChevronRight,
   Mic, Menu, X, CheckCircle2, User, Play,
-  ShoppingBag, ShieldCheck, ArrowRight, Brain, Flame, Terminal,
-  Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink, LogOut, Store, Sparkles
+  ShoppingBag, ShieldCheck, ArrowRight, Flame, Terminal,
+  Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink, LogOut, Store
 } from 'lucide-react';
-import { useAiServiceStatus } from '../hooks/useAiServiceStatus';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { requestJson } from '../services/httpClient';
+import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import { Carousel, CarouselContent, CarouselItem } from '../components/ui/carousel';
 import { CircularTestimonials } from '../components/ui/circular-testimonials';
@@ -596,7 +595,7 @@ const HERO_SLIDES = [
     title: (
       <>
         Shop Smarter with <br className="hidden sm:block" />
-        <span className="text-blue-600 font-extrabold">AI-Powered</span> <br className="hidden sm:block" />
+        <span className="text-blue-600 font-extrabold">Smart</span> <br className="hidden sm:block" />
         Workspace Catalog
       </>
     ),
@@ -637,7 +636,7 @@ const HERO_SLIDES = [
     title: (
       <>
         Stealth Mode: <br className="hidden sm:block" />
-        <span className="text-slate-900 font-extrabold">Matte Black</span> <br className="hidden sm:block" />
+        <span className="text-slate-100 font-extrabold">Matte Black</span> <br className="hidden sm:block" />
         Workspace Gear
       </>
     ),
@@ -761,8 +760,9 @@ const HERO_SLIDES = [
 export default function Home() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const isLight = theme === 'light';
   const navigate = useNavigate();
-  const aiServiceStatus = useAiServiceStatus();
+  const [showWelcomeOffer, setShowWelcomeOffer] = useState(false);
   const [followedVendors, setFollowedVendors] = useState({});
   const [openDropdownVendor, setOpenDropdownVendor] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
@@ -774,6 +774,17 @@ export default function Home() {
       setCurrentHeroSlide((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 6000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const popupSeenKey = 'techhub_offer_popup_seen';
+    if (sessionStorage.getItem(popupSeenKey) === '1') return;
+
+    const timer = setTimeout(() => {
+      setShowWelcomeOffer(true);
+    }, 1400);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const showToast = (msg) => {
@@ -843,14 +854,18 @@ export default function Home() {
         const prodData = await requestJson(`${serviceRegistry.catalog}/products`);
         setAllDbProducts(prodData);
       } catch (e) {
-        console.error('Failed to load products from database', e);
+        if (!isRequestAbortError(e)) {
+          console.error('Failed to load products from database', e);
+        }
       }
 
       try {
         const catData = await requestJson(`${serviceRegistry.catalog}/categories`);
         setDbCategories(catData);
       } catch (e) {
-        console.error('Failed to load categories from database', e);
+        if (!isRequestAbortError(e)) {
+          console.error('Failed to load categories from database', e);
+        }
       }
     };
     loadData();
@@ -977,17 +992,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    const closeMenuOnDesktop = () => {
-      if (window.innerWidth >= 1280) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', closeMenuOnDesktop);
-    return () => window.removeEventListener('resize', closeMenuOnDesktop);
-  }, []);
-
   const curatedCategories = [
     {
       name: 'Stands & Holders',
@@ -1045,6 +1049,33 @@ export default function Home() {
       image: new URL('../../Media/product_images/fasola-cable-management-box-for-power-strips-and-electrical-cords-organize-and-conceal-wires/image-1.webp', import.meta.url).href,
     },
   ];
+
+  const featuredPartnerTestimonials = compileVendorsData(VENDORS_DATA, allDbProducts).map(vendor => {
+    const vendorImages = {
+      apple: 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
+      samsung: 'https://images.unsplash.com/photo-1628749528992-f5702133b686?q=80&w=1368&auto=format&fit=crop',
+      dell: 'https://images.unsplash.com/photo-1524267213992-b76e8577d046?q=80&w=1368&auto=format&fit=crop',
+      sony: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?q=80&w=1368&auto=format&fit=crop',
+      xiaomi: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1368&auto=format&fit=crop',
+      beats: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1368&auto=format&fit=crop'
+    };
+
+    return {
+      name: vendor.name,
+      designation: 'Official Partner',
+      quote: vendor.tagline,
+      src: vendorImages[vendor.id] || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
+      id: vendor.id,
+      rating: vendor.rating,
+      reviews: vendor.reviews,
+      productsCount: vendor.productsCount,
+      baseFollowers: vendor.baseFollowers,
+      logoSvg: vendor.logoSvg,
+      isFollowed: !!followedVendors[vendor.id],
+      onFollow: () => handleToggleFollowVendor(vendor.id, vendor.name),
+      onVisit: () => showToast(`Opening storefront for ${vendor.name}...`)
+    };
+  });
 
   const flashDeals = [
     {
@@ -1109,6 +1140,32 @@ export default function Home() {
     },
   ];
 
+  const homeOfferBanners = [
+    {
+      id: 'payday-sale',
+      title: 'Payday Sale',
+      subtitle: 'Save up to 35% on workspace bestsellers',
+      cta: 'Shop Payday Deals',
+      to: '/category/All?deals=true&sort=rating',
+      image: new URL('../../Media/product_images/baseus-magpro-3-in-1-wireless-charging-station/image-1.png', import.meta.url).href,
+      gradient: 'from-amber-400/25 via-orange-400/15 to-yellow-300/25',
+    },
+    {
+      id: 'weekend-offer',
+      title: 'Weekend Bundle Offer',
+      subtitle: 'Get extra 10% off when you buy 3 setup items',
+      cta: 'Claim Offer',
+      to: '/category/All?q=desk%20setup',
+      image: new URL('../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png', import.meta.url).href,
+      gradient: 'from-blue-500/20 via-indigo-500/10 to-cyan-400/20',
+    },
+  ];
+
+  const closeWelcomeOffer = () => {
+    setShowWelcomeOffer(false);
+    sessionStorage.setItem('techhub_offer_popup_seen', '1');
+  };
+
   return (
     <div className="min-h-screen bg-[#070a13] font-sans overflow-x-hidden text-slate-200">
       
@@ -1116,28 +1173,28 @@ export default function Home() {
       <Navbar />
 
       {/* 2. Sub header features */}
-      <div className="bg-[#0b1021]/60 border-b border-white/[0.06] shadow-sm relative z-40 w-full hidden sm:block">
+      <div className={`border-b shadow-sm relative z-40 w-full hidden sm:block ${isLight ? 'bg-white border-slate-200' : 'bg-[#0b1021]/60 border-white/[0.06]'}`}>
         <div className="max-w-[1440px] mx-auto w-full py-2 lg:py-3 px-4 lg:px-10 flex justify-between items-center text-xs lg:text-sm">
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-blue-400 mt-0.5" />
             <div>
-              <p className="text-slate-500 text-xs">Deliver to</p>
-              <p className="font-semibold text-slate-300 flex items-center gap-1">Sri Lanka <ChevronDown className="w-3 h-3 text-slate-500" /></p>
+              <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Deliver to</p>
+              <p className={`font-semibold flex items-center gap-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Sri Lanka <ChevronDown className="w-3 h-3 text-slate-500" /></p>
             </div>
           </div>
           
           <div className="hidden md:flex items-center gap-2">
             <div className="bg-white/5 border border-white/10 p-1.5 rounded-full"><Truck className="w-4 h-4 text-blue-400" /></div>
             <div>
-              <p className="font-semibold text-slate-300">Free Shipping</p>
+              <p className={`font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Free Shipping</p>
               <p className="text-slate-500 text-xs text-left">On orders over LKR.50000.00</p>
             </div>
           </div>
 
           <div className="hidden lg:flex items-center gap-2 border-l border-r border-white/[0.08] px-6">
-            <div className="bg-white/5 border border-white/10 p-1.5 rounded-full"><Brain className="w-4 h-4 text-blue-400" /></div>
+            <div className="bg-white/5 border border-white/10 p-1.5 rounded-full"><ShieldCheck className="w-4 h-4 text-blue-400" /></div>
             <div>
-              <p className="font-semibold text-slate-300">AI-Powered Recommendations</p>
+              <p className={`font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Smart Recommendations</p>
               <p className="text-slate-500 text-xs text-left">Personalized for you</p>
             </div>
           </div>
@@ -1145,7 +1202,7 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-2">
             <div className="bg-white/5 border border-white/10 p-1.5 rounded-full"><RotateCcw className="w-4 h-4 text-blue-400" /></div>
             <div>
-              <p className="font-semibold text-slate-300">Easy Returns</p>
+              <p className={`font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Easy Returns</p>
               <p className="text-slate-500 text-xs text-left">30-day return policy</p>
             </div>
           </div>
@@ -1153,7 +1210,7 @@ export default function Home() {
           <div className="hidden lg:flex items-center gap-2">
             <div className="bg-white/5 border border-white/10 p-1.5 rounded-full"><HeadphonesIcon className="w-4 h-4 text-blue-400" /></div>
             <div>
-              <p className="font-semibold text-slate-300">24/7 AI Support</p>
+              <p className={`font-semibold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>24/7 Support</p>
               <p className="text-slate-505 text-xs text-left">We're here to help</p>
             </div>
           </div>
@@ -1214,33 +1271,33 @@ export default function Home() {
 
             
             {/* Stats - 2×2 on mobile, row on xl */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 xl:flex xl:items-center pt-3 sm:pt-4 border-t border-white/15 w-full relative z-10 gap-x-2 gap-y-2 sm:gap-4 xl:gap-0 xl:divide-x xl:divide-white/15 px-2 sm:px-0 mt-auto">
-              <div className="flex items-center gap-2 xl:gap-2.5 xl:pr-5 bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] sm:border-0 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+            <div className={`grid grid-cols-2 sm:grid-cols-4 xl:flex xl:items-center pt-3 sm:pt-4 border-t w-full relative z-10 gap-x-2 gap-y-2 sm:gap-4 xl:gap-0 px-2 sm:px-0 mt-auto ${isLight ? 'border-white/25 xl:divide-x xl:divide-white/25' : 'border-white/15 xl:divide-x xl:divide-white/15'}`}>
+              <div className={`flex items-center gap-2 xl:gap-2.5 xl:pr-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><ShoppingBag className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={50} suffix="K+" /></p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Products</p>
+                  <p className={`text-[9px] sm:text-[10px] font-medium ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Products</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 xl:gap-2.5 xl:px-5 bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] sm:border-0 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+              <div className={`flex items-center gap-2 xl:gap-2.5 xl:px-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><User className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={5} suffix="K+" /></p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Vendors</p>
+                  <p className={`text-[9px] sm:text-[10px] font-medium ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Vendors</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 xl:gap-2.5 xl:px-5 bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] sm:border-0 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+              <div className={`flex items-center gap-2 xl:gap-2.5 xl:px-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><Truck className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={1} suffix="M+" /></p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Orders</p>
+                  <p className={`text-[9px] sm:text-[10px] font-medium ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Orders</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 xl:gap-2.5 xl:pl-5 bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] sm:border-0 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+              <div className={`flex items-center gap-2 xl:gap-2.5 xl:pl-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><CheckCircle2 className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={98} suffix="%" /></p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium whitespace-nowrap">Satisfaction</p>
+                  <p className={`text-[9px] sm:text-[10px] font-medium whitespace-nowrap ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Satisfaction</p>
                 </div>
               </div>
             </div>
@@ -1256,14 +1313,37 @@ export default function Home() {
         <div className="absolute bottom-0 right-[10%] w-[400px] h-[300px] bg-indigo-500/[0.04] rounded-full blur-[80px] pointer-events-none" />
         <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
 
+          {/* ── Offer Banners ─────────────────────────────────── */}
+          <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {homeOfferBanners.map((offer) => (
+              <Link
+                key={offer.id}
+                to={offer.to}
+                className={`group relative overflow-hidden rounded-2xl border ${isLight ? 'border-slate-200 bg-white' : 'border-white/[0.08] bg-[#0d1527]/80'} shadow-lg`}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-r ${offer.gradient} pointer-events-none`} />
+                <div className="relative z-10 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className={`text-[10px] uppercase tracking-[0.16em] font-black ${isLight ? 'text-blue-600' : 'text-blue-400'}`}>Limited Time</p>
+                    <h4 className={`text-lg sm:text-xl font-extrabold leading-tight mt-0.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>{offer.title}</h4>
+                    <p className={`text-xs sm:text-sm mt-1 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{offer.subtitle}</p>
+                    <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
+                      {offer.cta}
+                      <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                  <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border shrink-0 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/[0.12] bg-white/[0.04]'}`}>
+                    <img src={offer.image} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
           {/* ── Section Header ───────────────────────────────── */}
           <div className="mb-6 sm:mb-8 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Browse Categories</h3>
-              <span className="hidden sm:inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">
-                <Sparkles className="w-3 h-3" />
-                Curated
-              </span>
             </div>
             <Link
               to="/category/All"
@@ -1359,13 +1439,13 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <a
-                href="#"
+              <Link
+                to="/category/All?deals=true&sort=rating"
                 className="self-start sm:self-auto inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-300 px-4 py-2 text-sm font-semibold hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-400 transition-all backdrop-blur-md"
               >
                 View All Deals
                 <ArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
             </div>
 
             {/* Deal Cards */}
@@ -1485,7 +1565,7 @@ export default function Home() {
               className="absolute inset-0 w-full h-full object-cover"
             />
             {/* Dark overlay — keeps text readable, matches site navy palette */}
-            <div className="absolute inset-0 bg-[#060c1a]/80 backdrop-blur-[1px]" />
+            <div className={`absolute inset-0 backdrop-blur-[1px] ${isLight ? 'bg-[#020814]/70' : 'bg-[#060c1a]/80'}`} />
             {/* Subtle dot-grid texture on top of video */}
             <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '28px 28px'}} />
             {/* Left accent bar */}
@@ -1502,7 +1582,7 @@ export default function Home() {
                     <Store className="w-3 h-3" />
                     Vendor Programme
                   </span>
-                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                  <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                     Applications open
                   </span>
@@ -1514,7 +1594,7 @@ export default function Home() {
                   <span className="text-blue-400">Reach more customers.</span>
                 </h2>
 
-                <p className="text-sm text-slate-400 leading-relaxed mb-8 max-w-[440px]">
+                <p className={`text-sm leading-relaxed mb-8 max-w-[440px] ${isLight ? 'text-slate-100' : 'text-slate-400'}`}>
                   List your products, manage orders, and track earnings — all from a single seller dashboard built for Sri Lanka's growing tech market.
                 </p>
 
@@ -1523,9 +1603,9 @@ export default function Home() {
                   {[
                     { icon: <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />, text: 'No setup fee. Approved and live within 24 hours.' },
                     { icon: <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />, text: 'Payouts every 14 days with full fraud protection.' },
-                    { icon: <Brain className="w-3.5 h-3.5 text-blue-400 shrink-0" />, text: 'AI-powered product recommendations drive your sales.' },
+                    { icon: <Activity className="w-3.5 h-3.5 text-blue-400 shrink-0" />, text: 'Smart product recommendations drive your sales.' },
                   ].map((item) => (
-                    <div key={item.text} className="flex items-center gap-3 text-[13px] text-slate-300">
+                    <div key={item.text} className={`flex items-center gap-3 text-[13px] ${isLight ? 'text-slate-100' : 'text-slate-300'}`}>
                       <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/15 flex items-center justify-center shrink-0">
                         {item.icon}
                       </div>
@@ -1546,7 +1626,7 @@ export default function Home() {
                   </Link>
                   <Link
                     to="/vendors"
-                    className="inline-flex items-center gap-2 border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.15] text-slate-300 hover:text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all"
+                    className={`inline-flex items-center gap-2 border font-semibold text-sm px-5 py-2.5 rounded-xl transition-all ${isLight ? 'border-white/20 bg-slate-900/40 hover:bg-slate-900/55 text-slate-100 hover:text-white' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.15] text-slate-300 hover:text-white'}`}
                   >
                     View Partners
                   </Link>
@@ -1554,7 +1634,7 @@ export default function Home() {
               </div>
 
               {/* Divider */}
-              <div className="hidden lg:block w-px bg-white/[0.06] my-10" />
+              <div className={`hidden lg:block w-px my-10 ${isLight ? 'bg-white/20' : 'bg-white/[0.06]'}`} />
 
               {/* Right — stats in the same dark card style */}
               <div className="hidden lg:flex flex-col justify-center px-12 py-12 gap-6 min-w-[280px]">
@@ -1565,12 +1645,12 @@ export default function Home() {
                   { icon: <ShieldCheck className="w-4 h-4 text-blue-400" />, value: '14-day', label: 'Guaranteed Payout' },
                 ].map((stat) => (
                   <div key={stat.label} className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl bg-[#0a1020] border border-white/[0.07] flex items-center justify-center shrink-0">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isLight ? 'bg-[#0a1020]/85 border border-white/20' : 'bg-[#0a1020] border border-white/[0.07]'}`}>
                       {stat.icon}
                     </div>
                     <div>
                       <p className="text-base font-extrabold text-white leading-none">{stat.value}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{stat.label}</p>
+                      <p className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-200' : 'text-slate-500'}`}>{stat.label}</p>
                     </div>
                   </div>
                 ))}
@@ -1615,34 +1695,42 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Testimonial Showcase */}
-          <div className="flex items-center justify-center w-full min-h-[450px] relative">
+          {/* Mobile Partner Cards */}
+          <div className="md:hidden grid grid-cols-1 gap-3">
+            {featuredPartnerTestimonials.slice(0, 3).map((partner) => (
+              <div
+                key={`mobile-partner-${partner.id}`}
+                className="rounded-2xl border border-white/[0.08] bg-[#0d1527]/70 p-4 backdrop-blur-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <img
+                    src={partner.src}
+                    alt={partner.name}
+                    className="w-14 h-14 rounded-xl object-cover border border-white/10"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-extrabold text-white truncate">{partner.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{partner.quote}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-[11px] text-amber-400 font-bold">{partner.rating} ★</span>
+                  <Link
+                    to="/vendors"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold px-3 py-1.5 transition-colors"
+                  >
+                    View
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Testimonial Showcase (desktop/tablet) */}
+          <div className="hidden md:flex items-center justify-center w-full min-h-[380px] lg:min-h-[450px] relative">
             <CircularTestimonials
-              testimonials={compileVendorsData(VENDORS_DATA, allDbProducts).map(vendor => {
-                const vendorImages = {
-                  apple: 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
-                  samsung: 'https://images.unsplash.com/photo-1628749528992-f5702133b686?q=80&w=1368&auto=format&fit=crop',
-                  dell: 'https://images.unsplash.com/photo-1524267213992-b76e8577d046?q=80&w=1368&auto=format&fit=crop',
-                  sony: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?q=80&w=1368&auto=format&fit=crop',
-                  xiaomi: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1368&auto=format&fit=crop',
-                  beats: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1368&auto=format&fit=crop'
-                };
-                return {
-                  name: vendor.name,
-                  designation: 'Official Partner',
-                  quote: vendor.tagline,
-                  src: vendorImages[vendor.id] || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
-                  id: vendor.id,
-                  rating: vendor.rating,
-                  reviews: vendor.reviews,
-                  productsCount: vendor.productsCount,
-                  baseFollowers: vendor.baseFollowers,
-                  logoSvg: vendor.logoSvg,
-                  isFollowed: !!followedVendors[vendor.id],
-                  onFollow: () => handleToggleFollowVendor(vendor.id, vendor.name),
-                  onVisit: () => showToast(`Opening storefront for ${vendor.name}...`)
-                };
-              })}
+              testimonials={featuredPartnerTestimonials}
               autoplay={true}
               colors={{
                 name: theme === 'light' ? '#1d1d1f' : '#ffffff',
@@ -1678,6 +1766,67 @@ export default function Home() {
           <span className="text-xs font-bold">{toastMessage}</span>
         </motion.div>
       )}
+
+      {/* Startup Offer Popup */}
+      <AnimatePresence>
+        {showWelcomeOffer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/55 backdrop-blur-[1px] z-[90] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className={`relative w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden ${isLight ? 'border-slate-200 bg-white' : 'border-white/[0.1] bg-[#0d1527]'}`}
+            >
+              <button
+                onClick={closeWelcomeOffer}
+                className={`absolute top-3 right-3 w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${isLight ? 'border-slate-200 hover:bg-slate-100 text-slate-600' : 'border-white/10 hover:bg-white/10 text-slate-300'}`}
+                aria-label="Close offer popup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="p-5 sm:p-6">
+                <p className="text-[10px] uppercase tracking-[0.16em] font-black text-rose-400">Welcome Offer</p>
+                <h3 className={`text-xl sm:text-2xl font-extrabold mt-1.5 leading-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Get extra 15% off your first tech setup order
+                </h3>
+                <p className={`text-sm mt-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                  Use code <span className="font-black text-blue-400">WELCOME15</span> during checkout. Valid today only.
+                </p>
+
+                <div className={`mt-4 rounded-xl border px-3 py-2 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/[0.08] bg-white/[0.03]'}`}>
+                  <p className={`text-[11px] font-semibold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    Offer applies to desk setup products, stands, lighting, and accessories.
+                  </p>
+                </div>
+
+                <div className="mt-5 flex items-center gap-2.5">
+                  <Link
+                    to="/category/All?deals=true&sort=rating"
+                    onClick={closeWelcomeOffer}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition-colors"
+                  >
+                    View Offers
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <button
+                    onClick={closeWelcomeOffer}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${isLight ? 'border-slate-200 text-slate-700 hover:bg-slate-100' : 'border-white/10 text-slate-300 hover:bg-white/10'}`}
+                  >
+                    Later
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

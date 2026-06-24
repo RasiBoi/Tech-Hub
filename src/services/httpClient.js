@@ -1,7 +1,44 @@
-const withTimeout = (timeoutMs) => {
+const withTimeout = (timeoutMs, externalSignal) => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  return { controller, timeoutId };
+
+  const timeoutId = setTimeout(() => {
+    controller.abort(new DOMException('Request timed out', 'TimeoutError'));
+  }, timeoutMs);
+
+  const abortFromExternalSignal = () => {
+    controller.abort(externalSignal?.reason || new DOMException('Request aborted', 'AbortError'));
+  };
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      abortFromExternalSignal();
+    } else {
+      externalSignal.addEventListener('abort', abortFromExternalSignal, { once: true });
+    }
+  }
+
+  return {
+    controller,
+    timeoutId,
+    cleanup: () => {
+      if (externalSignal) {
+        externalSignal.removeEventListener('abort', abortFromExternalSignal);
+      }
+    },
+  };
+};
+
+export const isRequestAbortError = (error) => {
+  if (!error) return false;
+  const name = error.name || '';
+  const message = error.message || '';
+
+  return (
+    name === 'AbortError' ||
+    name === 'TimeoutError' ||
+    message.includes('aborted') ||
+    message.includes('timed out')
+  );
 };
 
 export const pingEndpoint = async (url, timeoutMs = 4000) => {
@@ -27,25 +64,42 @@ export const requestJson = async (
     method = 'GET',
     body,
     headers = {},
-    timeoutMs = 8000,
+    timeoutMs = 15000,
+    signal,
+    omitAuth = false,
   } = {},
 ) => {
-  const { controller, timeoutId } = withTimeout(timeoutMs);
+  const { controller, timeoutId, cleanup } = withTimeout(timeoutMs, signal);
 
   const token = localStorage.getItem('techhub_token');
-  const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+  const authHeaders = !omitAuth && token ? { 'Authorization': `Bearer ${token}` } : {};
 
   try {
-    const response = await fetch(url, {
-      method,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-        ...headers,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    let response;
+
+    try {
+      response = await fetch(url, {
+        method,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+          ...headers,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch (error) {
+      if (isRequestAbortError(error)) {
+        const isTimeout = error.name === 'TimeoutError' || controller.signal.reason?.name === 'TimeoutError';
+        const abortError = new Error(isTimeout ? 'Request timed out' : 'Request aborted');
+        abortError.name = isTimeout ? 'TimeoutError' : 'AbortError';
+        abortError.isAbort = true;
+        abortError.isTimeout = isTimeout;
+        throw abortError;
+      }
+
+      throw error;
+    }
 
     if (!response.ok) {
       try {
@@ -75,5 +129,6 @@ export const requestJson = async (
     return json;
   } finally {
     clearTimeout(timeoutId);
+    cleanup();
   }
 };

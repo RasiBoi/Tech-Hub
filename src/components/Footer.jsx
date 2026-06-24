@@ -17,7 +17,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-[#070a13] border-t border-white/[0.06] pt-16 pb-8 relative overflow-hidden text-slate-400">
+    <footer className="bg-[#070a13] border-t border-white/[0.06] pt-10 sm:pt-16 pb-8 relative overflow-hidden text-slate-400">
       {/* Ambient bottom glows */}
       <div className="absolute bottom-0 right-[15%] w-[450px] h-[450px] bg-blue-500/5 rounded-full blur-[110px] pointer-events-none" />
       <div className="absolute top-0 left-[10%] w-[350px] h-[350px] bg-indigo-500/5 rounded-full blur-[90px] pointer-events-none" />
@@ -44,18 +44,18 @@ export default function Footer() {
             </div>
           </div>
 
-          <form onSubmit={handleSubscribe} className="w-full lg:w-auto flex items-center bg-[#070a13]/60 border border-white/[0.08] p-1.5 rounded-2xl relative z-10 max-w-xl group focus-within:border-blue-500/40 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all duration-300 shadow-inner backdrop-blur-md">
+          <form onSubmit={handleSubscribe} className="w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-center bg-[#070a13]/60 border border-white/[0.08] p-1.5 rounded-2xl relative z-10 max-w-xl group focus-within:border-blue-500/40 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all duration-300 shadow-inner backdrop-blur-md gap-1.5 sm:gap-0">
             <input
               type="email"
               required
               value={subscriberEmail}
               onChange={(e) => setSubscriberEmail(e.target.value)}
               placeholder="Enter your email address"
-              className="w-full bg-transparent border-0 text-white placeholder-slate-500 text-xs px-4 py-3.5 focus:ring-0 focus:outline-none min-w-[200px] sm:min-w-[320px]"
+              className="w-full bg-transparent border-0 text-white placeholder-slate-500 text-xs px-4 py-3.5 focus:ring-0 focus:outline-none min-w-0 sm:min-w-[260px]"
             />
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-6 py-3.5 rounded-xl transition-all shadow-md shadow-blue-600/25 hover:scale-[1.02] active:scale-[0.98] shrink-0 focus:outline-none flex items-center gap-1.5"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-6 py-3.5 rounded-xl transition-all shadow-md shadow-blue-600/25 hover:scale-[1.02] active:scale-[0.98] shrink-0 focus:outline-none flex items-center justify-center gap-1.5"
             >
               Subscribe
               <ArrowRight className="w-3.5 h-3.5" />
@@ -71,7 +71,7 @@ export default function Footer() {
               <span className="text-xl font-bold tracking-wide text-white">Tech-Hub</span>
             </Link>
             <p className="text-xs text-slate-400 mt-4 leading-relaxed max-w-xs">
-              AI-powered electronics marketplace connecting buyers with trusted vendors worldwide.
+              Electronics marketplace connecting buyers with trusted vendors worldwide.
             </p>
             
             {/* Social Icons */}
@@ -214,7 +214,7 @@ export default function Footer() {
 
       {/* Subscription Toast Alert */}
       {showSubscribedToast && (
-        <div className="fixed bottom-6 right-6 bg-[#0d1527] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 z-50 border border-white/[0.08]">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 max-w-[calc(100vw-2rem)] bg-[#0d1527] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 z-50 border border-white/[0.08]">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           <span className="text-xs font-bold">Successfully subscribed to tech deals!</span>
         </div>

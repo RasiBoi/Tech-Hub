@@ -151,11 +151,11 @@ export const CircularTestimonials = ({
   };
 
   return (
-    <div className="w-full max-w-[64rem] p-4 sm:p-8">
-      <div className="grid gap-12 md:gap-16 md:grid-cols-12 items-center">
+    <div className="w-full max-w-[64rem] p-3 sm:p-6 md:p-8">
+      <div className="grid gap-7 sm:gap-10 md:gap-16 md:grid-cols-12 items-center">
         {/* Images */}
         <div
-          className="relative w-full h-[22rem] md:h-[26rem] md:col-span-5 flex items-center justify-center"
+          className="relative w-full h-[15rem] sm:h-[18rem] md:h-[26rem] md:col-span-5 flex items-center justify-center"
           style={{ perspective: "1200px" }}
           ref={imageContainerRef}
         >
@@ -172,7 +172,7 @@ export const CircularTestimonials = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col justify-between md:col-span-7 h-full min-h-[22rem]">
+        <div className="flex flex-col justify-between md:col-span-7 h-full min-h-0 md:min-h-[22rem]">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeIndex}
@@ -209,7 +209,7 @@ export const CircularTestimonials = ({
 
                 {/* Testimony Quote with animate word blur */}
                 <motion.p
-                  className="leading-relaxed mb-6 font-medium italic min-h-[5rem]"
+                  className="leading-relaxed mb-6 font-medium italic min-h-[4rem] md:min-h-[5rem]"
                   style={{ color: colorTestimony, fontSize: fontSizeQuote }}
                 >
                   "

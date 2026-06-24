@@ -120,10 +120,10 @@ export default function Login() {
             navigate("/");
           }
         }}
-        className="absolute inset-0 flex items-center justify-center bg-[#070a13]/70 backdrop-blur-[16px] p-4 z-50 cursor-pointer"
+        className="absolute inset-0 flex items-start lg:items-center justify-center bg-[#070a13]/70 backdrop-blur-[16px] p-3 sm:p-4 lg:p-6 z-50 cursor-pointer overflow-y-auto"
       >
         <motion.div 
-          className="relative w-full max-w-5xl h-[760px] grid grid-cols-1 lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl border border-white/[0.08] bg-[#0d1527]/95 text-[#dce3f0] cursor-default"
+          className="relative w-full max-w-5xl min-h-[560px] lg:min-h-0 lg:h-[760px] max-h-[calc(100vh-1.5rem)] grid grid-cols-1 lg:grid-cols-2 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/[0.08] bg-[#0d1527]/95 text-[#dce3f0] cursor-default my-auto"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
@@ -149,7 +149,7 @@ export default function Login() {
           </div>
 
           {/* Right side: Form Panel (Redesigned with Dark Glassmorphic Theme) */}
-          <div className="w-full h-full bg-[#0a0f1d]/50 text-[#dce3f0] flex flex-col items-center justify-center p-8 md:p-12 overflow-y-auto no-scrollbar">
+          <div className="w-full h-full bg-[#0a0f1d]/50 text-[#dce3f0] flex flex-col items-center justify-center p-5 sm:p-7 md:p-10 overflow-y-auto no-scrollbar">
             <motion.div 
               key={activeTab} // reset animation when tab changes
               className="w-full max-w-sm"
