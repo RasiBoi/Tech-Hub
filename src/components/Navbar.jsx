@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Zap, Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight
+  Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
+
+const logoUrl = new URL('../../Media/logo (3).png', import.meta.url).href;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -150,8 +152,8 @@ export default function Navbar() {
           {/* Logo and Main Desktop Links */}
           <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 xl:gap-8 min-w-0">
             <Link to="/" className="flex items-center gap-2 shrink-0 hover:opacity-95">
-              <Zap className="text-yellow-400 w-5 h-5 sm:w-6 sm:h-6 fill-yellow-400" />
-              <span className="hidden sm:inline text-lg sm:text-xl font-bold tracking-wide">Tech-Hub</span>
+              <img src={logoUrl} alt="Tech-Hub Logo" className="w-12 h-12 sm:w-14 sm:h-14 -ml-3.5 -mr-3 object-contain" />
+              <span className="inline text-lg sm:text-xl font-bold tracking-wide">Tech-Hub</span>
             </Link>
 
             <div className="hidden xl:flex items-center gap-4 2xl:gap-6 text-[13px] font-medium text-slate-350 shrink-0 whitespace-nowrap">
@@ -280,19 +282,18 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Icons and User Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-4 2xl:gap-5 shrink-0">
+          <div className="flex items-center gap-3.5 sm:gap-4 xl:gap-4 2xl:gap-5 shrink-0">
             <div className="hidden xl:flex flex-col items-center gap-1 cursor-pointer group">
               <Heart className="w-5 h-5 text-slate-350 group-hover:text-white transition-colors" />
               <span className="text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Wishlist</span>
             </div>
             
-            <div className="hidden sm:flex flex-col items-center gap-1 cursor-pointer group relative">
-              <div className="relative">
+            <div className="flex xl:flex-col items-center gap-1 cursor-pointer group relative pr-1.5 xl:pr-0">
+              <div className="relative flex items-center justify-center">
                 <ShoppingCart className="w-5 h-5 text-slate-350 group-hover:text-white transition-colors" />
                 <span className="absolute -top-1.5 -right-2 bg-yellow-400 text-[#0b1021] text-[10px] font-bold px-1.5 rounded-full border border-[#0b1021]">2</span>
               </div>
-              <span className="text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Cart</span>
+              <span className="hidden xl:inline text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Cart</span>
             </div>
 
             <div className="hidden xl:flex flex-col items-center gap-1 cursor-pointer group relative">
@@ -306,7 +307,7 @@ export default function Navbar() {
             {/* Theme Switcher Toggle */}
             <button
               onClick={toggleTheme}
-              className="flex flex-col items-center gap-0.5 sm:gap-1 cursor-pointer group focus:outline-none"
+              className="flex xl:flex-col items-center gap-0.5 sm:gap-1 cursor-pointer group focus:outline-none"
               aria-label="Toggle Theme"
             >
               {theme === 'dark' ? (
@@ -314,7 +315,7 @@ export default function Navbar() {
               ) : (
                 <Moon className="w-5 h-5 text-slate-350 group-hover:text-blue-500 transition-colors" />
               )}
-              <span className="hidden sm:inline text-[10px] text-slate-450 group-hover:text-white font-semibold transition-colors capitalize">
+              <span className="hidden xl:inline text-[10px] text-slate-450 group-hover:text-white font-semibold transition-colors capitalize">
                 {theme === 'dark' ? 'light' : 'dark'}
               </span>
             </button>
@@ -324,7 +325,7 @@ export default function Navbar() {
                 {user.role === 'admin' && (
                   <Link 
                     to="/admin" 
-                    className="hidden md:inline-flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs sm:text-sm font-extrabold px-3.5 py-1.5 rounded-lg transition-all shadow-md shadow-rose-500/20"
+                    className="hidden xl:inline-flex items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs sm:text-sm font-extrabold px-3.5 py-1.5 rounded-lg transition-all shadow-md shadow-rose-500/20"
                   >
                     <Cpu className="w-3.5 h-3.5" />
                     Admin Panel
@@ -333,7 +334,7 @@ export default function Navbar() {
                 {user.role === 'vendor' && (
                   <Link 
                     to="/vendor" 
-                    className="hidden md:inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold px-3.5 py-1.5 rounded-lg transition-all shadow-md shadow-blue-600/20"
+                    className="hidden xl:inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold px-3.5 py-1.5 rounded-lg transition-all shadow-md shadow-blue-600/20"
                   >
                     <Store className="w-3.5 h-3.5" />
                     Vendor Portal
@@ -349,8 +350,8 @@ export default function Navbar() {
                     <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-xs font-black shadow-md ${user.avatarBg}`}>
                       {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                     </div>
-                    <span className="hidden md:inline text-xs font-extrabold text-slate-205">{user.name.split(' ')[0]}</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                    <span className="hidden xl:inline text-xs font-extrabold text-slate-205">{user.name.split(' ')[0]}</span>
+                    <ChevronDown className="w-3 h-3 text-slate-400 hidden xl:inline" />
                   </button>
 
                   {isProfileDropdownOpen && (
@@ -400,7 +401,7 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 sm:gap-3">
+              <div className="hidden xl:flex items-center gap-1.5 sm:gap-3">
                 <Link
                   to="/become-seller"
                   className="hidden md:inline-block border border-yellow-400/40 text-yellow-400 text-xs sm:text-sm font-semibold px-3 xl:px-4 py-1.5 sm:py-2 rounded-md hover:bg-yellow-400 hover:text-[#0b1021] transition-all whitespace-nowrap"
@@ -452,6 +453,11 @@ export default function Navbar() {
               <Link to="/vendors" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Vendors</Link>
               <Link to="/category/All" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Support</Link>
               <Link to="/about" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+              
+              {(!user || (user.role !== 'vendor' && user.role !== 'admin')) && (
+                <Link to="/become-seller" className="px-3 py-2 rounded-md bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Become Seller</Link>
+              )}
+
               <button 
                 onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }}
                 className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] text-left transition-colors flex items-center gap-1.5 focus:outline-none"

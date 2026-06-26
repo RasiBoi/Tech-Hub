@@ -951,7 +951,7 @@ export default function Product() {
           <div className="lg:col-span-6 xl:col-span-7 flex flex-col gap-4">
             
             {/* Large Active Preview Frame */}
-            <div className={`rounded-2xl aspect-[4/3] flex items-center justify-center p-8 relative group overflow-hidden select-none ${isLight ? 'border border-slate-200 bg-gradient-to-b from-slate-100 to-white' : 'border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent'}`}>
+            <div className={`rounded-2xl aspect-[4/3] flex items-center justify-center p-0 relative group overflow-hidden select-none ${isLight ? 'border border-slate-200 bg-gradient-to-b from-slate-100 to-white' : 'border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent'}`}>
               
               {/* Product Background reflection glow */}
               <div className={`absolute w-[60%] h-[60%] rounded-full blur-[80px] opacity-10 pointer-events-none transition-all duration-700 ${vibeStyle.glow}`}></div>
@@ -962,7 +962,7 @@ export default function Product() {
                 animate={{ opacity: 1, scale: 1 }}
                 src={productImages[activeImageIdx]} 
                 alt={productInfo.title}
-                className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105 relative z-10"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 relative z-10"
               />
               
               <div className="absolute right-4 top-4 flex flex-col gap-2 z-20">
@@ -1297,8 +1297,8 @@ export default function Product() {
                   <div className="absolute top-3 left-3 bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded">
                     This Item
                   </div>
-                  <div className="h-28 w-28 flex items-center justify-center p-2 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl">
-                    <img src={productInfo.image || productImages[0]} alt={productInfo.title} className="max-h-full max-w-full object-contain" />
+                  <div className="h-28 w-28 flex items-center justify-center p-0 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl overflow-hidden">
+                    <img src={productInfo.image || productImages[0]} alt={productInfo.title} className="w-full h-full object-cover" />
                   </div>
                   <h4 className={`text-xs font-black text-center line-clamp-1 w-full ${isLight ? 'text-slate-900' : 'text-white'}`}>{productInfo.title}</h4>
                   <p className="text-sm font-black text-rose-500 mt-2">LKR {Number(productInfo.price).toLocaleString('en-US')}</p>
@@ -1329,8 +1329,8 @@ export default function Product() {
                         {checkedBundleItems[bundleItems[0].id] && <Check className="w-3 h-3 text-white stroke-[3px]" />}
                       </div>
                     </div>
-                    <div className="h-28 w-28 flex items-center justify-center p-2 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl">
-                      <img src={bundleItems[0].image} alt={bundleItems[0].title} className="max-h-full max-w-full object-contain" />
+                    <div className="h-28 w-28 flex items-center justify-center p-0 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl overflow-hidden">
+                      <img src={bundleItems[0].image} alt={bundleItems[0].title} className="w-full h-full object-cover" />
                     </div>
                     <h4 className={`text-xs font-black text-center line-clamp-1 w-full ${isLight ? 'text-slate-900' : 'text-white'}`}>{bundleItems[0].title}</h4>
                     <p className={`text-sm font-black mt-2 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>LKR {Number(bundleItems[0].price).toLocaleString('en-US')}</p>
@@ -1362,8 +1362,8 @@ export default function Product() {
                         {checkedBundleItems[bundleItems[1].id] && <Check className="w-3 h-3 text-white stroke-[3px]" />}
                       </div>
                     </div>
-                    <div className="h-28 w-28 flex items-center justify-center p-2 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl">
-                      <img src={bundleItems[1].image} alt={bundleItems[1].title} className="max-h-full max-w-full object-contain" />
+                    <div className="h-28 w-28 flex items-center justify-center p-0 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl overflow-hidden">
+                      <img src={bundleItems[1].image} alt={bundleItems[1].title} className="w-full h-full object-cover" />
                     </div>
                     <h4 className={`text-xs font-black text-center line-clamp-1 w-full ${isLight ? 'text-slate-900' : 'text-white'}`}>{bundleItems[1].title}</h4>
                     <p className={`text-sm font-black mt-2 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>LKR {Number(bundleItems[1].price).toLocaleString('en-US')}</p>
@@ -1424,8 +1424,8 @@ export default function Product() {
                   className={`group relative overflow-hidden rounded-2xl border p-3.5 shadow-sm hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between ${isLight ? 'border-slate-200 bg-white hover:shadow-[0_12px_28px_rgba(15,23,42,0.12)]' : 'border-white/[0.08] bg-[#0c1325]/40 hover:shadow-[0_12px_28px_rgba(0,0,0,0.2)] backdrop-blur-md'}`}
                 >
                   <div>
-                    <div className={`h-44 rounded-xl border p-3 flex items-center justify-center overflow-hidden relative ${isLight ? 'border-slate-200 bg-slate-100' : 'border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent'}`}>
-                      <img src={prod.image} alt={prod.title} className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105 relative z-10" />
+                    <div className={`h-44 rounded-xl border p-0 flex items-center justify-center overflow-hidden relative ${isLight ? 'border-slate-200 bg-slate-100' : 'border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent'}`}>
+                      <img src={prod.image} alt={prod.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 relative z-10" />
                     </div>
                     <div className={`mt-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
                       <span>{prod.brand}</span>

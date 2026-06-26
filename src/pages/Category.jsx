@@ -908,11 +908,11 @@ export default function Category() {
                   }`}
                 >
                   {/* Centered Preview Image */}
-                  <div className={`absolute inset-0 flex items-center justify-center p-6 pb-20 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
+                  <div className={`absolute inset-0 flex items-center justify-center p-0 pb-16 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
                     <img 
                       src={cat.image} 
                       alt={cat.name}
-                      className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
 
@@ -967,11 +967,11 @@ export default function Category() {
                       onClick={() => setSelectedSubcategory(isActive ? null : sub.name)}
                     >
                       {/* Centered Preview Image */}
-                      <div className={`absolute inset-0 flex items-center justify-center p-6 pb-20 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
+                      <div className={`absolute inset-0 flex items-center justify-center p-0 pb-16 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
                         <img 
                           src={sub.image} 
                           alt={sub.name}
-                          className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
 
