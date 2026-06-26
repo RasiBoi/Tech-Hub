@@ -1218,7 +1218,7 @@ export default function Home() {
       </div>
 
       {/* 3. Hero Section — full-width video background, constrained content */}
-      <section className="relative w-full overflow-hidden bg-slate-950 flex xl:min-h-[calc(100vh-126px)]">
+      <section className="always-dark relative w-full overflow-hidden bg-slate-950 flex xl:min-h-[calc(100vh-126px)]">
         {/* Background Video */}
         <video
           autoPlay
@@ -1233,7 +1233,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-slate-950/85 z-0 pointer-events-none"></div>
         <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-b from-transparent to-[#070a13] pointer-events-none z-10"></div>
 
-        <main className="relative max-w-[1720px] mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-8 2xl:px-12 pt-2 sm:pt-4 xl:pt-6 pb-4 sm:pb-6 xl:pb-4 2xl:pb-8 grid grid-cols-1 xl:grid-cols-2 items-center justify-start xl:justify-center gap-10 xl:min-h-[calc(100vh-126px)] z-20">
+        <main className="relative max-w-[1720px] mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-8 2xl:px-12 pt-16 sm:pt-20 xl:pt-6 pb-4 sm:pb-6 xl:pb-4 2xl:pb-8 grid grid-cols-1 xl:grid-cols-2 items-center justify-start xl:justify-center gap-10 xl:min-h-[calc(100vh-126px)] z-20">
         
           {/* Left Column - Content */}
           <div className="w-full xl:max-w-[650px] 2xl:max-w-[720px] z-20 flex flex-col items-center xl:items-start justify-center text-center xl:text-left min-h-[380px] sm:min-h-[440px] xl:pr-8">
@@ -1271,33 +1271,33 @@ export default function Home() {
 
             
             {/* Stats - 2×2 on mobile, row on xl */}
-            <div className={`grid grid-cols-2 sm:grid-cols-4 xl:flex xl:items-center pt-3 sm:pt-4 border-t w-full relative z-10 gap-x-2 gap-y-2 sm:gap-4 xl:gap-0 px-2 sm:px-0 mt-auto ${isLight ? 'border-white/25 xl:divide-x xl:divide-white/25' : 'border-white/15 xl:divide-x xl:divide-white/15'}`}>
-              <div className={`flex items-center gap-2 xl:gap-2.5 xl:pr-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:flex xl:items-center w-full relative z-10 gap-2 sm:gap-3 xl:gap-4 px-2 sm:px-0 mt-auto">
+              <div className="flex items-center gap-2 xl:gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-md rounded-xl bg-slate-950/80 border border-white/10">
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><ShoppingBag className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={50} suffix="K+" /></p>
-                  <p className={`text-[9px] sm:text-[10px] font-medium ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Products</p>
+                  <p className="text-[9px] sm:text-[10px] font-medium text-slate-400">Products</p>
                 </div>
               </div>
-              <div className={`flex items-center gap-2 xl:gap-2.5 xl:px-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
+              <div className="flex items-center gap-2 xl:gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-md rounded-xl bg-slate-950/80 border border-white/10">
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><User className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={5} suffix="K+" /></p>
-                  <p className={`text-[9px] sm:text-[10px] font-medium ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Vendors</p>
+                  <p className="text-[9px] sm:text-[10px] font-medium text-slate-400">Vendors</p>
                 </div>
               </div>
-              <div className={`flex items-center gap-2 xl:gap-2.5 xl:px-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
+              <div className="flex items-center gap-2 xl:gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-md rounded-xl bg-slate-950/80 border border-white/10">
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><Truck className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={1} suffix="M+" /></p>
-                  <p className={`text-[9px] sm:text-[10px] font-medium ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Orders</p>
+                  <p className="text-[9px] sm:text-[10px] font-medium text-slate-400">Orders</p>
                 </div>
               </div>
-              <div className={`flex items-center gap-2 xl:gap-2.5 xl:pl-5 backdrop-blur-sm p-2 sm:p-0 rounded-lg ${isLight ? 'bg-slate-950/45 border border-white/20 sm:border-0 sm:bg-transparent' : 'bg-white/[0.06] border border-white/[0.08] sm:border-0 sm:bg-transparent'}`}>
+              <div className="flex items-center gap-2 xl:gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-md rounded-xl bg-slate-950/80 border border-white/10">
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 p-1.5 rounded-lg shrink-0"><CheckCircle2 className="w-4 h-4" /></div>
                 <div>
                   <p className="font-bold text-[13px] sm:text-sm text-white leading-tight"><AnimatedStat target={98} suffix="%" /></p>
-                  <p className={`text-[9px] sm:text-[10px] font-medium whitespace-nowrap ${isLight ? 'text-slate-200' : 'text-slate-400'}`}>Satisfaction</p>
+                  <p className="text-[9px] sm:text-[10px] font-medium whitespace-nowrap text-slate-400">Satisfaction</p>
                 </div>
               </div>
             </div>
@@ -1343,11 +1343,15 @@ export default function Home() {
           {/* ── Section Header ───────────────────────────────── */}
           <div className="mb-6 sm:mb-8 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Browse Categories</h3>
+              <h3 className={`text-xl sm:text-2xl font-extrabold tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>Browse Categories</h3>
             </div>
             <Link
               to="/category/All"
-              className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] text-slate-300 px-4 py-2 text-sm font-semibold hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-400 transition-all backdrop-blur-md"
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all backdrop-blur-md ${
+                isLight 
+                  ? 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-500/40 hover:bg-blue-50 hover:text-blue-600' 
+                  : 'border-white/[0.08] bg-white/[0.04] text-slate-300 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-400'
+              }`}
             >
               View All
               <ArrowRight className="h-4 w-4" />
@@ -1372,16 +1376,22 @@ export default function Home() {
                     className="group relative flex flex-col items-center gap-3 cursor-pointer"
                   >
                     {/* Image tile with premium hover glow */}
-                    <div className="relative w-[120px] sm:w-[136px] lg:w-[150px] h-[100px] sm:h-[114px] lg:h-[126px] rounded-2xl overflow-hidden border border-white/[0.1] shadow-xl group-hover:border-blue-500/60 group-hover:shadow-[0_0_24px_rgba(59,130,246,0.25)] transition-all duration-300">
+                    <div className={`relative w-[120px] sm:w-[136px] lg:w-[150px] h-[100px] sm:h-[114px] lg:h-[126px] rounded-2xl overflow-hidden border shadow-xl group-hover:border-blue-500/60 group-hover:shadow-[0_0_24px_rgba(59,130,246,0.25)] transition-all duration-300 ${
+                      isLight ? 'border-slate-200 bg-slate-50' : 'border-white/[0.1]'
+                    }`}>
                       {/* Dark tint that fades on hover to reveal bright image */}
-                      <div className="absolute inset-0 bg-[#0d1527]/55 z-10 pointer-events-none group-hover:opacity-0 transition-opacity duration-350" />
+                      <div className={`absolute inset-0 ${isLight ? 'bg-slate-100/10' : 'bg-[#0d1527]/55'} z-10 pointer-events-none group-hover:opacity-0 transition-opacity duration-350`} />
                       <img
                         src={category.image}
                         alt={category.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.12] mix-blend-luminosity opacity-80 group-hover:mix-blend-normal group-hover:opacity-100"
+                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.12] ${isLight ? 'opacity-90 group-hover:opacity-100' : 'mix-blend-luminosity opacity-80 group-hover:mix-blend-normal group-hover:opacity-100'}`}
                       />
                       {/* Bottom gradient — lightens on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#050810]/75 via-[#0a1020]/30 to-transparent z-20 pointer-events-none group-hover:from-[#050810]/30 group-hover:via-transparent transition-all duration-350" />
+                      <div className={`absolute inset-0 z-20 pointer-events-none transition-all duration-350 ${
+                        isLight 
+                          ? 'bg-gradient-to-t from-slate-200/80 via-slate-100/10 to-transparent group-hover:from-slate-200/40' 
+                          : 'bg-gradient-to-t from-[#050810]/75 via-[#0a1020]/30 to-transparent group-hover:from-[#050810]/30 group-hover:via-transparent'
+                      }`} />
                       {/* Active glow ring */}
                       <div className="absolute inset-0 rounded-2xl ring-0 group-hover:ring-2 group-hover:ring-blue-500/70 ring-offset-0 transition-all duration-300 z-30 pointer-events-none" />
                     </div>
@@ -1401,7 +1411,11 @@ export default function Home() {
                   whileHover={{ y: -4, scale: 1.03 }}
                   className="group flex flex-col items-center gap-3 cursor-pointer"
                 >
-                  <div className="relative w-[120px] sm:w-[136px] lg:w-[150px] h-[100px] sm:h-[114px] lg:h-[126px] rounded-2xl overflow-hidden border border-white/[0.1] bg-gradient-to-br from-blue-600/20 to-indigo-600/10 flex items-center justify-center">
+                  <div className={`relative w-[120px] sm:w-[136px] lg:w-[150px] h-[100px] sm:h-[114px] lg:h-[126px] rounded-2xl overflow-hidden border flex items-center justify-center ${
+                    isLight 
+                      ? 'border-slate-200 bg-gradient-to-br from-blue-50 to-indigo-50' 
+                      : 'border-white/[0.1] bg-gradient-to-br from-blue-600/20 to-indigo-600/10'
+                  }`}>
                     <div className="flex flex-col items-center gap-2">
                       <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-600/90 text-white shadow-lg shadow-blue-600/30 group-hover:bg-blue-500 transition-colors">
                         <ArrowRight className="h-6 w-6" />
@@ -1554,7 +1568,7 @@ export default function Home() {
         <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12 z-10">
 
           {/* Main banner — video background card */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.12]">
+          <div className="always-dark relative overflow-hidden rounded-2xl border border-white/[0.12]">
             {/* Background video */}
             <video
               src={sellerVideoUrl}

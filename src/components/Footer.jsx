@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Cpu, ShieldCheck, Activity, Bell, Mail, ArrowRight, Zap } from 'lucide-react';
+import { Cpu, ShieldCheck, Activity, Bell, Mail, ArrowRight } from 'lucide-react';
+
+const logoUrl = new URL('../../Media/logo (3).png', import.meta.url).href;
 
 export default function Footer() {
   const [subscriberEmail, setSubscriberEmail] = useState('');
@@ -67,7 +69,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 pb-12 border-b border-white/[0.06]">
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 hover:opacity-95 transition-opacity">
-              <Zap className="text-yellow-400 w-6 h-6 fill-yellow-400 filter drop-shadow-[0_2px_8px_rgba(234,179,8,0.3)]" />
+              <img src={logoUrl} alt="Tech-Hub Logo" className="w-14 h-14 -ml-3.5 -mr-3 object-contain" />
               <span className="text-xl font-bold tracking-wide text-white">Tech-Hub</span>
             </Link>
             <p className="text-xs text-slate-400 mt-4 leading-relaxed max-w-xs">

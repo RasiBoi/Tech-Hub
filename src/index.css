@@ -517,3 +517,109 @@ a, button, [role="button"] {
 :root.light .hover\:border-white\/\[0\.15\]:hover {
   border-color: rgba(0, 0, 0, 0.15) !important;
 }
+
+/* 7. Always Dark Sections (Hero & Vendor Card) */
+.always-dark,
+:root.light .always-dark {
+  background-color: #070a13 !important;
+  color: #dce3f0 !important;
+}
+
+:root.light .always-dark h1,
+:root.light .always-dark h2,
+:root.light .always-dark h3,
+:root.light .always-dark h4,
+:root.light .always-dark h5,
+:root.light .always-dark h6,
+:root.light .always-dark .text-heading {
+  color: #ffffff !important;
+}
+
+:root.light .always-dark p {
+  color: #94a3b8 !important;
+}
+
+:root.light .always-dark .text-white,
+:root.light .always-dark .text-soft {
+  color: #dce3f0 !important;
+}
+
+:root.light .always-dark .text-slate-100 {
+  color: #f1f5f9 !important;
+}
+
+:root.light .always-dark .text-slate-200 {
+  color: #e2e8f0 !important;
+}
+
+:root.light .always-dark .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+:root.light .always-dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+:root.light .always-dark .text-slate-450 {
+  color: #64748b !important;
+}
+
+:root.light .always-dark .text-slate-500 {
+  color: #64748b !important;
+}
+
+:root.light .always-dark .border-white\/10,
+:root.light .always-dark .border-white\/15,
+:root.light .always-dark .border-white\/20,
+:root.light .always-dark .border-white\/\[0\.12\],
+:root.light .always-dark .border-white\/\[0\.08\],
+:root.light .always-dark .border-white\/\[0\.06\],
+:root.light .always-dark .border-white\/\[0\.07\] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+:root.light .always-dark .bg-slate-900\/40 {
+  background-color: rgba(15, 23, 42, 0.4) !important;
+}
+
+:root.light .always-dark .bg-slate-950\/45 {
+  background-color: rgba(2, 6, 23, 0.45) !important;
+}
+
+:root.light .always-dark .divide-white\/25,
+:root.light .always-dark .divide-white\/15 {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+:root.light .always-dark .border-white\/25 {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+:root.light .always-dark .bg-white\/\[0\.04\] {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+:root.light .always-dark .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+:root.light .always-dark .bg-slate-900 {
+  background-color: #0f172a !important;
+}
+
+:root.light .always-dark .hover\:bg-slate-800:hover {
+  background-color: #1e293b !important;
+}
+
+:root.light .always-dark .bg-slate-950\/80 {
+  background-color: rgba(6, 10, 22, 0.85) !important;
+}
+
+:root.light .always-dark p.text-white span,
+:root.light .always-dark p.text-white .AnimatedStat {
+  color: #ffffff !important;
+}
+
+:root.light .always-dark .text-blue-400 {
+  color: #60a5fa !important;
+}
