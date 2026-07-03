@@ -850,22 +850,22 @@ export default function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const prodData = await requestJson(`${serviceRegistry.catalog}/products`);
-        setAllDbProducts(prodData);
-      } catch (e) {
-        if (!isRequestAbortError(e)) {
-          console.error('Failed to load products from database', e);
-        }
+      // Fetch products and categories in parallel for faster page load
+      const [prodResult, catResult] = await Promise.allSettled([
+        requestJson(`${serviceRegistry.catalog}/products`),
+        requestJson(`${serviceRegistry.catalog}/categories`),
+      ]);
+
+      if (prodResult.status === 'fulfilled' && prodResult.value) {
+        setAllDbProducts(prodResult.value);
+      } else if (prodResult.status === 'rejected' && !isRequestAbortError(prodResult.reason)) {
+        console.error('Failed to load products from database', prodResult.reason);
       }
 
-      try {
-        const catData = await requestJson(`${serviceRegistry.catalog}/categories`);
-        setDbCategories(catData);
-      } catch (e) {
-        if (!isRequestAbortError(e)) {
-          console.error('Failed to load categories from database', e);
-        }
+      if (catResult.status === 'fulfilled' && catResult.value) {
+        setDbCategories(catResult.value);
+      } else if (catResult.status === 'rejected' && !isRequestAbortError(catResult.reason)) {
+        console.error('Failed to load categories from database', catResult.reason);
       }
     };
     loadData();

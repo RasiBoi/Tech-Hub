@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight
+  Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight, ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -56,34 +56,36 @@ export default function Navbar() {
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
 
-  useEffect(() => {
-    const loadSuggestions = async () => {
-      try {
-        const data = await requestJson(`${serviceRegistry.catalog}/products`, {
-          timeoutMs: 15000,
-          omitAuth: true,
-        });
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
 
-        if (!Array.isArray(data)) return;
+  const loadSuggestions = async () => {
+    if (suggestionPool.length > 0 || isSuggestionsLoading) return;
+    setIsSuggestionsLoading(true);
+    try {
+      const data = await requestJson(`${serviceRegistry.catalog}/products`, {
+        timeoutMs: 15000,
+        omitAuth: true,
+      });
 
-        const normalized = data.slice(0, 240).map((item) => ({
-          id: item.id,
-          title: item.title || 'Untitled Product',
-          image: item.image || '',
-          brand: item.brand || 'Tech-Hub',
-          category: item.category?.name || item.category || 'Accessories',
-        }));
+      if (!Array.isArray(data)) return;
 
-        setSuggestionPool(normalized);
-      } catch (error) {
-        if (!isRequestAbortError(error)) {
-          console.error('Failed to preload navbar search suggestions:', error);
-        }
+      const normalized = data.slice(0, 240).map((item) => ({
+        id: item.id,
+        title: item.title || 'Untitled Product',
+        image: item.image || '',
+        brand: item.brand || 'Tech-Hub',
+        category: item.category?.name || item.category || 'Accessories',
+      }));
+
+      setSuggestionPool(normalized);
+    } catch (error) {
+      if (!isRequestAbortError(error)) {
+        console.error('Failed to load navbar search suggestions:', error);
       }
-    };
-
-    loadSuggestions();
-  }, []);
+    } finally {
+      setIsSuggestionsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const query = searchInput.trim().toLowerCase();
@@ -216,9 +218,11 @@ export default function Navbar() {
                 onChange={(e) => {
                   setSearchInput(e.target.value);
                   setIsSuggestionsOpen(true);
+                  loadSuggestions();
                 }}
                 onFocus={() => {
                   setIsSuggestionsOpen(true);
+                  loadSuggestions();
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -385,6 +389,14 @@ export default function Navbar() {
                             Vendor Portal
                           </Link>
                         )}
+                        <Link 
+                          to="/portal" 
+                          className="text-xs text-slate-300 hover:text-white font-bold py-2 flex items-center gap-2 transition-colors border-t border-slate-800/50 mt-1 pt-1.5"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5 text-emerald-500" />
+                          Customer Dashboard
+                        </Link>
                         <button
                           onClick={() => {
                             logout();
@@ -552,8 +564,12 @@ export default function Navbar() {
                 onChange={(e) => {
                   setSearchInput(e.target.value);
                   setIsMobileSearchOpen(true);
+                  loadSuggestions();
                 }}
-                onFocus={() => setIsMobileSearchOpen(true)}
+                onFocus={() => {
+                  setIsMobileSearchOpen(true);
+                  loadSuggestions();
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     submitSearch();

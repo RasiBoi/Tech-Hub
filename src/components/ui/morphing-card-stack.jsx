@@ -89,12 +89,20 @@ function GridCard({ card }) {
       <div className="px-5 pb-5 flex-1 flex flex-col justify-between relative">
         {/* Avatar logo overlapping the banner */}
         <div className="flex gap-3 text-left relative -mt-6">
-          <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-lg border-2 border-[var(--bg-card,#0d1527)] shrink-0 transition-transform duration-300 group-hover:scale-105",
-            card.avatarBg ? card.avatarBg : 'bg-gradient-to-tr from-blue-600 to-indigo-500'
-          )}>
-            {card.initials}
-          </div>
+          {card.logoUrl ? (
+            <img
+              src={card.logoUrl}
+              alt={card.title}
+              className="w-12 h-12 rounded-2xl object-cover shadow-lg border-2 border-[var(--bg-card,#0d1527)] shrink-0 transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-lg border-2 border-[var(--bg-card,#0d1527)] shrink-0 transition-transform duration-300 group-hover:scale-105",
+              card.avatarBg ? card.avatarBg : 'bg-gradient-to-tr from-blue-600 to-indigo-500'
+            )}>
+              {card.initials}
+            </div>
+          )}
 
           <div className="min-w-0 flex-1 pt-6">
             <div className="flex items-center justify-between group/title">
@@ -164,12 +172,20 @@ function StackCard({ card, isTopCard, showContent }) {
       <div className="px-4 pb-4 flex-1 flex flex-col justify-between relative">
         {/* Avatar logo overlapping the banner */}
         <div className="flex gap-2.5 text-left relative -mt-5">
-          <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shadow-lg border-2 border-[var(--bg-card,#0d1527)] shrink-0",
-            card.avatarBg ? card.avatarBg : 'bg-gradient-to-tr from-blue-600 to-indigo-500'
-          )}>
-            {card.initials}
-          </div>
+          {card.logoUrl ? (
+            <img
+              src={card.logoUrl}
+              alt={card.title}
+              className="w-10 h-10 rounded-xl object-cover shadow-lg border-2 border-[var(--bg-card,#0d1527)] shrink-0"
+            />
+          ) : (
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shadow-lg border-2 border-[var(--bg-card,#0d1527)] shrink-0",
+              card.avatarBg ? card.avatarBg : 'bg-gradient-to-tr from-blue-600 to-indigo-500'
+            )}>
+              {card.initials}
+            </div>
+          )}
 
           <div className="min-w-0 flex-1 pt-5">
             <div className="flex items-center justify-between">
@@ -212,13 +228,21 @@ function ListCard({ card }) {
   return (
     <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5">
       <div className="flex items-center gap-4 min-w-0 flex-1">
-        {/* Initials Avatar */}
-        <div className={cn(
-          "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-md border border-white/10 shrink-0",
-          card.avatarBg ? card.avatarBg : 'bg-gradient-to-tr from-blue-600 to-indigo-500'
-        )}>
-          {card.initials}
-        </div>
+        {/* Initials Avatar / Logo */}
+        {card.logoUrl ? (
+          <img
+            src={card.logoUrl}
+            alt={card.title}
+            className="w-12 h-12 rounded-2xl object-cover shadow-md border border-white/10 shrink-0"
+          />
+        ) : (
+          <div className={cn(
+            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-md border border-white/10 shrink-0",
+            card.avatarBg ? card.avatarBg : 'bg-gradient-to-tr from-blue-600 to-indigo-500'
+          )}>
+            {card.initials}
+          </div>
+        )}
         
         {/* Title & Tagline */}
         <div className="min-w-0">
