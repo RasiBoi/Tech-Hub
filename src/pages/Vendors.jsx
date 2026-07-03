@@ -114,7 +114,8 @@ export default function Vendors() {
       id: String(vendor.id),
       title: nameStr,
       description: vendor.store_description || 'Premium workspace accessories & gear.',
-      bannerUrl: vendor.banner_url,
+      bannerUrl: vendor.cover_image_url || vendor.banner_url,
+      logoUrl: vendor.logo_url,
       avatarBg: vendor.avatar_bg,
       initials: initials,
       rating: vendor.rating || 5.0,
@@ -195,9 +196,17 @@ export default function Vendors() {
                       key={`slide-${v.id}`}
                       className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl bg-[#0d1527] border border-white/[0.05] backdrop-blur-md select-none shrink-0"
                     >
-                      <div className={`w-7 h-7 rounded-xl bg-gradient-to-tr ${v.avatar_bg || 'from-blue-600 to-indigo-500'} flex items-center justify-center text-xs font-black text-white shadow-md border border-white/5`}>
-                        {initials}
-                      </div>
+                      {v.logo_url ? (
+                        <img
+                          src={v.logo_url}
+                          alt={nameStr}
+                          className="w-7 h-7 rounded-xl object-cover shadow-md border border-white/5 shrink-0"
+                        />
+                      ) : (
+                        <div className={`w-7 h-7 rounded-xl bg-gradient-to-tr ${v.avatar_bg || 'from-blue-600 to-indigo-500'} flex items-center justify-center text-xs font-black text-white shadow-md border border-white/5`}>
+                          {initials}
+                        </div>
+                      )}
                       <span className="text-xs font-extrabold text-white tracking-wide">{nameStr}</span>
                     </div>
                   );

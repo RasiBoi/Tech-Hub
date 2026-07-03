@@ -7,8 +7,10 @@ import {
   LogOut, LayoutGrid, Plus, BarChart3, RotateCcw, PackageCheck, 
   AlertCircle, RefreshCw, Cpu, Award, ShoppingBag, Settings, 
   Hammer, Loader2, Search, Edit3, Trash2, CheckCircle2, ChevronRight, Truck,
-  Tag, Sliders, Info, ShoppingCart, HelpCircle, Sun, Moon
+  Tag, Sliders, Info, ShoppingCart, HelpCircle, Sun, Moon,
+  Upload, ImageIcon, X, Users, FileText, Palette, BookOpen
 } from 'lucide-react';
+import '../../element-ui.css';
 
 export default function VendorPortal() {
   const { user, logout, updateUser } = useAuth();
@@ -43,6 +45,8 @@ export default function VendorPortal() {
   const [addVibe, setAddVibe] = useState('minimalist');
   const [addImage, setAddImage] = useState('');
   const [addDescription, setAddDescription] = useState('');
+  const [addImageFile, setAddImageFile] = useState(null);       // File object from <input type="file">
+  const [addImagePreview, setAddImagePreview] = useState('');   // Object URL for live preview
   
   // Filter States (View Products)
   const [productSearch, setProductSearch] = useState('');
@@ -53,6 +57,18 @@ export default function VendorPortal() {
   const [vendorName, setVendorName] = useState(user?.name || '');
   const [shopBio, setShopBio] = useState('Premium workspace accessories & gear.');
   const [shopAvatarBg, setShopAvatarBg] = useState(user?.avatarBg || 'bg-slate-800 text-white');
+
+  // New customization settings states
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [shopTheme, setShopTheme] = useState('element');
+  const [companyProfile, setCompanyProfile] = useState('');
+  const [policyType, setPolicyType] = useState('text');
+  const [policyText, setPolicyText] = useState('');
+  const [policyPdfUrl, setPolicyPdfUrl] = useState('');
+  const [followersList, setFollowersList] = useState([]);
+  const [activeCustomizeSubTab, setActiveCustomizeSubTab] = useState('branding');
+  const [uploadingField, setUploadingField] = useState(null); // 'logo' | 'cover' | 'policy'
 
   // Dispatch Courier State
   const [dispatchItem, setDispatchItem] = useState(null);
@@ -80,33 +96,45 @@ export default function VendorPortal() {
   const [makerPrice, setMakerPrice] = useState(0);
   const [generatedProduct, setGeneratedProduct] = useState(null);
 
+  // Force Light Mode on Mount, Restore on Unmount
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const wasLight = root.classList.contains('light');
+    root.classList.add('light');
+    return () => {
+      if (!wasLight) {
+        root.classList.remove('light');
+      }
+    };
+  }, []);
+
   // Load backend data
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch categories
-      const catData = await requestJson(`${serviceRegistry.catalog}/categories`);
-      if (catData) {
-        setCategories(catData);
-        if (catData.length > 0 && !addCategoryId) {
-          setAddCategoryId(catData[0].id.toString());
+      // Fetch all data in parallel — categories, products, and orders simultaneously
+      const [catResult, prodResult, ordersResult] = await Promise.allSettled([
+        requestJson(`${serviceRegistry.catalog}/categories`),
+        requestJson(`${serviceRegistry.catalog}/products`),
+        requestJson(`${serviceRegistry.commerce}/orders`),
+      ]);
+
+      if (catResult.status === 'fulfilled' && catResult.value) {
+        setCategories(catResult.value);
+        if (catResult.value.length > 0 && !addCategoryId) {
+          setAddCategoryId(catResult.value[0].id.toString());
         }
       }
-      
-      // 2. Fetch products
-      const prodData = await requestJson(`${serviceRegistry.catalog}/products`);
-      if (prodData && user?.id) {
-        // Filter products owned by this vendor
-        const filteredProds = prodData.filter(
+
+      if (prodResult.status === 'fulfilled' && prodResult.value && user?.id) {
+        const filteredProds = prodResult.value.filter(
           p => p.vendor_id === user.id || p.vendor?.id === user.id
         );
         setProducts(filteredProds);
       }
-      
-      // 3. Fetch order items
-      const ordersData = await requestJson(`${serviceRegistry.commerce}/orders`);
-      if (ordersData) {
-        setOrderItems(ordersData);
+
+      if (ordersResult.status === 'fulfilled' && ordersResult.value) {
+        setOrderItems(ordersResult.value);
       }
     } catch (e) {
       console.error('Error fetching vendor data:', e);
@@ -118,6 +146,9 @@ export default function VendorPortal() {
 
   useEffect(() => {
     fetchData();
+    if (user?.id) {
+      fetchSettingsAndFollowers();
+    }
   }, [user?.id]);
 
   useEffect(() => {
@@ -182,7 +213,7 @@ export default function VendorPortal() {
     if (!editTitle || !editPrice || !editStock) return;
     setActionLoading(true);
     try {
-      const updated = await requestJson(`${serviceRegistry.catalog}/products/${editingProduct.id}`, {
+      await requestJson(`${serviceRegistry.catalog}/products/${editingProduct.id}`, {
         method: 'PUT',
         body: {
           title: editTitle,
@@ -213,6 +244,12 @@ export default function VendorPortal() {
     }
     setActionLoading(true);
     try {
+      // Use the file preview URL if a file was chosen, otherwise fall back to the pasted URL
+      const resolvedImage =
+        addImagePreview ||
+        addImage ||
+        '../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-1.jpg';
+
       const payload = {
         title: addTitle,
         description: addDescription || 'Premium handcrafted tech workspace gear.',
@@ -221,10 +258,10 @@ export default function VendorPortal() {
         category_id: parseInt(addCategoryId),
         spec: addSpec || 'Custom Workstation Accessory',
         vibe: addVibe || null,
-        image: addImage || '../../Media/product_images/baseus-foldable-desktop-phone-stand-portable-and-adjustable-universal-holder-for-phones-tablets-and-ipads/image-1.jpg'
+        image: resolvedImage,
       };
 
-      const newProduct = await requestJson(`${serviceRegistry.catalog}/products`, {
+      await requestJson(`${serviceRegistry.catalog}/products`, {
         method: 'POST',
         body: payload
       });
@@ -237,7 +274,10 @@ export default function VendorPortal() {
       setAddSpec('');
       setAddDescription('');
       setAddImage('');
-      
+      setAddImageFile(null);
+      if (addImagePreview) URL.revokeObjectURL(addImagePreview);
+      setAddImagePreview('');
+
       // Reload products list and go to products tab
       fetchData();
       setActiveTab('products');
@@ -249,12 +289,81 @@ export default function VendorPortal() {
     }
   };
 
-  // Handle Save Profile Settings
-  const handleSaveProfile = async (e) => {
+
+  // Load settings and followers
+  const fetchSettingsAndFollowers = async () => {
+    if (!user || user.role !== 'vendor') return;
+    try {
+      const settings = await requestJson(`${serviceRegistry.catalog}/vendor/settings`);
+      if (settings) {
+        setCoverImageUrl(settings.cover_image_url || '');
+        setLogoUrl(settings.logo_url || '');
+        setShopTheme(settings.shop_theme || 'element');
+        setCompanyProfile(settings.company_profile || '');
+        setPolicyType(settings.policy_type || 'text');
+        setPolicyText(settings.policy_text || '');
+        setPolicyPdfUrl(settings.policy_pdf_url || '');
+      }
+
+      const followers = await requestJson(`${serviceRegistry.catalog}/vendor/followers`);
+      if (followers) {
+        setFollowersList(followers);
+      }
+    } catch (e) {
+      console.error('Error fetching settings/followers:', e);
+    }
+  };
+
+  // Helper function to upload files to backend
+  const handleFileUpload = async (file, field) => {
+    setUploadingField(field);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const token = localStorage.getItem('techhub_token');
+      const response = await fetch(`${serviceRegistry.catalog}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'File upload failed');
+      }
+      
+      const res = await response.json();
+      const uploadedUrl = res.data?.url || res.url;
+
+      if (field === 'logo') {
+        setLogoUrl(uploadedUrl);
+        showToast('Logo uploaded successfully.');
+      } else if (field === 'cover') {
+        setCoverImageUrl(uploadedUrl);
+        showToast('Cover image uploaded successfully.');
+      } else if (field === 'policy') {
+        setPolicyPdfUrl(uploadedUrl);
+        showToast('Terms & Conditions PDF uploaded successfully.');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Failed to upload file.', 'error');
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  // Handle Save Settings (updates profile + vendor settings)
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
     if (!vendorName) return;
     setActionLoading(true);
     try {
+      // 1. Update basic profile
       const updatedUser = await requestJson(`${serviceRegistry.catalog}/profile`, {
         method: 'PUT',
         body: {
@@ -263,12 +372,36 @@ export default function VendorPortal() {
           avatar_bg: shopAvatarBg
         }
       });
-      
       updateUser(updatedUser);
-      showToast('Shop configurations saved.');
+
+      // 2. Update vendor settings
+      const updatedSettings = await requestJson(`${serviceRegistry.catalog}/vendor/settings`, {
+        method: 'PUT',
+        body: {
+          cover_image_url: coverImageUrl,
+          logo_url: logoUrl,
+          shop_theme: shopTheme,
+          company_profile: companyProfile,
+          policy_type: policyType,
+          policy_text: policyText,
+          policy_pdf_url: policyPdfUrl
+        }
+      });
+
+      if (updatedSettings) {
+        setCoverImageUrl(updatedSettings.cover_image_url || '');
+        setLogoUrl(updatedSettings.logo_url || '');
+        setShopTheme(updatedSettings.shop_theme || 'element');
+        setCompanyProfile(updatedSettings.company_profile || '');
+        setPolicyType(updatedSettings.policy_type || 'text');
+        setPolicyText(updatedSettings.policy_text || '');
+        setPolicyPdfUrl(updatedSettings.policy_pdf_url || '');
+      }
+
+      showToast('Shop configurations and interface settings saved successfully!');
     } catch (e) {
       console.error(e);
-      showToast('Failed to update shop details.', 'error');
+      showToast(e.message || 'Failed to update shop settings.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -283,39 +416,61 @@ export default function VendorPortal() {
   };
 
   // Confirm Dispatch
-  const handleConfirmDispatch = (e) => {
+  const handleConfirmDispatch = async (e) => {
     e.preventDefault();
-    if (!trackingCode) return;
+    if (!trackingCode || !dispatchItem) return;
     
-    setDispatchedTrackers(prev => ({
-      ...prev,
-      [dispatchItem.id]: {
-        courier: courierName,
-        tracking: trackingCode,
-        timestamp: new Date().toLocaleTimeString()
-      }
-    }));
-    
-    showToast(`Courier dispatched! Tracker: ${trackingCode}`);
-    setDispatchItem(null);
+    setActionLoading(true);
+    try {
+      await requestJson(`${serviceRegistry.commerce}/order-items/${dispatchItem.id}/dispatch`, {
+        method: 'PUT',
+        body: {
+          courier_name: courierName,
+          tracking_code: trackingCode
+        }
+      });
+      
+      setDispatchedTrackers(prev => ({
+        ...prev,
+        [dispatchItem.id]: {
+          courier: courierName,
+          tracking: trackingCode,
+          timestamp: new Date().toLocaleTimeString()
+        }
+      }));
+      
+      showToast(`Courier dispatched! Tracker: ${trackingCode}`);
+      setDispatchItem(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to dispatch courier.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  // Dynamic values calculated from real data
+  // Dynamic Telemetry metrics
   const stats = useMemo(() => {
     let sales = 0;
+    let totalOrdersCount = 0;
+    
     orderItems.forEach(item => {
-      sales += parseFloat(item.price) * parseInt(item.quantity);
+      // Find matches for this vendor
+      if (item.product?.vendor_id === user?.id || item.product?.vendor?.id === user?.id) {
+        sales += parseFloat(item.price || 0) * parseInt(item.quantity || 1);
+        totalOrdersCount += 1;
+      }
     });
 
     const activeListingsCount = products.length;
-    const totalOrdersCount = orderItems.length;
 
     return {
       sales,
       listings: activeListingsCount,
       orders: totalOrdersCount
     };
-  }, [products, orderItems]);
+  }, [products, orderItems, user]);
 
   // Preset images matching specific categories
   const imagePresets = [
@@ -363,70 +518,64 @@ export default function VendorPortal() {
     let vibe = 'minimalist';
     let image = '';
     let categoryName = '';
+    let chosenCategoryId = 1;
 
-    if (makerCategory === 'keyboard') {
-      categoryName = 'Charging Stations';
-      const baseLabel = kbBase === 'walnut' ? 'Walnut' : kbBase === 'matte_black' ? 'Stealth Black' : kbBase === 'white_acrylic' ? 'Minimalist White' : 'Cyberpunk Neon';
-      const switchLabel = kbSwitch === 'linear_red' ? 'Linear Red' : kbSwitch === 'clicky_blue' ? 'Tactile Blue' : 'Silent Brown';
-      const keycapLabel = kbKeycaps === 'retro_orange' ? 'Retro Grey-Orange' : kbKeycaps === 'stealth_black' ? 'Matte Black' : 'Vaporwave Cyan';
-      const cableLabel = kbCable === 'aviator' ? 'Aviator Coiled' : 'Standard USB-C';
-
-      title = `Tech-Hub Custom ${baseLabel} Mechanical Keyboard`;
-      description = `A beautifully configured custom mechanical keyboard, boasting a premium ${baseLabel} case and frame. Powered by ${switchLabel} switches and finished with striking ${keycapLabel} keycaps, connected with a high-fidelity ${cableLabel} cable for the ultimate visual desk setup.`;
-      spec = `${baseLabel} Plate | ${switchLabel} Switches | ${keycapLabel} Keycaps`;
-      
-      if (kbBase === 'walnut') vibe = 'walnut';
-      else if (kbBase === 'matte_black') vibe = 'black';
-      else if (kbBase === 'neon_glass') vibe = 'cyberpunk';
-      else vibe = 'minimalist';
-
-      image = '../../Media/product_images/ugreen-monitor-raiser-stand/image-1.png'; // Fallback
-    } else if (makerCategory === 'organizer') {
-      categoryName = 'Desk Organizers';
-      const matLabel = orgMaterial === 'walnut' ? 'Premium Walnut' : orgMaterial === 'cherry' ? 'Cherry Wood' : orgMaterial === 'polymer' ? 'Stealth Matte Black' : 'Cyberpunk Acrylic';
-      const compLabel = orgCompartments === '3_slots' ? '3 slots' : orgCompartments === '5_slots' ? '5 slots with phone holder' : '7 slots dual-tier';
-      const liningLabel = orgLining === 'felt' ? 'Soft felt lining' : orgLining === 'leather' ? 'Top-grain leather lining' : 'Natural wood grain';
-
-      title = `Tech-Hub Custom ${matLabel} Desk Organizer`;
-      description = `Declutter your creative workspace. Handcrafted custom organizer featuring ${compLabel} designed to house stationery, notebooks, and mobile phones, layered with a ${liningLabel} protective base.`;
-      spec = `${matLabel} | ${compLabel} | ${orgLining !== 'none' ? liningLabel : 'No Lining'}`;
-
-      if (orgMaterial === 'walnut') vibe = 'walnut';
-      else if (orgMaterial === 'polymer') vibe = 'black';
-      else if (orgMaterial === 'neon') vibe = 'cyberpunk';
-      else vibe = 'minimalist';
-
-      image = '../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png';
-    } else if (makerCategory === 'riser') {
-      categoryName = 'Monitor Raisers';
-      const woodLabel = riserWood === 'walnut' ? 'Solid Walnut' : riserWood === 'cherry' ? 'Cherry Wood' : riserWood === 'metal' ? 'Anodized Aluminum' : 'Frosted White Acrylic';
-      const sizeLabel = riserSize === 'single' ? 'Single Display' : 'Ultrawide/Dual Display';
-      const drawerLabel = riserDrawer === 'walnut_drawer' ? 'integrated Walnut storage drawers' : riserDrawer === 'acrylic_drawer' ? 'integrated acrylic drawers' : 'open layout';
-
-      title = `Tech-Hub Custom ${woodLabel} Monitor Riser`;
-      description = `Ergonomically raise your monitors to eye level. Crafted from ${woodLabel} for ${sizeLabel} workspaces, finished with a beautiful ${drawerLabel} layout to store accessories.`;
-      spec = `${woodLabel} Wood | ${sizeLabel} | ${drawerLabel}`;
-
-      if (riserWood === 'walnut') vibe = 'walnut';
-      else if (riserWood === 'metal') vibe = 'black';
-      else if (riserWood === 'acrylic') vibe = 'minimalist';
-      else vibe = 'walnut';
-
-      image = '../../Media/product_images/upergo-premium-walnut-dual-monitor-riser-stand-vd-42t/image-1.png';
+    if (categories.length > 0) {
+      chosenCategoryId = categories[0].id;
     }
 
-    const matchedCat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-    const matchedCatId = matchedCat ? matchedCat.id : (categories.length > 0 ? categories[0].id : 1);
+    if (makerCategory === 'keyboard') {
+      categoryName = 'Keyboards';
+      const baseLabel = kbBase === 'walnut' ? 'Walnut Wood' : kbBase === 'matte_black' ? 'Stealth Black' : kbBase === 'white_acrylic' ? 'Minimalist White' : 'Cyberpunk Neon';
+      const switchLabel = kbSwitch === 'linear_red' ? 'Linear Red' : kbSwitch === 'clicky_blue' ? 'Tactile Blue' : 'Silent Brown';
+      const keycapLabel = kbKeycaps === 'retro_orange' ? 'Retro Orange' : kbKeycaps === 'stealth_black' ? 'Stealth Black' : 'Vaporwave';
+      const cableLabel = kbCable === 'aviator' ? 'Coiled Aviator Cable' : 'Standard USB-C';
+      
+      title = `Custom ${baseLabel} Mech Keyboard`;
+      description = `A custom-crafted mechanical keyboard built on a premium ${baseLabel} case base. Equipped with high-performance ${switchLabel} switches and premium ${keycapLabel} layout keycaps. Connected via a high-end ${cableLabel} matching workspace aesthetics.`;
+      spec = `${switchLabel} switches | ${keycapLabel} caps | ${baseLabel}`;
+      vibe = kbBase === 'neon_glass' ? 'cyberpunk' : kbBase === 'walnut' ? 'walnut' : kbBase === 'matte_black' ? 'black' : 'minimalist';
+      image = kbBase === 'walnut' 
+        ? '../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png' 
+        : '../../Media/product_images/ugreen-monitor-raiser-stand/image-1.png';
+    } else if (makerCategory === 'organizer') {
+      categoryName = 'Desk Organizers';
+      const matLabel = orgMaterial === 'walnut' ? 'Walnut wood' : orgMaterial === 'cherry' ? 'Cherry wood' : orgMaterial === 'polymer' ? 'Matte Polymer' : 'Cyberpunk Neon Acrylic';
+      const slotsLabel = orgCompartments === '3_slots' ? '3 Slots' : orgCompartments === '5_slots' ? '5 Compartments' : '7 XL Slots';
+      const liningLabel = orgLining === 'felt' ? 'wool felt lining' : orgLining === 'leather' ? 'saddle leather padding' : 'unlined base';
+      
+      title = `Handcrafted ${matLabel} Desk Caddy`;
+      description = `An elegant desktop organizer custom configured with ${slotsLabel} to hold workstation accessories. Finished with a premium protective ${liningLabel} to safeguard tools.`;
+      spec = `${slotsLabel} | ${matLabel} | ${orgLining !== 'none' ? liningLabel : 'Classic finish'}`;
+      vibe = orgMaterial === 'neon' ? 'cyberpunk' : orgMaterial === 'walnut' ? 'walnut' : 'minimalist';
+      image = '../../Media/product_images/premium-walnut-desk-organizer-the-c-level-collection/image-1.png';
+    } else if (makerCategory === 'riser') {
+      categoryName = 'Monitor Stands';
+      const woodLabel = riserWood === 'walnut' ? 'Walnut Wood' : riserWood === 'cherry' ? 'Cherry Wood' : riserWood === 'metal' ? 'Anodized Aluminum' : 'Frosted Acrylic';
+      const sizeLabel = riserSize === 'single' ? 'Single Monitor' : 'Dual Monitor XL';
+      const drawerLabel = riserDrawer === 'none' ? 'open storage slot' : riserDrawer === 'walnut_drawer' ? 'walnut wood storage drawer' : 'frosted acrylic storage drawer';
+      
+      title = `Premium ${woodLabel} Monitor Riser`;
+      description = `An ergonomic workspace addition configured for ${sizeLabel} setups. Made of high-quality ${woodLabel} and integrated with a custom ${drawerLabel} for desktop item storage.`;
+      spec = `${sizeLabel} | ${woodLabel} | Drawer: ${riserDrawer}`;
+      vibe = riserWood === 'walnut' ? 'walnut' : riserWood === 'acrylic' ? 'cyberpunk' : 'minimalist';
+      image = '../../Media/product_images/ugreen-monitor-raiser-stand/image-1.png';
+    }
+
+    const matchedCat = categories.find(c => c.name.toLowerCase().includes(categoryName.toLowerCase().substring(0, 5)));
+    if (matchedCat) {
+      chosenCategoryId = matchedCat.id;
+    }
 
     setGeneratedProduct({
       title,
       description,
+      price: calculatedMakerPrice,
+      stock: parseInt(makerStock),
+      category_id: chosenCategoryId,
       spec,
       vibe,
-      image,
-      category_id: matchedCatId,
-      price: calculatedMakerPrice,
-      stock: parseInt(makerStock)
+      image
     });
   };
 
@@ -450,6 +599,7 @@ export default function VendorPortal() {
     }
   };
 
+  // Filter vendors list
   const filteredProductsList = useMemo(() => {
     return products.filter(p => {
       const matchesSearch = (p.title || p.name || '').toLowerCase().includes(productSearch.toLowerCase());
@@ -458,36 +608,43 @@ export default function VendorPortal() {
     });
   }, [products, productSearch, categoryFilter]);
 
+  // Filter orders containing this vendor's products
+  const vendorOrdersList = useMemo(() => {
+    return orderItems.filter(item => {
+      return item.product?.vendor_id === user?.id || item.product?.vendor?.id === user?.id;
+    });
+  }, [orderItems, user]);
+
   return (
-    <div className="min-h-screen bg-[#070a13] font-sans text-[#dce3f0] antialiased">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased flex flex-col">
       
       {/* Dynamic Toast Alerts */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-55 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border backdrop-blur-md transition-all ${
+        <div className={`fixed bottom-6 right-6 z-55 flex items-center gap-3 px-4 py-3 rounded-lg shadow-md border backdrop-blur-md transition-all duration-300 ${
           toast.type === 'error' 
-            ? 'bg-rose-950/80 border-rose-800 text-rose-200' 
-            : 'bg-[#0d1527]/90 border-white/[0.08] text-white'
+            ? 'bg-red-50 border-red-200 text-red-800' 
+            : 'bg-white border-slate-200 text-slate-800'
         }`}>
-          <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
-            toast.type === 'error' ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'
+          <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
+            toast.type === 'error' ? 'bg-red-100 text-red-650' : 'bg-emerald-100 text-emerald-650'
           }`}>
-            {toast.type === 'error' ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+            {toast.type === 'error' ? <AlertCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
           </div>
-          <p className="text-xs font-bold tracking-wide">{toast.message}</p>
+          <p className="text-xs font-semibold tracking-wide">{toast.message}</p>
         </div>
       )}
 
       {/* Top Banner for Pending Approvals */}
       {user?.status === 'pending' && (
-        <div className="bg-[#ffa600]/10 border-b border-[#ffa600]/20 py-2.5 px-6">
+        <div className="bg-[#fdf6ec] border-b border-[#faecd8] py-3 px-6 shadow-sm">
           <div className="max-w-[1720px] mx-auto flex items-center justify-between flex-wrap gap-2 text-xs">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-[#facc15] animate-pulse" />
-              <span>
+              <AlertCircle className="w-4 h-4 text-[#e6a23c] animate-pulse" />
+              <span className="text-[#e6a23c] font-medium">
                 <strong>Application Verification Pending:</strong> Your shop setup is in progress. Listings are cataloged but invisible to general customers until approved.
               </span>
             </div>
-            <div className="px-2.5 py-0.5 rounded-full bg-[#ffa600]/10 text-[#facc15] font-black uppercase text-[9px] tracking-widest border border-[#ffa600]/30 animate-pulse">
+            <div className="px-3 py-0.5 rounded-full bg-[#fdf6ec] text-[#e6a23c] font-bold uppercase text-[9px] tracking-widest border border-[#faecd8] animate-pulse">
               Under Review
             </div>
           </div>
@@ -495,50 +652,48 @@ export default function VendorPortal() {
       )}
 
       {/* Top Control Bar */}
-      <nav className="bg-[#0b1021]/80 border-b border-white/[0.06] py-3.5 px-6 sm:px-10 flex items-center justify-between backdrop-blur-md sticky top-0 z-50">
+      <nav className="bg-white border-b border-slate-200/80 h-16 px-6 sm:px-10 flex items-center justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl p-2 flex items-center justify-center shadow-lg shadow-blue-500/10">
-            <Cpu className="w-5 h-5 text-white" />
-          </div>
+          {logoUrl ? (
+            <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center border border-slate-200 bg-slate-50 shrink-0 shadow-sm">
+              <img src={logoUrl} alt="Store Logo" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="bg-[#409eff] rounded-lg p-2 flex items-center justify-center shadow-sm shadow-[#409eff]/20 shrink-0">
+              <Cpu className="w-4 h-4 text-white" />
+            </div>
+          )}
           <div>
-            <h1 className="text-sm font-extrabold text-white tracking-wide">{user?.storeName || 'Tech-Hub Vendor'}</h1>
-            <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Merchant Portal</p>
+            <h1 className="text-sm font-bold text-slate-900 leading-tight">{user?.storeName || 'Tech-Hub Vendor'}</h1>
+            <p className="text-[9px] text-[#409eff] font-bold uppercase tracking-wider mt-0.5">Merchant Portal</p>
           </div>
         </div>
 
         <div className="flex items-center gap-5">
-          <div className="hidden md:flex items-center gap-2.5 bg-[#0a0f1d]/60 border border-white/[0.06] px-3.5 py-1.5 rounded-full text-xs">
-            <span className={`w-2 h-2 rounded-full ${user?.status === 'pending' ? 'bg-[#facc15] animate-ping' : 'bg-emerald-500'}`} />
-            <span className="font-semibold text-slate-350 capitalize">{user?.role} Mode : <strong>{user?.name}</strong></span>
+          <div className="hidden md:flex items-center gap-2.5 bg-slate-100 border border-slate-200 px-3.5 py-1.5 rounded-full text-xs">
+            <span className={`w-2 h-2 rounded-full ${user?.status === 'pending' ? 'bg-[#e6a23c] animate-pulse' : 'bg-[#67c23a]'}`} />
+            <span className="font-semibold text-slate-600 capitalize">{user?.role} Mode : <strong>{user?.name}</strong></span>
           </div>
-          
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center p-1.5 rounded-xl bg-[#12192a] hover:bg-[#1a233b] text-slate-300 hover:text-white border border-white/[0.04] transition-all focus:outline-none"
-            aria-label="Toggle Theme"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-yellow-400" /> : <Moon className="w-4 h-4 text-blue-550" />}
-          </button>
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 bg-[#12192a] hover:bg-[#1a233b] text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border border-white/[0.04]"
+            className="flex items-center gap-2 bg-slate-100 hover:bg-red-50 text-slate-650 hover:text-red-650 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border border-slate-200 shadow-sm"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-3.5 h-3.5 text-slate-400" />
             Logout
           </button>
         </div>
       </nav>
 
       {/* Portal Layout */}
-      <div className="flex min-h-[calc(screen-65px)]">
+      <div className="flex flex-1 min-h-0">
         
         {/* Sidebar Nav */}
-        <aside className="w-64 border-r border-white/[0.06] bg-[#090e1c]/40 flex flex-col justify-between p-4 shrink-0 hidden lg:flex">
+        <aside className="w-64 border-r border-slate-200/80 bg-white flex flex-col justify-between p-5 shrink-0 hidden lg:flex">
           <div className="space-y-6">
             <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-3">Control Dashboard</p>
-              <div className="mt-3 space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3.5 mb-4">Control Dashboard</p>
+              <div className="space-y-1.5">
                 {[
                   { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
                   { id: 'products', label: 'View Products', icon: <LayoutGrid className="w-4 h-4" /> },
@@ -554,12 +709,15 @@ export default function VendorPortal() {
                       setEditingProduct(null);
                       setGeneratedProduct(null);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-lg text-xs font-semibold transition-all relative ${
                       activeTab === tab.id
-                        ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-sm shadow-blue-500/5'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-[#12192c]/55 border border-transparent'
+                        ? 'text-[#409eff] bg-blue-50/50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
+                    {activeTab === tab.id && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-5 bg-[#409eff] rounded-r-md" />
+                    )}
                     {tab.icon}
                     {tab.label}
                   </button>
@@ -568,60 +726,68 @@ export default function VendorPortal() {
             </div>
 
             {/* Shop Public Preview Card */}
-            <div className="p-4 rounded-2xl bg-[#0e162b]/60 border border-white/[0.06] space-y-3">
-              <div className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-lg ${shopAvatarBg} flex items-center justify-center text-xs font-black shrink-0`}>
-                  {shopName.charAt(0).toUpperCase() || 'S'}
-                </div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3.5 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                {logoUrl ? (
+                  <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center border border-slate-200/80 bg-slate-50 shrink-0 shadow-sm">
+                    <img src={logoUrl} alt="Store Logo" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className={`w-8 h-8 rounded-lg ${shopAvatarBg} flex items-center justify-center text-xs font-bold shrink-0 shadow-sm`}>
+                    {shopName.charAt(0).toUpperCase() || 'S'}
+                  </div>
+                )}
                 <div className="min-w-0">
-                  <h4 className="text-xs font-extrabold text-white truncate">{shopName || 'Unnamed Shop'}</h4>
+                  <h4 className="text-xs font-bold text-slate-800 truncate">{shopName || 'Unnamed Shop'}</h4>
                   <p className="text-[9px] text-slate-400 font-bold truncate">Live Public Vibe</p>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-450 leading-relaxed italic line-clamp-2">
+              <p className="text-[10px] text-slate-500 leading-relaxed italic line-clamp-2">
                 "{shopBio}"
               </p>
-              <div className="border-t border-white/[0.04] pt-2.5 flex items-center justify-between text-[9px] font-bold text-slate-400">
+              <div className="border-t border-slate-200 pt-2.5 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Active Listings:</span>
-                <span className="text-blue-400 font-extrabold">{products.length} Items</span>
+                <span className="text-[#409eff] font-bold">{products.length} Items</span>
               </div>
             </div>
           </div>
 
-          <div className="text-[10px] text-slate-500 font-semibold px-3 space-y-1">
+          <div className="text-[10px] text-slate-400 font-semibold px-3.5 border-t border-slate-100 pt-3.5 space-y-0.5">
             <p>Tech-Hub Platform v2.4.1</p>
             <p>&copy; 2026 Tech-Hub</p>
           </div>
         </aside>
 
         {/* Tab content area */}
-        <main className="flex-1 p-6 sm:p-10 max-w-[1440px] mx-auto overflow-y-auto w-full">
+        <main className="flex-1 p-6 sm:p-8 max-w-[1440px] mx-auto overflow-y-auto w-full">
           
           {/* Mobile Tab Select Dropdown */}
           <div className="lg:hidden mb-6">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Select Dashboard Workspace</label>
-            <select
-              value={activeTab}
-              onChange={(e) => {
-                setActiveTab(e.target.value);
-                setEditingProduct(null);
-                setGeneratedProduct(null);
-              }}
-              className="w-full bg-[#0c1325] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-bold text-slate-200 focus:outline-none focus:border-blue-500"
-            >
-              <option value="overview">Overview</option>
-              <option value="products">View Products</option>
-              <option value="add">Product Adding</option>
-              <option value="maker">Product Making (Visual config)</option>
-              <option value="orders">Order Dispatch</option>
-              <option value="customize">Customize Shop</option>
-            </select>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Select Dashboard Workspace</label>
+            <div className="el-select">
+              <select
+                value={activeTab}
+                onChange={(e) => {
+                  setActiveTab(e.target.value);
+                  setEditingProduct(null);
+                  setGeneratedProduct(null);
+                }}
+                className="el-input__inner font-semibold text-slate-700"
+              >
+                <option value="overview">Overview</option>
+                <option value="products">View Products</option>
+                <option value="add">Product Adding</option>
+                <option value="maker">Product Making (Visual config)</option>
+                <option value="orders">Order Dispatch</option>
+                <option value="customize">Customize Shop</option>
+              </select>
+            </div>
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-              <p className="text-xs font-bold text-slate-400 tracking-widest uppercase">Fetching store status...</p>
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <Loader2 className="w-8 h-8 text-[#409eff] animate-spin" />
+              <p className="text-xs font-semibold text-slate-400 tracking-wider">Fetching store status...</p>
             </div>
           ) : (
             <>
@@ -630,27 +796,26 @@ export default function VendorPortal() {
                 <div className="space-y-8">
                   {/* Greeting */}
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Welcome, {user?.name || 'Partner'}</h2>
-                    <p className="text-xs font-semibold text-slate-400 mt-1">Here is a summary of your workspace performance and active store inventory.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Welcome, {user?.name || 'Partner'}</h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">Here is a summary of your workspace performance and active store inventory.</p>
                   </div>
 
                   {/* Dynamic Metrics */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     {[
-                      { label: 'Store Sales (LKR)', val: `LKR ${stats.sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, sub: 'Calculated from dynamic orders', icon: <BarChart3 className="w-5 h-5 text-blue-400" /> },
-                      { label: 'Active Listings', val: `${stats.listings} Products`, sub: 'Live in platform search', icon: <LayoutGrid className="w-5 h-5 text-indigo-400" /> },
-                      { label: 'Orders Received', val: `${stats.orders} items`, sub: 'Placed by customers', icon: <PackageCheck className="w-5 h-5 text-emerald-400" /> }
+                      { label: 'Store Sales (LKR)', val: `LKR ${stats.sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, sub: 'Calculated from dynamic orders', icon: <BarChart3 className="w-5 h-5 text-[#409eff]" />, border: 'border-l-4 border-l-[#409eff]' },
+                      { label: 'Active Listings', val: `${stats.listings} Products`, sub: 'Live in platform search', icon: <LayoutGrid className="w-5 h-5 text-[#67c23a]" />, border: 'border-l-4 border-l-[#67c23a]' },
+                      { label: 'Orders Received', val: `${stats.orders} items`, sub: 'Placed by customers', icon: <PackageCheck className="w-5 h-5 text-[#e6a23c]" />, border: 'border-l-4 border-l-[#e6a23c]' }
                     ].map((stat, idx) => (
-                      <div key={idx} className="bg-[#0c1325]/50 border border-white/[0.08] rounded-2xl p-5 flex items-start justify-between backdrop-blur-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-colors" />
+                      <div key={idx} className={`bg-white border border-slate-200 rounded-xl p-5 flex items-start justify-between shadow-sm relative overflow-hidden group hover:shadow-md hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-300 ${stat.border}`}>
                         <div className="space-y-4">
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
                           <div>
-                            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-none">{stat.val}</h3>
-                            <p className="text-[10px] font-bold text-slate-400 mt-1.5">{stat.sub}</p>
+                            <h3 className="text-xl font-bold text-slate-900 tracking-tight leading-none">{stat.val}</h3>
+                            <p className="text-[10px] font-semibold text-slate-400 mt-2">{stat.sub}</p>
                           </div>
                         </div>
-                        <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] shrink-0">
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 shrink-0 group-hover:scale-115 transition-transform duration-200">
                           {stat.icon}
                         </div>
                       </div>
@@ -661,61 +826,89 @@ export default function VendorPortal() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
                     {/* Catalog Status */}
-                    <div className="bg-[#0c1325]/50 border border-white/[0.08] rounded-3xl p-6 space-y-4">
-                      <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <Tag className="w-4 h-4 text-blue-400" />
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-[#409eff]" />
                         Catalog Diagnostics
                       </h3>
-                      <p className="text-xs text-slate-400">Review status updates for your product categories and items listed on the store index.</p>
+                      <p className="text-xs text-slate-500">Review status updates for your product categories and items listed on the store index.</p>
                       
-                      <div className="space-y-3 pt-2">
-                        {categories.map((c) => {
-                          const catProdCount = products.filter(p => p.category_id === c.id).length;
-                          if (catProdCount === 0) return null;
-                          return (
-                            <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                              <span className="text-xs font-bold text-slate-200">{c.name}</span>
-                              <span className="text-[10px] font-bold bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-blue-400">
-                                {catProdCount} active listings
-                              </span>
-                            </div>
-                          );
-                        })}
-                        {products.length === 0 && (
-                          <div className="text-center py-6 text-xs text-slate-500 font-bold">
-                            No listings detected. Use Product Adding or Product Making tabs to begin!
-                          </div>
-                        )}
+                      <div className="el-table el-table--border">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr>
+                              <th className="py-2 px-4">Category Name</th>
+                              <th className="py-2 px-4 text-right">Active Listings</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {categories.map((c, idx) => {
+                              const catProdCount = products.filter(p => p.category_id === c.id).length;
+                              if (catProdCount === 0) return null;
+                              return (
+                                <tr key={c.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                  <td className="py-2.5 px-4 font-bold text-slate-800">{c.name}</td>
+                                  <td className="py-2.5 px-4 text-right">
+                                    <span className="el-tag el-tag--success el-tag--mini font-bold">
+                                      {catProdCount} active listings
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {products.length === 0 && (
+                              <tr>
+                                <td colSpan="2" className="text-center py-6 text-xs text-slate-400 font-semibold">
+                                  No listings detected. Use Product Adding or Product Making tabs to begin!
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
 
                     {/* Recent Orders Overview */}
-                    <div className="bg-[#0c1325]/50 border border-white/[0.08] rounded-3xl p-6 space-y-4">
-                      <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <ShoppingCart className="w-4 h-4 text-emerald-400" />
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4 text-[#67c23a]" />
                         Recent Purchases
                       </h3>
-                      <p className="text-xs text-slate-400">The most recent orders placed for your merchant inventory catalog.</p>
+                      <p className="text-xs text-slate-500">The most recent orders placed for your merchant inventory catalog.</p>
                       
-                      <div className="space-y-3 pt-2 max-h-[300px] overflow-y-auto pr-1">
-                        {orderItems.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-xs">
-                            <div>
-                              <p className="font-extrabold text-slate-200">{item.product?.title || 'Unknown Product'}</p>
-                              <p className="text-[10px] text-slate-450 mt-0.5">
-                                Qty: {item.quantity} | Customer: {item.order?.user?.name || 'Customer'}
-                              </p>
-                            </div>
-                            <span className="font-extrabold text-emerald-400 text-right">
-                              LKR {(parseFloat(item.price) * item.quantity).toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-                        {orderItems.length === 0 && (
-                          <div className="text-center py-8 text-xs text-slate-500 font-bold">
-                            No order logs recorded.
-                          </div>
-                        )}
+                      <div className="el-table el-table--border">
+                        <div className="max-h-[300px] overflow-y-auto">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr>
+                                <th className="py-2 px-4">Product / Customer</th>
+                                <th className="py-2 px-4 text-right">Total Earnings</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {vendorOrdersList.map((item, idx) => (
+                                <tr key={item.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                  <td className="py-2.5 px-4">
+                                    <div className="font-bold text-slate-800 truncate max-w-[200px]">{item.product?.title || 'Unknown Product'}</div>
+                                    <div className="text-[10px] text-slate-400 mt-0.5">
+                                      Qty: {item.quantity} | Customer: {item.order?.user?.name || 'Customer'}
+                                    </div>
+                                  </td>
+                                  <td className="py-2.5 px-4 text-right font-bold text-[#67c23a]">
+                                    LKR {(parseFloat(item.price) * item.quantity).toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              {vendorOrdersList.length === 0 && (
+                                <tr>
+                                  <td colSpan="2" className="text-center py-8 text-xs text-slate-400 font-semibold">
+                                    No order logs recorded.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
 
@@ -728,12 +921,12 @@ export default function VendorPortal() {
                 <div className="space-y-6">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div>
-                      <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Active Catalog Listings</h2>
-                      <p className="text-xs font-semibold text-slate-400 mt-1">Manage and update price, stock details, or specs for your products.</p>
+                      <h2 className="text-xl font-bold text-slate-900 tracking-tight">Active Catalog Listings</h2>
+                      <p className="text-xs font-semibold text-slate-500 mt-1">Manage and update price, stock details, or specs for your products.</p>
                     </div>
                     <button
                       onClick={() => setActiveTab('add')}
-                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-4.5 py-3 rounded-xl transition-all shadow-md active:scale-99 shrink-0"
+                      className="el-button el-button--primary shadow-sm flex items-center gap-1.5"
                     >
                       <Plus className="w-4 h-4" />
                       Add New Listing
@@ -743,108 +936,115 @@ export default function VendorPortal() {
                   {/* Filter / Search Row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Search bar */}
-                    <div className="relative">
-                      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                      <input
-                        type="text"
-                        placeholder="Search product title..."
-                        value={productSearch}
-                        onChange={(e) => setProductSearch(e.target.value)}
-                        className="w-full bg-[#0c1325]/50 border border-white/[0.08] rounded-xl pl-10 pr-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                      />
+                    <div className="el-input">
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-slate-450 absolute left-3 top-2.5 z-10" />
+                        <input
+                          type="text"
+                          placeholder="Search product title..."
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          className="el-input__inner pl-9 font-medium"
+                        />
+                      </div>
                     </div>
                     {/* Category filter */}
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full bg-[#0c1325]/50 border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-bold text-slate-300 focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="all">All Categories</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                    <div className="el-select">
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="el-input__inner font-semibold text-slate-650"
+                      >
+                        <option value="all">All Categories</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
-                  {/* Main Product Table */}
-                  <div className="bg-[#0c1325]/50 border border-white/[0.08] rounded-2xl overflow-hidden">
+                  {/* Main Product Table in Element UI table style */}
+                  <div className="el-table el-table--border el-table--striped shadow-sm">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-white/[0.06] text-slate-450 font-black uppercase tracking-wider text-[9px] bg-white/[0.01]">
-                            <th className="p-4">Product Details</th>
-                            <th className="p-4">Category</th>
-                            <th className="p-4">Pricing</th>
-                            <th className="p-4">Stock</th>
-                            <th className="p-4">Health Status</th>
-                            <th className="p-4 text-right">Actions</th>
+                          <tr>
+                            <th className="py-3 px-5">Product Details</th>
+                            <th className="py-3 px-5">Category</th>
+                            <th className="py-3 px-5">Pricing</th>
+                            <th className="py-3 px-5">Stock</th>
+                            <th className="py-3 px-5">Health Status</th>
+                            <th className="py-3 px-5 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/[0.04]">
-                          {filteredProductsList.map((p) => {
+                        <tbody>
+                          {filteredProductsList.map((p, idx) => {
                             const matchedCat = categories.find(cat => cat.id === p.category_id);
                             const categoryName = matchedCat ? matchedCat.name : (p.category?.name || p.category || 'Workspace Gear');
                             
                             const stockCount = p.stock || 0;
                             const healthStatus = stockCount > 10 
-                              ? { label: 'In Stock', style: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' }
+                              ? { label: 'In Stock', tagClass: 'el-tag--success' }
                               : stockCount > 0 
-                                ? { label: 'Low Stock', style: 'bg-amber-500/10 border-amber-500/25 text-amber-400' }
-                                : { label: 'Out of Stock', style: 'bg-rose-500/10 border-rose-500/25 text-rose-400' };
+                                ? { label: 'Low Stock', tagClass: 'el-tag--warning' }
+                                : { label: 'Out of Stock', tagClass: 'el-tag--danger' };
 
                             return (
-                              <tr key={p.id} className="hover:bg-white/[0.01] transition-colors">
-                                <td className="p-4">
+                              <tr key={p.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                <td className="py-4 px-5">
                                   <div className="flex items-center gap-3">
                                     {p.image ? (
                                       <img 
                                         src={p.image.startsWith('http') || p.image.startsWith('../') || p.image.startsWith('/') ? p.image : `../../Media/product_images/${p.image}`} 
                                         alt={p.title} 
-                                        className="w-10 h-10 rounded-lg object-cover bg-[#090f1d] border border-white/[0.06] shrink-0" 
+                                        className="w-11 h-11 rounded-lg object-cover bg-slate-100 border border-slate-200 shrink-0" 
                                       />
                                     ) : (
-                                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-white/[0.06] flex items-center justify-center shrink-0">
-                                        <ShoppingBag className="w-5 h-5 text-slate-500" />
+                                      <div className="w-11 h-11 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                                        <ShoppingBag className="w-5 h-5 text-slate-400" />
                                       </div>
                                     )}
                                     <div className="min-w-0">
-                                      <p className="font-extrabold text-white text-xs sm:text-[13px] truncate max-w-[200px] sm:max-w-xs">{p.title || p.name}</p>
+                                      <p className="font-bold text-slate-900 text-[13px] truncate max-w-[200px] sm:max-w-xs">{p.title || p.name}</p>
                                       {p.spec && (
-                                        <p className="text-[10px] text-slate-400 truncate mt-0.5 max-w-[200px]">{p.spec}</p>
+                                        <p className="text-[10px] text-slate-500 truncate mt-0.5 max-w-[200px]">{p.spec}</p>
                                       )}
-                                      <p className="text-[9px] text-slate-500 mt-0.5">ID: P-{p.id}</p>
+                                      <p className="text-[9px] text-slate-400 mt-1 uppercase font-mono tracking-wider">ID: P-{p.id}</p>
                                     </div>
                                   </div>
                                 </td>
-                                <td className="p-4 text-slate-300 font-semibold">{categoryName}</td>
-                                <td className="p-4 font-black text-white">LKR {parseFloat(p.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                <td className="p-4 font-bold text-slate-350">{stockCount} units</td>
-                                <td className="p-4">
-                                  <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full uppercase border ${healthStatus.style}`}>
+                                <td className="py-4 px-5 text-slate-650 font-semibold">{categoryName}</td>
+                                <td className="py-4 px-5 font-bold text-slate-900">LKR {parseFloat(p.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                <td className="py-4 px-5 font-semibold text-slate-650">{stockCount} units</td>
+                                <td className="py-4 px-5">
+                                  <span className={`el-tag uppercase ${healthStatus.tagClass}`}>
+                                    <span className="el-tag__dot" />
                                     {healthStatus.label}
                                   </span>
                                 </td>
-                                <td className="p-4 text-right space-x-2 shrink-0 whitespace-nowrap">
-                                  <button
-                                    onClick={() => openEditModal(p)}
-                                    className="bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-slate-200 font-extrabold text-[10px] px-3 py-1.5 rounded-lg transition-all"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    disabled={actionLoading}
-                                    onClick={() => handleDeleteProduct(p.id)}
-                                    className="bg-rose-950/40 text-rose-450 border border-rose-900/30 hover:bg-rose-950/80 font-extrabold text-[10px] px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
-                                  >
-                                    Remove
-                                  </button>
+                                <td className="py-4 px-5 text-right">
+                                  <div className="inline-flex gap-2 justify-end items-center">
+                                    <button
+                                      onClick={() => openEditModal(p)}
+                                      className="el-button el-button--primary el-button--mini shadow-sm"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      disabled={actionLoading}
+                                      onClick={() => handleDeleteProduct(p.id)}
+                                      className="el-button el-button--danger el-button--mini is-plain shadow-sm"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
                           })}
                           {filteredProductsList.length === 0 && (
                             <tr>
-                              <td colSpan="6" className="text-center py-10 text-xs font-semibold text-slate-550">
+                              <td colSpan="6" className="text-center py-12 text-xs font-semibold text-slate-400">
                                 No products found matching criteria.
                               </td>
                             </tr>
@@ -856,82 +1056,90 @@ export default function VendorPortal() {
 
                   {/* Inline/Modal Edit Form Drawer */}
                   {editingProduct && (
-                    <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
-                      <div className="bg-[#0d1527] border border-white/[0.08] rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 max-w-lg w-full shadow-lg relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
                         <div>
-                          <h3 className="text-base font-black text-white tracking-tight">Configure Listing details</h3>
-                          <p className="text-[11px] text-slate-400 mt-1">Make direct updates to this public catalog entry.</p>
+                          <h3 className="text-base font-bold text-slate-900 tracking-tight">Configure Listing details</h3>
+                          <p className="text-[11px] text-slate-500 mt-1">Make direct updates to this public catalog entry.</p>
                         </div>
                         
                         <form onSubmit={handleSaveEdit} className="space-y-4">
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest block">Product Name / Title</label>
-                            <input
-                              type="text"
-                              required
-                              value={editTitle}
-                              onChange={(e) => setEditTitle(e.target.value)}
-                              className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                            />
+                            <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Product Name / Title</label>
+                            <div className="el-input">
+                              <input
+                                type="text"
+                                required
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                className="el-input__inner font-medium"
+                              />
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
-                              <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest block">Price (LKR)</label>
-                              <input
-                                type="number"
-                                required
-                                value={editPrice}
-                                onChange={(e) => setEditPrice(e.target.value)}
-                                className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                              />
+                              <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Price (LKR)</label>
+                              <div className="el-input">
+                                <input
+                                  type="number"
+                                  required
+                                  value={editPrice}
+                                  onChange={(e) => setEditPrice(e.target.value)}
+                                  className="el-input__inner font-medium"
+                                />
+                              </div>
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest block">Stock Count</label>
+                              <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Stock Count</label>
+                              <div className="el-input">
+                                <input
+                                  type="number"
+                                  required
+                                  value={editStock}
+                                  onChange={(e) => setEditStock(e.target.value)}
+                                  className="el-input__inner font-medium"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Specifications / Trim</label>
+                            <div className="el-input">
                               <input
-                                type="number"
-                                required
-                                value={editStock}
-                                onChange={(e) => setEditStock(e.target.value)}
-                                className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
+                                type="text"
+                                placeholder="e.g. Walnut wood grain | linear switches"
+                                value={editSpec}
+                                onChange={(e) => setEditSpec(e.target.value)}
+                                className="el-input__inner font-medium"
                               />
                             </div>
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest block">Specifications / Trim</label>
-                            <input
-                              type="text"
-                              placeholder="e.g. Walnut wood grain | linear switches"
-                              value={editSpec}
-                              onChange={(e) => setEditSpec(e.target.value)}
-                              className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest block">Product Description</label>
+                            <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Product Description</label>
                             <textarea
                               rows="3"
                               value={editDescription}
                               onChange={(e) => setEditDescription(e.target.value)}
-                              className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
+                              className="el-input__inner h-auto py-2 font-medium"
                             />
                           </div>
 
-                          <div className="flex gap-3 mt-6">
+                          <div className="flex gap-3 pt-3">
                             <button 
                               type="submit" 
                               disabled={actionLoading}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                              className="flex-1 el-button el-button--primary shadow-sm"
                             >
-                              {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                              {actionLoading && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
                               Save Configuration
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditingProduct(null)}
-                              className="flex-1 bg-white/[0.04] border border-white/[0.06] text-slate-300 font-extrabold text-xs py-3.5 rounded-xl hover:bg-white/[0.08] transition-all"
+                              className="flex-1 el-button is-plain"
                             >
                               Cancel
                             </button>
@@ -946,439 +1154,586 @@ export default function VendorPortal() {
 
               {/* 3. TAB: PRODUCT ADDING */}
               {activeTab === 'add' && (
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Create Listing Catalog</h2>
-                    <p className="text-xs font-semibold text-slate-400 mt-1">Configure and publish a new workspace item directly to the online store indexes.</p>
+                <div className="space-y-6">
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-50 border border-blue-100">
+                          <Plus className="w-4 h-4 text-[#409eff]" />
+                        </span>
+                        New Product Listing
+                      </h2>
+                      <p className="text-xs font-medium text-slate-500 mt-1 ml-9.5">
+                        Fill in the details below and publish your product directly to the live store catalog.
+                      </p>
+                    </div>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Catalog
+                    </span>
                   </div>
 
-                  <form onSubmit={handleAddProduct} className="bg-[#0c1325]/50 border border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-5 backdrop-blur-sm">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Product Name / Title <span className="text-rose-500">*</span></label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. Tech-Hub Premium Desk Organizer"
-                        value={addTitle}
-                        onChange={(e) => setAddTitle(e.target.value)}
-                        className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                      />
-                    </div>
+                  <form onSubmit={handleAddProduct} className="space-y-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Price (LKR) <span className="text-rose-500">*</span></label>
-                        <input
-                          type="number"
-                          required
-                          placeholder="e.g. 14500"
-                          value={addPrice}
-                          onChange={(e) => setAddPrice(e.target.value)}
-                          className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Initial Stock <span className="text-rose-500">*</span></label>
-                        <input
-                          type="number"
-                          required
-                          value={addStock}
-                          onChange={(e) => setAddStock(e.target.value)}
-                          className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                        />
-                      </div>
-                    </div>
+                      {/* ─── LEFT COLUMN: Image Upload ─── */}
+                      <div className="lg:col-span-1 space-y-4">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Product Image</p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Product Category <span className="text-rose-500">*</span></label>
-                        <select
-                          required
-                          value={addCategoryId}
-                          onChange={(e) => setAddCategoryId(e.target.value)}
-                          className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-bold text-slate-300 focus:outline-none focus:border-blue-500"
-                        >
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Aesthetic Vibe Setting</label>
-                        <select
-                          value={addVibe}
-                          onChange={(e) => setAddVibe(e.target.value)}
-                          className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-bold text-slate-300 focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="minimalist">Minimalist Vibe</option>
-                          <option value="walnut">Walnut wood Vibe</option>
-                          <option value="black">Stealth Black Vibe</option>
-                          <option value="cyberpunk">Cyberpunk Neon Vibe</option>
-                          <option value="">No custom theme (none)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Specifications / Trim Detail</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Dimensions: 30x15cm | Made of pure Oak"
-                        value={addSpec}
-                        onChange={(e) => setAddSpec(e.target.value)}
-                        className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                      />
-                    </div>
-
-                    {/* Pre-set Image Chooser */}
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Product Image Setup</label>
-                      <input
-                        type="text"
-                        placeholder="Paste custom Image URL or select a preset below..."
-                        value={addImage}
-                        onChange={(e) => setAddImage(e.target.value)}
-                        className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                      />
-                      <div className="pt-2">
-                        <p className="text-[9px] text-slate-400 font-bold mb-2">Preset Images Quick Select:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {imagePresets.map((preset, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                setAddImage(preset.url);
-                                showToast(`Preset "${preset.name}" image URL loaded.`);
+                            {/* Upload Zone */}
+                            <div
+                              className="relative group"
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                const file = e.dataTransfer.files[0];
+                                if (file && file.type.startsWith('image/')) {
+                                  setAddImageFile(file);
+                                  if (addImagePreview) URL.revokeObjectURL(addImagePreview);
+                                  setAddImagePreview(URL.createObjectURL(file));
+                                  setAddImage('');
+                                }
                               }}
-                              className="text-[10px] font-bold px-3 py-1.5 rounded-lg border border-white/[0.04] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.08] text-slate-300 transition-all"
                             >
-                              {preset.name}
-                            </button>
-                          ))}
+                              {/* Preview or placeholder */}
+                              <div className={`w-full aspect-square rounded-xl border-2 border-dashed overflow-hidden flex flex-col items-center justify-center transition-all duration-200 ${
+                                addImagePreview || addImage
+                                  ? 'border-transparent'
+                                  : 'border-slate-200 bg-slate-50 group-hover:border-[#409eff] group-hover:bg-blue-50/30'
+                              }`}>
+                                {addImagePreview ? (
+                                  <img
+                                    src={addImagePreview}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : addImage ? (
+                                  <img
+                                    src={addImage}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div className="flex flex-col items-center gap-3 px-4 py-8 text-center select-none pointer-events-none">
+                                    <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+                                      <ImageIcon className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-slate-500">Drag & drop image here</p>
+                                      <p className="text-[10px] text-slate-400 mt-0.5">PNG, JPG, WEBP up to 10 MB</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Clear button when preview active */}
+                              {(addImagePreview || addImage) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (addImagePreview) URL.revokeObjectURL(addImagePreview);
+                                    setAddImagePreview('');
+                                    setAddImageFile(null);
+                                    setAddImage('');
+                                  }}
+                                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 border border-slate-200 shadow-sm flex items-center justify-center hover:bg-red-50 hover:border-red-200 hover:text-red-500 text-slate-500 transition-all"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* File chooser button */}
+                            <label className="mt-3 flex items-center justify-center gap-2 w-full cursor-pointer el-button el-button--primary is-plain el-button--small shadow-sm">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>Choose File</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="sr-only"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    setAddImageFile(file);
+                                    if (addImagePreview) URL.revokeObjectURL(addImagePreview);
+                                    setAddImagePreview(URL.createObjectURL(file));
+                                    setAddImage('');
+                                  }
+                                }}
+                              />
+                            </label>
+
+                            {/* OR divider */}
+                            <div className="flex items-center gap-2 my-3">
+                              <div className="flex-1 h-px bg-slate-100" />
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">or paste URL</span>
+                              <div className="flex-1 h-px bg-slate-100" />
+                            </div>
+
+                            <div className="el-input">
+                              <input
+                                type="text"
+                                placeholder="https://example.com/image.jpg"
+                                value={addImage}
+                                onChange={(e) => {
+                                  setAddImage(e.target.value);
+                                  // Clear file when URL is typed
+                                  if (addImagePreview) URL.revokeObjectURL(addImagePreview);
+                                  setAddImagePreview('');
+                                  setAddImageFile(null);
+                                }}
+                                className="el-input__inner font-medium text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Preset thumbnails */}
+                          <div>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Quick Presets</p>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {imagePresets.map((preset, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  title={preset.name}
+                                  onClick={() => {
+                                    setAddImage(preset.url);
+                                    if (addImagePreview) URL.revokeObjectURL(addImagePreview);
+                                    setAddImagePreview('');
+                                    setAddImageFile(null);
+                                  }}
+                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                                    addImage === preset.url
+                                      ? 'border-[#409eff] shadow-md shadow-blue-100'
+                                      : 'border-transparent hover:border-slate-300'
+                                  }`}
+                                >
+                                  <img
+                                    src={preset.url}
+                                    alt={preset.name}
+                                    className="w-full h-full object-cover bg-slate-100"
+                                    onError={(e) => {
+                                      e.target.parentNode.innerHTML = `<div class="w-full h-full bg-slate-100 flex items-center justify-center text-[8px] text-slate-400 font-semibold p-1 text-center">${preset.name}</div>`;
+                                    }}
+                                  />
+                                  {addImage === preset.url && (
+                                    <div className="absolute inset-0 bg-[#409eff]/20 flex items-center justify-center">
+                                      <CheckCircle2 className="w-4 h-4 text-[#409eff]" />
+                                    </div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Store Description</label>
-                      <textarea
-                        rows="4"
-                        placeholder="Describe the product materials, highlights, and custom dimensions..."
-                        value={addDescription}
-                        onChange={(e) => setAddDescription(e.target.value)}
-                        className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                      />
-                    </div>
+                      {/* ─── RIGHT COLUMN: Product Details ─── */}
+                      <div className="lg:col-span-2 space-y-4">
 
-                    <div className="pt-4 flex gap-4">
-                      <button
-                        type="submit"
-                        disabled={actionLoading}
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                        Publish Catalog entry
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('products')}
-                        className="flex-1 bg-white/[0.04] border border-white/[0.06] text-slate-300 font-extrabold text-xs py-3.5 rounded-xl hover:bg-white/[0.08] transition-all"
-                      >
-                        Cancel
-                      </button>
+                        {/* Section: Core Details */}
+                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3">
+                            Core Details
+                          </p>
+
+                          {/* Product Title */}
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-600 tracking-wide block">
+                              Product Name / Title <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="el-input">
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g. Tech-Hub Premium Walnut Desk Organizer"
+                                value={addTitle}
+                                onChange={(e) => setAddTitle(e.target.value)}
+                                className="el-input__inner font-medium"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Price + Stock */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-600 tracking-wide block">
+                                Price (LKR) <span className="text-rose-500">*</span>
+                              </label>
+                              <div className="el-input relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">Rs.</span>
+                                <input
+                                  type="number"
+                                  required
+                                  min="0"
+                                  step="0.01"
+                                  placeholder="14500"
+                                  value={addPrice}
+                                  onChange={(e) => setAddPrice(e.target.value)}
+                                  className="el-input__inner font-medium pl-10"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-600 tracking-wide block">
+                                Initial Stock <span className="text-rose-500">*</span>
+                              </label>
+                              <div className="el-input relative">
+                                <input
+                                  type="number"
+                                  required
+                                  min="0"
+                                  value={addStock}
+                                  onChange={(e) => setAddStock(e.target.value)}
+                                  className="el-input__inner font-medium"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">units</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Category + Vibe */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-600 tracking-wide block">
+                                Category <span className="text-rose-500">*</span>
+                              </label>
+                              <div className="el-select">
+                                <select
+                                  required
+                                  value={addCategoryId}
+                                  onChange={(e) => setAddCategoryId(e.target.value)}
+                                  className="el-input__inner font-semibold text-slate-700"
+                                >
+                                  <option value="">Select category…</option>
+                                  {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-600 tracking-wide block">Aesthetic Vibe</label>
+                              <div className="el-select">
+                                <select
+                                  value={addVibe}
+                                  onChange={(e) => setAddVibe(e.target.value)}
+                                  className="el-input__inner font-semibold text-slate-700"
+                                >
+                                  <option value="minimalist">🎨 Minimalist</option>
+                                  <option value="walnut">🪵 Walnut Wood</option>
+                                  <option value="black">🖤 Stealth Black</option>
+                                  <option value="cyberpunk">🌐 Cyberpunk Neon</option>
+                                  <option value="">— No Theme</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section: Specifications */}
+                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3">
+                            Specifications & Description
+                          </p>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-600 tracking-wide block">Specifications / Trim Detail</label>
+                            <div className="el-input">
+                              <input
+                                type="text"
+                                placeholder="e.g. Dimensions: 30×15 cm | Pure Oak Wood | Anti-slip base"
+                                value={addSpec}
+                                onChange={(e) => setAddSpec(e.target.value)}
+                                className="el-input__inner font-medium"
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-400">Separate attributes with a pipe  |  character.</p>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-600 tracking-wide block">Store Description</label>
+                            <textarea
+                              rows="5"
+                              placeholder="Describe the product materials, unique highlights, ergonomic benefits, and custom dimensions…"
+                              value={addDescription}
+                              onChange={(e) => setAddDescription(e.target.value)}
+                              className="el-input__inner h-auto py-3 font-medium resize-none w-full"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Action Footer */}
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
+                          <p className="text-[10px] text-slate-400 font-medium hidden sm:block">
+                            Your listing will be live immediately after publishing.
+                          </p>
+                          <div className="flex gap-3 w-full sm:w-auto">
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('products')}
+                              className="flex-1 sm:flex-none el-button is-plain px-5"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={actionLoading}
+                              className="flex-1 sm:flex-none el-button el-button--primary shadow-sm px-8 font-bold"
+                            >
+                              {actionLoading
+                                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin inline" />Publishing…</>
+                                : <><Plus className="w-3.5 h-3.5 mr-1.5 inline" />Publish Listing</>
+                              }
+                            </button>
+                          </div>
+                        </div>
+
+                      </div>
                     </div>
                   </form>
                 </div>
               )}
 
+
+
               {/* 4. TAB: PRODUCT MAKING (VISUAL CONFIGURATOR) */}
               {activeTab === 'maker' && (
                 <div className="space-y-8">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Handcrafted Product Maker</h2>
-                    <p className="text-xs font-semibold text-slate-400 mt-1">Configure premium, tailor-made workstation setups and publish items instantly to store shelves.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Handcrafted Product Maker</h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">Configure premium, tailor-made workstation setups and publish items instantly to store shelves.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     
-                    {/* Options Workbench */}
-                    <div className="lg:col-span-7 bg-[#0c1325]/50 border border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-6 backdrop-blur-sm">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Choose Gear category</label>
-                        <div className="grid grid-cols-3 gap-3">
+                    {/* Visual configurator controls */}
+                    <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 space-y-6 shadow-sm">
+                      <div className="border-b border-slate-100 pb-3">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Product Type</h3>
+                        <div className="flex gap-2.5 mt-3.5">
                           {[
-                            { id: 'keyboard', label: 'Mechanical Keyboard', icon: <Cpu className="w-4 h-4" /> },
-                            { id: 'organizer', label: 'Desk Organizer', icon: <Sliders className="w-4 h-4" /> },
-                            { id: 'riser', label: 'Monitor Wood Riser', icon: <Tag className="w-4 h-4" /> }
-                          ].map(t => (
+                            { id: 'keyboard', label: 'Mechanical Keyboard', desc: 'Custom mechanical switches & caps' },
+                            { id: 'organizer', label: 'Desk Caddy', desc: 'Handcrafted accessory trays' },
+                            { id: 'riser', label: 'Monitor Stand Riser', desc: 'Ergonomic dual/single risers' }
+                          ].map((catOption) => (
                             <button
-                              key={t.id}
+                              key={catOption.id}
                               type="button"
                               onClick={() => {
-                                setMakerCategory(t.id);
+                                setMakerCategory(catOption.id);
                                 setGeneratedProduct(null);
                               }}
-                              className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border text-center transition-all ${
-                                makerCategory === t.id
-                                  ? 'bg-blue-600/10 border-blue-500/40 text-blue-400 font-black shadow-lg shadow-blue-500/5'
-                                  : 'bg-[#070a13]/40 border-white/[0.06] text-slate-400 hover:text-slate-200 hover:border-white/[0.1] font-bold'
+                              className={`flex-1 p-3.5 rounded-xl border text-left transition-all ${
+                                makerCategory === catOption.id
+                                  ? 'border-[#409eff] bg-blue-50/20 text-[#409eff] shadow-sm'
+                                  : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-650'
                               }`}
                             >
-                              {t.icon}
-                              <span className="text-[10px]">{t.label}</span>
+                              <span className="block text-xs font-bold">{catOption.label}</span>
+                              <span className="block text-[9px] text-slate-400 mt-1 font-medium leading-relaxed">{catOption.desc}</span>
                             </button>
                           ))}
                         </div>
                       </div>
 
-                      {/* Dynamic options based on Category Selection */}
-                      <div className="border-t border-white/[0.04] pt-5 space-y-5">
-                        
-                        {/* CATEGORY: KEYBOARD OPTIONS */}
+                      {/* Options dynamic fields */}
+                      <div className="space-y-5">
+                        <h3 className="text-xs font-bold text-slate-450 uppercase tracking-widest">Configuration Specifications</h3>
+
                         {makerCategory === 'keyboard' && (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Base Plate Vibe</label>
-                                <select
-                                  value={kbBase}
-                                  onChange={(e) => { setKbBase(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="walnut">Premium Solid Walnut Base (+ LKR 10,000)</option>
-                                  <option value="matte_black">Stealth Black Aluminum (+ LKR 8,000)</option>
-                                  <option value="white_acrylic">Polar White Frosted Acrylic (+ LKR 5,000)</option>
-                                  <option value="neon_glass">Cyberpunk Electroluminescent Glass (+ LKR 15,000)</option>
-                                </select>
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Mechanical Switches</label>
-                                <select
-                                  value={kbSwitch}
-                                  onChange={(e) => { setKbSwitch(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="linear_red">Gateron Linear Red (Quiet, gaming)</option>
-                                  <option value="clicky_blue">Cherry MX Clicky Blue (Typist, crisp)</option>
-                                  <option value="silent_brown">Luxe Silent Tactile Brown (+ LKR 2,500)</option>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Case Base Material</label>
+                              <div className="el-select">
+                                <select value={kbBase} onChange={(e) => { setKbBase(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="walnut">Solid Walnut wood (LKR +10,000)</option>
+                                  <option value="matte_black">Anodized Stealth Black (LKR +0)</option>
+                                  <option value="white_acrylic">Frosted White Acrylic (LKR +0)</option>
+                                  <option value="neon_glass">Handmade Cyber Neon Glass (LKR +15,000)</option>
                                 </select>
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Keycap Aesthetics</label>
-                                <select
-                                  value={kbKeycaps}
-                                  onChange={(e) => { setKbKeycaps(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="retro_orange">Retro Grey-Orange (Classic workspace)</option>
-                                  <option value="stealth_black">Stealth Matte Black (Chamber look)</option>
-                                  <option value="vaporwave">Vaporwave Cyan-Magenta Neon (+ LKR 3,500)</option>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Mechanical Switch Profile</label>
+                              <div className="el-select">
+                                <select value={kbSwitch} onChange={(e) => { setKbSwitch(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="silent_brown">Silent Tactile Browns (LKR +2,500)</option>
+                                  <option value="linear_red">Ultra-fast Linear Reds (LKR +0)</option>
+                                  <option value="clicky_blue">Classic Tactile Clicky Blues (LKR +0)</option>
                                 </select>
                               </div>
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Aviator Coiled Cable</label>
-                                <select
-                                  value={kbCable}
-                                  onChange={(e) => { setKbCable(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="standard">Standard Matte USB-C Cable</option>
-                                  <option value="aviator">Hand-Coiled Aviator Cable (+ LKR 4,000)</option>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Keycap Aesthetics Layout</label>
+                              <div className="el-select">
+                                <select value={kbKeycaps} onChange={(e) => { setKbKeycaps(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="retro_orange">Retro Orange Classic (LKR +0)</option>
+                                  <option value="stealth_black">Stealth Black Minimal (LKR +0)</option>
+                                  <option value="vaporwave">Vaporwave Neon PBT (LKR +3,500)</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">USB Cable Layout</label>
+                              <div className="el-select">
+                                <select value={kbCable} onChange={(e) => { setKbCable(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="standard">Standard Black USB-C (LKR +0)</option>
+                                  <option value="aviator">Custom Coiled Cable with Aviator connector (LKR +4,000)</option>
                                 </select>
                               </div>
                             </div>
                           </div>
                         )}
 
-                        {/* CATEGORY: ORGANIZER OPTIONS */}
                         {makerCategory === 'organizer' && (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Wood / Shell material</label>
-                                <select
-                                  value={orgMaterial}
-                                  onChange={(e) => { setOrgMaterial(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="walnut">Pure Walnut Finish Base (+ LKR 4,500)</option>
-                                  <option value="cherry">Rich Cherry Red Wood Base (+ LKR 3,000)</option>
-                                  <option value="polymer">Black Fireproof Polymer</option>
-                                  <option value="neon">Hexagon Glowing Acrylic (+ LKR 5,000)</option>
-                                </select>
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Compartment slots</label>
-                                <select
-                                  value={orgCompartments}
-                                  onChange={(e) => { setOrgCompartments(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="3_slots">3 Slots Layout (Sleek, minimalist)</option>
-                                  <option value="5_slots">5 Slots with Integrated Stand (+ LKR 2,000)</option>
-                                  <option value="7_slots">7 Slots Dual-Tier Master Organizer (+ LKR 4,500)</option>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Material Composition</label>
+                              <div className="el-select">
+                                <select value={orgMaterial} onChange={(e) => { setOrgMaterial(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="walnut">Premium Walnut Wood (LKR +4,500)</option>
+                                  <option value="cherry">Rich Cherry Wood (LKR +0)</option>
+                                  <option value="polymer">Impact Matte Polymer (LKR +0)</option>
+                                  <option value="neon">Cyberpunk Neon Acrylic (LKR +0)</option>
                                 </select>
                               </div>
                             </div>
 
-                            <div className="space-y-2">
-                              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Internal Lining Protection</label>
-                              <select
-                                value={orgLining}
-                                onChange={(e) => { setOrgLining(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                              >
-                                <option value="none">No Lining (Raw wood finish)</option>
-                                <option value="felt">Soft protective felt lining (+ LKR 1,500)</option>
-                                <option value="leather">Premium PU Leather Lining (+ LKR 3,500)</option>
-                              </select>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Tray Compartments</label>
+                              <div className="el-select">
+                                <select value={orgCompartments} onChange={(e) => { setOrgCompartments(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="3_slots">3 Slots Layout (LKR +0)</option>
+                                  <option value="5_slots">5 Slots layout (LKR +2,000)</option>
+                                  <option value="7_slots">7 XL Organizer slots (LKR +4,500)</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Internal Slot Lining</label>
+                              <div className="el-select">
+                                <select value={orgLining} onChange={(e) => { setOrgLining(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="felt">Premium Wool Felt (LKR +1,500)</option>
+                                  <option value="leather">Luxury Saddle Leather (LKR +3,500)</option>
+                                  <option value="none">No lining (wooden base) (LKR +0)</option>
+                                </select>
+                              </div>
                             </div>
                           </div>
                         )}
 
-                        {/* CATEGORY: RISER OPTIONS */}
                         {makerCategory === 'riser' && (
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Wood Board / Base Trim</label>
-                                <select
-                                  value={riserWood}
-                                  onChange={(e) => { setRiserWood(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="walnut">Pure Solid Walnut Board (+ LKR 9,000)</option>
-                                  <option value="cherry">Handmade Cherry Wood Board (+ LKR 6,500)</option>
-                                  <option value="metal">Anodized matte-black metal Board (+ LKR 6,000)</option>
-                                  <option value="acrylic">Minimalist Frosted White Acrylic Base</option>
-                                </select>
-                              </div>
-                              <div className="space-y-2">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Size Dimensions</label>
-                                <select
-                                  value={riserSize}
-                                  onChange={(e) => { setRiserSize(e.target.value); setGeneratedProduct(null); }}
-                                  className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                                >
-                                  <option value="single">Single Monitor Size</option>
-                                  <option value="dual">Ultrawide / Dual Monitor Layout (+ LKR 8,000)</option>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Ergonomic Riser Wood</label>
+                              <div className="el-select">
+                                <select value={riserWood} onChange={(e) => { setRiserWood(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="walnut">American Walnut (LKR +9,000)</option>
+                                  <option value="cherry">Rich Wild Cherry (LKR +0)</option>
+                                  <option value="metal">Space Gray Aluminum (LKR +6,000)</option>
+                                  <option value="acrylic">Frosted Cyberpunk Acrylic (LKR +0)</option>
                                 </select>
                               </div>
                             </div>
 
-                            <div className="space-y-2">
-                              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Integrated Drawers</label>
-                              <select
-                                value={riserDrawer}
-                                onChange={(e) => { setRiserDrawer(e.target.value); setGeneratedProduct(null); }}
-                                className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
-                              >
-                                <option value="none">Open Storage shelf (no drawers)</option>
-                                <option value="walnut_drawer">Integrated Walnut Drawer unit (+ LKR 4,500)</option>
-                                <option value="acrylic_drawer">Integrated Acrylic slide drawer (+ LKR 3,500)</option>
-                              </select>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Ergonomic Width</label>
+                              <div className="el-select">
+                                <select value={riserSize} onChange={(e) => { setRiserSize(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="single">Single Monitor Stand (LKR +0)</option>
+                                  <option value="dual">Dual Monitor stand XL (LKR +8,000)</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Integrated Drawer Slot</label>
+                              <div className="el-select">
+                                <select value={riserDrawer} onChange={(e) => { setRiserDrawer(e.target.value); setGeneratedProduct(null); }} className="el-input__inner font-semibold text-slate-650">
+                                  <option value="none">No Drawer (open shelf) (LKR +0)</option>
+                                  <option value="walnut_drawer">Matching Wooden Drawer (LKR +4,500)</option>
+                                  <option value="acrylic_drawer">Frosted Acrylic Drawer (LKR +3,500)</option>
+                                </select>
+                              </div>
                             </div>
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Initial Stock</label>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Target Stock Quantity</label>
+                          <div className="el-input">
                             <input
                               type="number"
                               value={makerStock}
                               onChange={(e) => { setMakerStock(e.target.value); setGeneratedProduct(null); }}
-                              className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-300 focus:outline-none"
+                              className="el-input__inner font-medium"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Calculated Price (LKR)</label>
-                            <div className="w-full bg-[#070a13]/80 border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-black text-blue-400">
-                              LKR {calculatedMakerPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                            </div>
-                          </div>
                         </div>
-
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleGenerateMakerConfig}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md active:scale-99"
-                      >
-                        Generate Configuration & Preview
-                      </button>
+                      <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Est. Production Cost</p>
+                          <h4 className="text-xl font-bold text-[#67c23a] mt-1">LKR {calculatedMakerPrice.toLocaleString()}</h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleGenerateMakerConfig}
+                          className="el-button el-button--primary shadow-sm"
+                        >
+                          Generate Specifications
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Configuration Live Preview Card */}
-                    <div className="lg:col-span-5 flex flex-col gap-6">
-                      
-                      <div className="bg-[#0c1325]/50 border border-white/[0.08] rounded-3xl p-6 backdrop-blur-sm flex-1 flex flex-col justify-between space-y-6">
-                        <div>
-                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Workspace Gear Mockup</p>
-                          
-                          {generatedProduct ? (
-                            <div className="space-y-5">
-                              {/* Virtual Render View */}
-                              <div className="border border-white/[0.08] rounded-2xl bg-[#070a13] p-5 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
-                                
-                                <div className="space-y-4">
-                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-500/10 border border-blue-500/25 text-[8px] font-black text-blue-400 uppercase tracking-wider">
-                                    {generatedProduct.vibe} vibe active
-                                  </div>
-                                  
-                                  <div>
-                                    <h4 className="text-sm font-black text-white leading-snug">{generatedProduct.title}</h4>
-                                    <p className="text-[9px] text-slate-500 mt-1 uppercase tracking-widest font-bold">Custom Build Serial : #{Math.floor(1000 + Math.random() * 9000)}</p>
-                                  </div>
+                    {/* Generator Preview Output Panel */}
+                    <div className="space-y-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+                        <h3 className="text-xs font-bold text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-2">Specification Output</h3>
 
-                                  <div className="border-t border-white/[0.04] pt-3 text-[10px] text-slate-400 space-y-1.5 leading-relaxed">
-                                    <p><strong>Config Details:</strong> {generatedProduct.spec}</p>
-                                    <p className="line-clamp-3 italic text-slate-450 mt-1">"{generatedProduct.description}"</p>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="space-y-1 bg-white/[0.01] border border-white/[0.04] rounded-xl p-3.5">
-                                <div className="flex justify-between text-[11px]">
-                                  <span className="text-slate-400 font-bold">Configured Price:</span>
-                                  <span className="text-white font-black">LKR {generatedProduct.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                </div>
-                                <div className="flex justify-between text-[11px] mt-1.5">
-                                  <span className="text-slate-400 font-bold">Release Inventory:</span>
-                                  <span className="text-white font-black">{generatedProduct.stock} Units</span>
-                                </div>
+                        {generatedProduct ? (
+                          <div className="space-y-4">
+                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                              <h4 className="text-sm font-bold text-slate-800 leading-snug">{generatedProduct.title}</h4>
+                              <p className="text-[11px] text-slate-500 leading-relaxed italic">"{generatedProduct.description}"</p>
+                              
+                              <div className="border-t border-slate-200/60 pt-2 space-y-1 text-[10px] font-semibold text-slate-450">
+                                <p>Pricing: <span className="text-slate-850">LKR {generatedProduct.price.toLocaleString()}</span></p>
+                                <p>Initial Stock: <span className="text-slate-850">{generatedProduct.stock} Units</span></p>
+                                <p>Specs: <span className="text-slate-850">{generatedProduct.spec}</span></p>
+                                <p>Theme: <span className="text-slate-850 capitalize">{generatedProduct.vibe || 'N/A'}</span></p>
                               </div>
                             </div>
-                          ) : (
-                            <div className="border border-dashed border-white/[0.1] rounded-2xl py-14 flex flex-col items-center justify-center text-center px-4 space-y-3">
-                              <HelpCircle className="w-8 h-8 text-slate-500" />
-                              <div className="space-y-1">
-                                <h4 className="text-xs font-black text-slate-350">No Active Configuration</h4>
-                                <p className="text-[10px] text-slate-500 leading-normal max-w-xs">Select options and click "Generate Configuration" to view details and check specifications.</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
 
-                        {generatedProduct && (
-                          <button
-                            type="button"
-                            disabled={actionLoading}
-                            onClick={handlePublishMakerProduct}
-                            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                            Publish Custom Gear to Catalog
-                          </button>
+                            <button
+                              type="button"
+                              disabled={actionLoading}
+                              onClick={handlePublishMakerProduct}
+                              className="w-full el-button el-button--success shadow-sm flex items-center justify-center gap-1.5"
+                            >
+                              {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                              Publish Configured Listing
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="py-14 text-center text-slate-400 font-semibold text-xs leading-relaxed space-y-2">
+                            <Sliders className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <p>Configure custom specifications</p>
+                            <p className="text-[10px] font-medium text-slate-400">Press "Generate Specifications" to compile listings data.</p>
+                          </div>
                         )}
                       </div>
-
                     </div>
 
                   </div>
@@ -1389,74 +1744,76 @@ export default function VendorPortal() {
               {activeTab === 'orders' && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Order Fulfillment Control</h2>
-                    <p className="text-xs font-semibold text-slate-400 mt-1">Review orders containing your products and process courier shipping dispatches.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Order Fulfillment Control</h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">Review orders containing your products and process courier shipping dispatches.</p>
                   </div>
 
-                  <div className="bg-[#0c1325]/50 border border-white/[0.08] rounded-2xl overflow-hidden backdrop-blur-sm">
+                  <div className="el-table el-table--border el-table--striped shadow-sm">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-white/[0.06] text-slate-450 font-black uppercase tracking-wider text-[9px] bg-white/[0.01]">
-                            <th className="p-4">Fulfillment Details</th>
-                            <th className="p-4">Customer Details</th>
-                            <th className="p-4">Product Purchased</th>
-                            <th className="p-4">Earnings</th>
-                            <th className="p-4">Status / Tracking</th>
-                            <th className="p-4 text-right">Actions</th>
+                          <tr>
+                            <th className="py-3 px-5">Fulfillment Details</th>
+                            <th className="py-3 px-5">Customer Details</th>
+                            <th className="py-3 px-5">Product Purchased</th>
+                            <th className="py-3 px-5">Earnings</th>
+                            <th className="py-3 px-5">Status / Tracking</th>
+                            <th className="py-3 px-5 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/[0.04]">
-                          {orderItems.map((item) => {
-                            const isDispatched = !!dispatchedTrackers[item.id];
-                            const tracker = dispatchedTrackers[item.id];
+                        <tbody>
+                          {vendorOrdersList.map((item, idx) => {
+                            const isDispatched = item.status === 'dispatched' || !!dispatchedTrackers[item.id];
+                            const tracker = item.status === 'dispatched' 
+                              ? { courier: item.courier_name, tracking: item.tracking_code }
+                              : dispatchedTrackers[item.id];
 
                             return (
-                              <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
-                                <td className="p-4">
-                                  <p className="font-extrabold text-white">Order Item ID: #{item.id}</p>
-                                  <p className="text-[10px] text-slate-500 mt-0.5">Order Ref: #{item.order_id}</p>
+                              <tr key={item.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                <td className="py-4 px-5">
+                                  <p className="font-bold text-slate-900">Order Item ID: #{item.id}</p>
+                                  <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase tracking-wider">Ref: #{item.order_id}</p>
                                 </td>
-                                <td className="p-4">
-                                  <p className="font-bold text-slate-200">{item.order?.user?.name || 'Valued Customer'}</p>
-                                  <p className="text-[9px] text-slate-400 mt-0.5">{item.order?.user?.email || 'N/A'}</p>
+                                <td className="py-4 px-5">
+                                  <p className="font-semibold text-slate-700">{item.order?.user?.name || 'Valued Customer'}</p>
+                                  <p className="text-[10px] text-slate-500 mt-0.5 font-mono">{item.order?.user?.email || 'N/A'}</p>
                                 </td>
-                                <td className="p-4">
-                                  <p className="font-extrabold text-slate-300 max-w-[200px] truncate">{item.product?.title || 'Tech-Hub Gear'}</p>
-                                  <p className="text-[10px] text-slate-450 mt-0.5">Quantity: {item.quantity} Unit(s)</p>
+                                <td className="py-4 px-5">
+                                  <p className="font-bold text-slate-800 max-w-[200px] truncate">{item.product?.title || 'Tech-Hub Gear'}</p>
+                                  <p className="text-[10px] text-slate-500 mt-0.5">Quantity: {item.quantity} Unit(s)</p>
                                 </td>
-                                <td className="p-4">
-                                  <p className="font-black text-white">LKR {(parseFloat(item.price) * item.quantity).toLocaleString()}</p>
-                                  <p className="text-[9px] text-slate-550 mt-0.5">LKR {parseFloat(item.price).toLocaleString()} each</p>
+                                <td className="py-4 px-5">
+                                  <p className="font-bold text-[#67c23a]">LKR {(parseFloat(item.price) * item.quantity).toLocaleString()}</p>
+                                  <p className="text-[9px] text-slate-450 mt-0.5">LKR {parseFloat(item.price).toLocaleString()} each</p>
                                 </td>
-                                <td className="p-4">
+                                <td className="py-4 px-5">
                                   {isDispatched ? (
                                     <div className="space-y-1">
-                                      <span className="inline-flex items-center gap-1 text-[8px] font-black px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 uppercase tracking-widest">
+                                      <span className="el-tag el-tag--success el-tag--mini uppercase tracking-wider font-bold">
                                         Dispatched
                                       </span>
-                                      <p className="text-[9px] font-bold text-slate-400">{tracker.courier}</p>
-                                      <p className="text-[9px] text-slate-500">{tracker.tracking}</p>
+                                      <p className="text-[9px] font-bold text-slate-500">{tracker.courier}</p>
+                                      <p className="text-[9px] text-slate-400 font-mono">{tracker.tracking}</p>
                                     </div>
                                   ) : (
                                     <div className="space-y-1">
-                                      <span className="inline-flex items-center gap-1 text-[8px] font-black px-2 py-0.5 rounded bg-[#facc15]/10 border border-[#facc15]/25 text-[#facc15] uppercase tracking-widest">
+                                      <span className="el-tag el-tag--warning el-tag--mini uppercase tracking-wider font-bold">
                                         Awaiting Dispatch
                                       </span>
                                       <p className="text-[9px] text-slate-450">Pending vendor fulfillment</p>
                                     </div>
                                   )}
                                 </td>
-                                <td className="p-4 text-right">
+                                <td className="py-4 px-5 text-right">
                                   {isDispatched ? (
-                                    <div className="text-[10px] text-slate-500 font-bold flex items-center justify-end gap-1">
+                                    <div className="text-[10px] text-slate-400 font-bold flex items-center justify-end gap-1.5">
                                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                       Processed
                                     </div>
                                   ) : (
                                     <button
                                       onClick={() => triggerCourierDispatch(item)}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-xl transition-all border border-blue-500/20 flex items-center gap-1.5 ml-auto"
+                                      className="el-button el-button--primary el-button--mini shadow-sm flex items-center gap-1.5 ml-auto"
                                     >
                                       <Truck className="w-3.5 h-3.5" />
                                       Dispatch Courier
@@ -1466,10 +1823,10 @@ export default function VendorPortal() {
                               </tr>
                             );
                           })}
-                          {orderItems.length === 0 && (
+                          {vendorOrdersList.length === 0 && (
                             <tr>
-                              <td colSpan="6" className="text-center py-10 text-xs font-semibold text-slate-550">
-                                No orders found for your shop items yet.
+                              <td colSpan="6" className="text-center py-10 text-xs font-semibold text-slate-400">
+                                No customer orders recorded.
                               </td>
                             </tr>
                           )}
@@ -1478,66 +1835,56 @@ export default function VendorPortal() {
                     </div>
                   </div>
 
-                  {/* Dispatch Courier Modal */}
+                  {/* Dispatch Courier Dialog Modal */}
                   {dispatchItem && (
-                    <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
-                      <div className="bg-[#0d1527] border border-white/[0.08] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 max-w-md w-full shadow-lg relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
                         <div>
-                          <h3 className="text-base font-black text-white tracking-tight flex items-center gap-2">
-                            <Truck className="w-5 h-5 text-blue-400" />
-                            Courier Dispatch Setup
-                          </h3>
-                          <p className="text-[11px] text-slate-400 mt-1">Configure courier details to mark Order #{dispatchItem.id} as shipped.</p>
+                          <h3 className="text-base font-bold text-slate-900 tracking-tight">Fulfill Order Item #{dispatchItem.id}</h3>
+                          <p className="text-[11px] text-slate-500 mt-1">Assign a logistics partner and tracking code to dispatch shipment.</p>
                         </div>
 
                         <form onSubmit={handleConfirmDispatch} className="space-y-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest block">Choose Courier Partner</label>
-                            <select
-                              value={courierName}
-                              onChange={(e) => {
-                                setCourierName(e.target.value);
-                                const prefix = e.target.value.substring(0, 2).toUpperCase();
-                                const randNum = Math.floor(100000 + Math.random() * 900000);
-                                setTrackingCode(`${prefix}-${randNum}-LK`);
-                              }}
-                              className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-bold text-slate-350 focus:outline-none focus:border-blue-500"
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Courier Logistics Service</label>
+                            <div className="el-select">
+                              <select 
+                                value={courierName} 
+                                onChange={(e) => setCourierName(e.target.value)} 
+                                className="el-input__inner font-semibold text-slate-650"
+                              >
+                                <option value="DHL Express">DHL Express Courier</option>
+                                <option value="FedEx Ground">FedEx International</option>
+                                <option value="Sri Lanka Post">Sri Lanka Post Registered</option>
+                                <option value="Pronto Lanka">Pronto Domestic</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-bold text-slate-455 uppercase tracking-widest block">Waybill / Tracking Code</label>
+                            <div className="el-input">
+                              <input
+                                type="text"
+                                required
+                                value={trackingCode}
+                                onChange={(e) => setTrackingCode(e.target.value)}
+                                className="el-input__inner font-mono font-medium"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 pt-3">
+                            <button 
+                              type="submit" 
+                              className="flex-1 el-button el-button--primary shadow-sm"
                             >
-                              <option value="DHL Express">DHL Express Partner</option>
-                              <option value="Fedex Express">Fedex World Freight</option>
-                              <option value="Citypak Courier">Citypak Sri Lanka</option>
-                              <option value="Domex Logistics">Domex Logistics Delivery</option>
-                            </select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-slate-550 uppercase tracking-widest block">Generated Tracking Code</label>
-                            <input
-                              type="text"
-                              required
-                              value={trackingCode}
-                              onChange={(e) => setTrackingCode(e.target.value)}
-                              className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:border-blue-500 text-blue-400 tracking-wider"
-                            />
-                          </div>
-
-                          <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04] text-[10px] text-slate-400 leading-relaxed space-y-1">
-                            <p><strong>Courier:</strong> {courierName}</p>
-                            <p><strong>Item Title:</strong> {dispatchItem.product?.title}</p>
-                            <p><strong>Destination:</strong> Verified Platform Checkout Address</p>
-                          </div>
-
-                          <div className="flex gap-3 mt-6">
-                            <button
-                              type="submit"
-                              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md"
-                            >
-                              Confirm Shipment
+                              Fulfill Dispatch
                             </button>
                             <button
                               type="button"
                               onClick={() => setDispatchItem(null)}
-                              className="flex-1 bg-white/[0.04] border border-white/[0.06] text-slate-300 font-extrabold text-xs py-3.5 rounded-xl hover:bg-white/[0.08] transition-all"
+                              className="flex-1 el-button is-plain"
                             >
                               Cancel
                             </button>
@@ -1552,107 +1899,403 @@ export default function VendorPortal() {
 
               {/* 6. TAB: CUSTOMIZE SHOP */}
               {activeTab === 'customize' && (
-                <div className="max-w-2xl mx-auto space-y-6">
+                <div className="max-w-4xl mx-auto space-y-6">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Shop Presentation Customizer</h2>
-                    <p className="text-xs font-semibold text-slate-400 mt-1">Configure your public storefront branding, bio, and display colors.</p>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Shop Configurations</h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">Customize public profile settings, aesthetic branding, upload policies, and view followers.</p>
                   </div>
 
-                  <form onSubmit={handleSaveProfile} className="bg-[#0c1325]/50 border border-white/[0.08] rounded-3xl p-6 sm:p-8 space-y-5 backdrop-blur-sm">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Store Display Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={shopName}
-                          onChange={(e) => setShopName(e.target.value)}
-                          className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Public Merchant Owner Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={vendorName}
-                          onChange={(e) => setVendorName(e.target.value)}
-                          className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Avatar Theme Color</label>
-                      <div className="flex gap-2">
-                        {[
-                          { label: 'Deep Rose', value: 'bg-rose-600 text-white' },
-                          { label: 'Ocean Blue', value: 'bg-blue-600 text-white' },
-                          { label: 'Emerald Green', value: 'bg-emerald-600 text-white' },
-                          { label: 'Amber Orange', value: 'bg-amber-600 text-white' },
-                          { label: 'Stealth Slate', value: 'bg-slate-800 text-white' }
-                        ].map((colorOpt) => (
-                          <button
-                            key={colorOpt.value}
-                            type="button"
-                            onClick={() => setShopAvatarBg(colorOpt.value)}
-                            className={`flex-1 text-[10px] font-bold py-2.5 rounded-lg border transition-all ${
-                              shopAvatarBg === colorOpt.value
-                                ? 'bg-blue-600/10 border-blue-500/40 text-blue-400'
-                                : 'bg-[#070a13] border-white/[0.06] text-slate-400 hover:text-slate-200'
-                            }`}
-                          >
-                            <span className="inline-block w-2.5 h-2.5 rounded-full mr-1 bg-current" style={{ backgroundColor: colorOpt.value.split(' ')[0].replace('bg-', '') }} />
-                            {colorOpt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Shop Bio Description</label>
-                      <textarea
-                        rows="3"
-                        value={shopBio}
-                        onChange={(e) => setShopBio(e.target.value)}
-                        className="w-full bg-[#070a13] border border-white/[0.08] rounded-xl px-4 py-3 text-xs font-semibold focus:outline-none focus:border-blue-500 text-slate-200"
-                      />
-                    </div>
-
-                    {/* Public preview card mockup */}
-                    <div className="pt-2">
-                      <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black mb-3">Live Public Preview</p>
-                      <div className="bg-[#070a13] border border-white/[0.06] p-4.5 rounded-2xl flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl ${shopAvatarBg} flex items-center justify-center font-black text-sm`}>
-                            {shopName.charAt(0).toUpperCase() || 'S'}
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-black text-white leading-none">{shopName || 'Shop Name'}</h4>
-                            <p className="text-[10px] text-slate-450 mt-1.5 font-bold flex items-center gap-1">
-                              <Award className="w-3.5 h-3.5 text-blue-400" />
-                              Tech-Hub Authorized Merchant ({vendorName})
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[9px] font-black text-emerald-400 uppercase tracking-wider">
-                            Verified Store
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 flex gap-4">
+                  {/* Sub-tabs menu */}
+                  <div className="flex border-b border-slate-200/80 bg-white rounded-t-xl px-4 pt-2 gap-2 shadow-sm">
+                    {[
+                      { id: 'branding', label: 'Branding & Theme', icon: <Palette className="w-4 h-4" /> },
+                      { id: 'profile', label: 'Company Profile', icon: <BookOpen className="w-4 h-4" /> },
+                      { id: 'policies', label: 'Store Policies', icon: <FileText className="w-4 h-4" /> },
+                      { id: 'followers', label: 'Shop Followers', icon: <Users className="w-4 h-4" /> }
+                    ].map((tab) => (
                       <button
-                        type="submit"
-                        disabled={actionLoading}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveCustomizeSubTab(tab.id)}
+                        className={`flex items-center gap-2 px-4 py-3 text-xs font-bold transition-all border-b-2 -mb-px ${
+                          activeCustomizeSubTab === tab.id
+                            ? 'border-[#409eff] text-[#409eff] font-black'
+                            : 'border-transparent text-slate-650 hover:text-slate-900 hover:border-slate-200'
+                        }`}
                       >
-                        {actionLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                        Save Store Configurations
+                        {tab.icon}
+                        {tab.label}
+                        {tab.id === 'followers' && followersList.length > 0 && (
+                          <span className="bg-blue-100 text-[#409eff] px-2.5 py-0.5 rounded-full text-[9px] font-black">
+                            {followersList.length}
+                          </span>
+                        )}
                       </button>
-                    </div>
+                    ))}
+                  </div>
+
+                  <form onSubmit={handleSaveSettings} className="bg-white border border-slate-200 border-t-0 rounded-b-xl p-6 sm:p-8 space-y-6 shadow-sm">
+                    {/* SUBTAB: BRANDING & THEME */}
+                    {activeCustomizeSubTab === 'branding' && (
+                      <div className="space-y-6 animate-in fade-in duration-200">
+                        {/* Cover Image Upload */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Cover Banner Image</label>
+                          <div className="relative h-48 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden group flex items-center justify-center">
+                            {coverImageUrl ? (
+                              <img src={coverImageUrl} alt="Cover Banner" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="text-center text-slate-400">
+                                <ImageIcon className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                                <p className="text-xs font-semibold">No cover image uploaded</p>
+                              </div>
+                            )}
+                            {uploadingField === 'cover' && (
+                              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center text-white text-xs font-bold">
+                                <Loader2 className="w-6 h-6 animate-spin mr-2" /> Uploading Cover...
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <label className="flex items-center gap-1.5 cursor-pointer el-button el-button--primary is-plain el-button--small shadow-sm">
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>{coverImageUrl ? 'Change Banner' : 'Upload Banner'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="sr-only"
+                                onChange={(e) => {
+                                  if (e.target.files[0]) handleFileUpload(e.target.files[0], 'cover');
+                                }}
+                              />
+                            </label>
+                            {coverImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setCoverImageUrl('')}
+                                className="el-button el-button--danger is-plain el-button--small shadow-sm"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Logo Upload */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Shop Logo</label>
+                          <div className="flex items-center gap-5">
+                            <div className="relative w-20 h-20 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                              {logoUrl ? (
+                                <img src={logoUrl} alt="Shop Logo" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="text-[20px] font-black text-slate-300">
+                                  {shopName ? shopName.charAt(0).toUpperCase() : 'S'}
+                                </div>
+                              )}
+                              {uploadingField === 'logo' && (
+                                <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center text-white">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="space-y-1.5">
+                              <div className="flex gap-2">
+                                <label className="flex items-center gap-1.5 cursor-pointer el-button el-button--primary is-plain el-button--small shadow-sm">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>{logoUrl ? 'Change Logo' : 'Upload Logo'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="sr-only"
+                                    onChange={(e) => {
+                                      if (e.target.files[0]) handleFileUpload(e.target.files[0], 'logo');
+                                    }}
+                                  />
+                                </label>
+                                {logoUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setLogoUrl('')}
+                                    className="el-button el-button--danger is-plain el-button--small shadow-sm"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400">Square layout recommended (PNG or JPG).</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Shop Theme */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Shop Theme Profile</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                            {[
+                              { id: 'element', name: 'Element Blue', class: 'bg-[#409eff] text-white', desc: 'Modern and professional' },
+                              { id: 'walnut', name: 'Walnut Dark', class: 'bg-[#1e293b] text-white', desc: 'Cozy and warm wood aesthetic' },
+                              { id: 'forest', name: 'Forest Green', class: 'bg-[#67c23a] text-white', desc: 'Organic and earthy vibe' },
+                              { id: 'amber', name: 'Amber Glow', class: 'bg-[#e6a23c] text-white', desc: 'Premium workspace accent' },
+                              { id: 'rose', name: 'Rose Petal', class: 'bg-[#f56c6c] text-white', desc: 'Warm and vibrant styling' }
+                            ].map((themeOpt) => (
+                              <button
+                                key={themeOpt.id}
+                                type="button"
+                                onClick={() => {
+                                  setShopTheme(themeOpt.id);
+                                  // Map theme to avatar bg for backwards compatibility
+                                  setShopAvatarBg(themeOpt.class);
+                                  showToast(`Shop theme selected: ${themeOpt.name}`);
+                                }}
+                                className={`p-3 text-[10px] rounded-lg border text-left flex flex-col justify-between transition-all ${
+                                  shopTheme === themeOpt.id
+                                    ? 'border-[#409eff] bg-blue-50/10 shadow-sm shadow-[#409eff]/15 scale-102 ring-1 ring-[#409eff]'
+                                    : 'border-slate-200 bg-white hover:border-slate-350'
+                                }`}
+                              >
+                                <span className="flex items-center font-bold text-slate-800">
+                                  <span className={`inline-block w-2 h-2 rounded-full ${themeOpt.class.split(' ')[0]} mr-1.5`} />
+                                  {themeOpt.name.split(' ')[0]}
+                                </span>
+                                <span className="block text-[8px] text-slate-400 mt-1 leading-snug">{themeOpt.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SUBTAB: COMPANY PROFILE */}
+                    {activeCustomizeSubTab === 'profile' && (
+                      <div className="space-y-5 animate-in fade-in duration-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Public Store Name</label>
+                            <div className="el-input">
+                              <input
+                                type="text"
+                                required
+                                value={shopName}
+                                onChange={(e) => setShopName(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Merchant Manager Name</label>
+                            <div className="el-input">
+                              <input
+                                type="text"
+                                required
+                                value={vendorName}
+                                onChange={(e) => setVendorName(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Store Slogan & Bio</label>
+                          <input
+                            type="text"
+                            value={shopBio}
+                            onChange={(e) => setShopBio(e.target.value)}
+                            className="el-input__inner font-medium text-xs"
+                            placeholder="e.g. Premium workspace accessories & gear."
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Detailed Company Profile</label>
+                          <textarea
+                            rows="6"
+                            value={companyProfile}
+                            onChange={(e) => setCompanyProfile(e.target.value)}
+                            className="el-input__inner h-auto py-3 font-medium text-xs resize-none"
+                            placeholder="Describe your company history, design values, materials sourcing, and what sets your brand apart..."
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SUBTAB: STORE POLICIES */}
+                    {activeCustomizeSubTab === 'policies' && (
+                      <div className="space-y-5 animate-in fade-in duration-200">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy & Terms Upload Type</label>
+                          <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs text-slate-700">
+                              <input
+                                type="radio"
+                                name="policyType"
+                                value="text"
+                                checked={policyType === 'text'}
+                                onChange={() => setPolicyType('text')}
+                                className="text-[#409eff] focus:ring-[#409eff]"
+                              />
+                              <span>Rich Text Policy</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs text-slate-700">
+                              <input
+                                type="radio"
+                                name="policyType"
+                                value="pdf"
+                                checked={policyType === 'pdf'}
+                                onChange={() => setPolicyType('pdf')}
+                                className="text-[#409eff] focus:ring-[#409eff]"
+                              />
+                              <span>PDF Document Upload</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {policyType === 'text' ? (
+                          <div className="space-y-1 animate-in fade-in duration-150">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Terms, Conditions & Return Policies (Text)</label>
+                            <textarea
+                              rows="8"
+                              value={policyText}
+                              onChange={(e) => setPolicyText(e.target.value)}
+                              className="el-input__inner h-auto py-3 font-medium text-xs font-mono"
+                              placeholder="Write your shop's terms and conditions, return policy, and dispatch times..."
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-4 animate-in fade-in duration-150">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy Document (PDF)</label>
+                            
+                            {policyPdfUrl ? (
+                              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-500 shrink-0">
+                                    <FileText className="w-5 h-5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 truncate">Store_Policy_Terms.pdf</p>
+                                    <a
+                                      href={policyPdfUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] font-bold text-[#409eff] hover:underline"
+                                    >
+                                      View Uploaded PDF
+                                    </a>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setPolicyPdfUrl('')}
+                                  className="text-xs font-semibold text-red-500 hover:text-red-700 hover:underline"
+                                >
+                                  Remove File
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 hover:bg-slate-100/50 transition-colors">
+                                <Upload className="w-8 h-8 text-slate-355 mx-auto mb-2 animate-bounce duration-1000" />
+                                <p className="text-xs font-semibold text-slate-500">Upload Terms & Conditions PDF</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5">Maximum size 10MB</p>
+                              </div>
+                            )}
+
+                            {uploadingField === 'policy' && (
+                              <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-550 py-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-[#409eff]" />
+                                Uploading PDF file...
+                              </div>
+                            )}
+
+                            {!policyPdfUrl && (
+                              <label className="flex items-center justify-center gap-1.5 w-full cursor-pointer el-button el-button--primary is-plain el-button--small shadow-sm">
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Choose PDF File</span>
+                                <input
+                                  type="file"
+                                  accept="application/pdf"
+                                  className="sr-only"
+                                  onChange={(e) => {
+                                    if (e.target.files[0]) handleFileUpload(e.target.files[0], 'policy');
+                                  }}
+                                />
+                              </label>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SUBTAB: SHOP FOLLOWERS */}
+                    {activeCustomizeSubTab === 'followers' && (
+                      <div className="space-y-4 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <h3 className="text-xs font-bold text-slate-450 uppercase tracking-widest">Store Followers ({followersList.length})</h3>
+                          <p className="text-[10px] text-slate-400 font-medium">List of users who follow your store catalog updates.</p>
+                        </div>
+
+                        {followersList.length > 0 ? (
+                          <div className="el-table el-table--border el-table--striped">
+                            <div className="max-h-[350px] overflow-y-auto">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr>
+                                    <th className="py-2.5 px-4">User Details</th>
+                                    <th className="py-2.5 px-4">Email</th>
+                                    <th className="py-2.5 px-4 text-right">Followed Since</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {followersList.map((follower, idx) => (
+                                    <tr key={follower.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center gap-2.5">
+                                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-slate-700`}>
+                                            {follower.name.charAt(0).toUpperCase()}
+                                          </div>
+                                          <span className="font-bold text-slate-800">{follower.name}</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 font-semibold text-slate-650">{follower.email}</td>
+                                      <td className="py-3 px-4 text-right text-slate-450 font-medium">
+                                        {new Date(follower.created_at || Date.now()).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="py-16 text-center text-slate-400 font-semibold text-xs leading-relaxed space-y-2">
+                            <Users className="w-8 h-8 text-slate-350 mx-auto mb-1" />
+                            <p>No followers yet</p>
+                            <p className="text-[10px] font-medium text-slate-400">Share your store catalog link to attract followers!</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action buttons (only show if not followers list sub-tab) */}
+                    {activeCustomizeSubTab !== 'followers' && (
+                      <div className="pt-4 border-t border-slate-100 flex gap-4">
+                        <button
+                          type="submit"
+                          disabled={actionLoading || uploadingField !== null}
+                          className="flex-1 el-button el-button--primary shadow-sm font-bold"
+                        >
+                          {actionLoading && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin inline" />}
+                          Save Configurations
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('overview')}
+                          className="flex-1 el-button is-plain"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </form>
                 </div>
               )}

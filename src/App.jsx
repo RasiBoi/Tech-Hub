@@ -12,7 +12,9 @@ import VendorStore from './pages/VendorStore';
 import About from './pages/About';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import VendorPortal from './pages/vendor/VendorPortal';
+import CustomerPortal from './pages/customer/CustomerPortal';
 import { ProtectedRoute } from './routes/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 
 export default function App() {
@@ -20,6 +22,7 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/become-seller" element={<BecomeSeller />} />
@@ -42,6 +45,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['vendor']}>
                 <VendorPortal />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/portal" 
+            element={
+              <ProtectedRoute allowedRoles={['customer', 'vendor', 'admin']}>
+                <CustomerPortal />
               </ProtectedRoute>
             } 
           />

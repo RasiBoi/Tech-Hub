@@ -5,7 +5,7 @@ import {
   Search, Heart, ShoppingCart, Bell, MapPin, Truck, 
   Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown, ChevronLeft, ChevronRight,
   Mic, Menu, X, CheckCircle2, User, ShoppingBag, ArrowRight, Brain, LogOut, Store,
-  SlidersHorizontal, Check, ShieldCheck, Share2, Plus, Minus, Info
+  SlidersHorizontal, Check, ShieldCheck, Share2, Plus, Minus, Info, Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -702,25 +702,22 @@ export default function Product() {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const prodData = await requestJson(`${serviceRegistry.catalog}/products`);
-        if (prodData && prodData.length > 0) {
-          setAllDbProducts(prodData);
-        }
-      } catch (e) {
-        if (!isRequestAbortError(e)) {
-          console.error('Failed to load products from database', e);
-        }
+      // Fetch products and categories in parallel for faster page load
+      const [prodResult, catResult] = await Promise.allSettled([
+        requestJson(`${serviceRegistry.catalog}/products`),
+        requestJson(`${serviceRegistry.catalog}/categories`),
+      ]);
+
+      if (prodResult.status === 'fulfilled' && prodResult.value?.length > 0) {
+        setAllDbProducts(prodResult.value);
+      } else if (prodResult.status === 'rejected' && !isRequestAbortError(prodResult.reason)) {
+        console.error('Failed to load products from database', prodResult.reason);
       }
-      try {
-        const catData = await requestJson(`${serviceRegistry.catalog}/categories`);
-        if (catData && catData.length > 0) {
-          setDbCategories(catData);
-        }
-      } catch (e) {
-        if (!isRequestAbortError(e)) {
-          console.error('Failed to load categories from database', e);
-        }
+
+      if (catResult.status === 'fulfilled' && catResult.value?.length > 0) {
+        setDbCategories(catResult.value);
+      } else if (catResult.status === 'rejected' && !isRequestAbortError(catResult.reason)) {
+        console.error('Failed to load categories from database', catResult.reason);
       }
     };
     loadData();
@@ -900,6 +897,19 @@ export default function Product() {
   const handleAddToCart = () => {
     showToast(`Added ${quantity}x "${productInfo.title}" (${selectedColor}) to setup!`);
   };
+
+  if (allDbProducts.length === 0) {
+    return (
+      <div className={`min-h-screen font-sans flex flex-col ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-[#070a13] text-slate-100'}`}>
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-9 h-9 text-blue-500 animate-spin" />
+          <p className="text-xs font-bold text-slate-400 tracking-wider">Syncing workspace specifications...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen font-sans ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-[#070a13] text-slate-100'}`}>
