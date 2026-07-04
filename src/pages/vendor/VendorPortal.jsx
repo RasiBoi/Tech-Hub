@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { requestJson } from '../../services/httpClient';
@@ -8,7 +9,7 @@ import {
   AlertCircle, RefreshCw, Cpu, Award, ShoppingBag, Settings, 
   Hammer, Loader2, Search, Edit3, Trash2, CheckCircle2, ChevronRight, Truck,
   Tag, Sliders, Info, ShoppingCart, HelpCircle, Sun, Moon,
-  Upload, ImageIcon, X, Users, FileText, Palette, BookOpen
+  Upload, ImageIcon, X, Users, FileText, Palette, BookOpen, Globe, ArrowLeft
 } from 'lucide-react';
 import '../../element-ui.css';
 
@@ -32,6 +33,7 @@ export default function VendorPortal() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editPrice, setEditPrice] = useState('');
+  const [editOldPrice, setEditOldPrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [editSpec, setEditSpec] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -40,6 +42,7 @@ export default function VendorPortal() {
   const [addTitle, setAddTitle] = useState('');
   const [addCategoryId, setAddCategoryId] = useState('');
   const [addPrice, setAddPrice] = useState('');
+  const [addOldPrice, setAddOldPrice] = useState('');
   const [addStock, setAddStock] = useState('15');
   const [addSpec, setAddSpec] = useState('');
   const [addVibe, setAddVibe] = useState('minimalist');
@@ -96,6 +99,48 @@ export default function VendorPortal() {
   const [makerPrice, setMakerPrice] = useState(0);
   const [generatedProduct, setGeneratedProduct] = useState(null);
 
+  // Promotions and Policies states
+  const [promotionsList, setPromotionsList] = useState([]);
+  const [policiesList, setPoliciesList] = useState([]);
+  const [activePromoSubTab, setActivePromoSubTab] = useState('promotions');
+  
+  // Promotion Form State
+  const [editingPromo, setEditingPromo] = useState(null);
+  const [promoTitle, setPromoTitle] = useState('');
+  const [promoSubtitle, setPromoSubtitle] = useState('');
+  const [promoImageUrl, setPromoImageUrl] = useState('');
+  const [promoGradient, setPromoGradient] = useState('from-blue-500/20 via-indigo-500/10 to-cyan-400/20');
+  const [promoTo, setPromoTo] = useState('/');
+  const [promoIsActive, setPromoIsActive] = useState(true);
+  const [promoPolicyId, setPromoPolicyId] = useState('');
+
+  // Policy Form State
+  const [editingPolicy, setEditingPolicy] = useState(null);
+  const [policyFormTitle, setPolicyFormTitle] = useState('');
+  const [policyFormType, setPolicyFormType] = useState('text');
+  const [policyFormContent, setPolicyFormContent] = useState('');
+  const [policyFormPdfUrl, setPolicyFormPdfUrl] = useState('');
+
+  // Promotions and Policies fetcher
+  const fetchPromotionsAndPolicies = async () => {
+    if (!user || user.role !== 'vendor') return;
+    try {
+      const [policiesRes, promosRes] = await Promise.allSettled([
+        requestJson(`${serviceRegistry.catalog}/vendor/policies`),
+        requestJson(`${serviceRegistry.catalog}/vendor/promotions`),
+      ]);
+
+      if (policiesRes.status === 'fulfilled' && policiesRes.value) {
+        setPoliciesList(policiesRes.value.data || policiesRes.value);
+      }
+      if (promosRes.status === 'fulfilled' && promosRes.value) {
+        setPromotionsList(promosRes.value.data || promosRes.value);
+      }
+    } catch (e) {
+      console.error('Error fetching promotions/policies:', e);
+    }
+  };
+
   // Force Light Mode on Mount, Restore on Unmount
   useEffect(() => {
     const root = window.document.documentElement;
@@ -118,6 +163,9 @@ export default function VendorPortal() {
         requestJson(`${serviceRegistry.catalog}/products`),
         requestJson(`${serviceRegistry.commerce}/orders`),
       ]);
+
+      // Fetch promotions and policies
+      await fetchPromotionsAndPolicies();
 
       if (catResult.status === 'fulfilled' && catResult.value) {
         setCategories(catResult.value);
@@ -202,6 +250,7 @@ export default function VendorPortal() {
     setEditingProduct(product);
     setEditTitle(product.title || product.name || '');
     setEditPrice(product.price ? product.price.toString() : '');
+    setEditOldPrice(product.old_price ? product.old_price.toString() : '');
     setEditStock(product.stock ? product.stock.toString() : '0');
     setEditSpec(product.spec || '');
     setEditDescription(product.description || '');
@@ -218,6 +267,7 @@ export default function VendorPortal() {
         body: {
           title: editTitle,
           price: parseFloat(editPrice),
+          old_price: editOldPrice ? parseFloat(editOldPrice) : null,
           stock: parseInt(editStock),
           spec: editSpec,
           description: editDescription
@@ -225,7 +275,15 @@ export default function VendorPortal() {
       });
       
       showToast('Product updated successfully.');
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, title: editTitle, price: parseFloat(editPrice), stock: parseInt(editStock), spec: editSpec, description: editDescription } : p));
+      setProducts(products.map(p => p.id === editingProduct.id ? { 
+        ...p, 
+        title: editTitle, 
+        price: parseFloat(editPrice), 
+        old_price: editOldPrice ? parseFloat(editOldPrice) : null, 
+        stock: parseInt(editStock), 
+        spec: editSpec, 
+        description: editDescription 
+      } : p));
       setEditingProduct(null);
     } catch (e) {
       console.error(e);
@@ -254,6 +312,7 @@ export default function VendorPortal() {
         title: addTitle,
         description: addDescription || 'Premium handcrafted tech workspace gear.',
         price: parseFloat(addPrice),
+        old_price: addOldPrice ? parseFloat(addOldPrice) : null,
         stock: parseInt(addStock),
         category_id: parseInt(addCategoryId),
         spec: addSpec || 'Custom Workstation Accessory',
@@ -270,6 +329,7 @@ export default function VendorPortal() {
       // Reset form
       setAddTitle('');
       setAddPrice('');
+      setAddOldPrice('');
       setAddStock('15');
       setAddSpec('');
       setAddDescription('');
@@ -348,6 +408,12 @@ export default function VendorPortal() {
       } else if (field === 'policy') {
         setPolicyPdfUrl(uploadedUrl);
         showToast('Terms & Conditions PDF uploaded successfully.');
+      } else if (field === 'promo_image') {
+        setPromoImageUrl(uploadedUrl);
+        showToast('Promotional banner uploaded successfully.');
+      } else if (field === 'custom_policy_pdf') {
+        setPolicyFormPdfUrl(uploadedUrl);
+        showToast('Policy PDF uploaded successfully.');
       }
     } catch (e) {
       console.error(e);
@@ -402,6 +468,132 @@ export default function VendorPortal() {
     } catch (e) {
       console.error(e);
       showToast(e.message || 'Failed to update shop settings.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Promotion Handlers
+  const handleSavePromotion = async (e) => {
+    e.preventDefault();
+    if (!promoTitle) {
+      showToast('Promotion title is required.', 'error');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const url = editingPromo 
+        ? `${serviceRegistry.catalog}/vendor/promotions/${editingPromo.id}` 
+        : `${serviceRegistry.catalog}/vendor/promotions`;
+      const method = editingPromo ? 'PUT' : 'POST';
+
+      await requestJson(url, {
+        method,
+        body: {
+          title: promoTitle,
+          subtitle: promoSubtitle,
+          image_url: promoImageUrl,
+          gradient: promoGradient,
+          to: promoTo,
+          is_active: promoIsActive,
+          policy_id: promoPolicyId ? parseInt(promoPolicyId) : null
+        }
+      });
+
+      showToast(editingPromo ? 'Promotion updated successfully!' : 'Promotion created successfully!');
+      
+      // Reset form
+      setEditingPromo(null);
+      setPromoTitle('');
+      setPromoSubtitle('');
+      setPromoImageUrl('');
+      setPromoGradient('from-blue-500/20 via-indigo-500/10 to-cyan-400/20');
+      setPromoTo('/');
+      setPromoIsActive(true);
+      setPromoPolicyId('');
+
+      // Refresh list
+      fetchPromotionsAndPolicies();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to save promotion.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeletePromotion = async (id) => {
+    if (!confirm('Are you sure you want to delete this promotion?')) return;
+    setActionLoading(true);
+    try {
+      await requestJson(`${serviceRegistry.catalog}/vendor/promotions/${id}`, {
+        method: 'DELETE'
+      });
+      showToast('Promotion deleted successfully!');
+      fetchPromotionsAndPolicies();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete promotion.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Policy Handlers
+  const handleSavePolicy = async (e) => {
+    e.preventDefault();
+    if (!policyFormTitle) {
+      showToast('Policy title is required.', 'error');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const url = editingPolicy 
+        ? `${serviceRegistry.catalog}/vendor/policies/${editingPolicy.id}` 
+        : `${serviceRegistry.catalog}/vendor/policies`;
+      const method = editingPolicy ? 'PUT' : 'POST';
+
+      await requestJson(url, {
+        method,
+        body: {
+          title: policyFormTitle,
+          type: policyFormType,
+          content: policyFormContent,
+          pdf_url: policyFormPdfUrl
+        }
+      });
+
+      showToast(editingPolicy ? 'Policy updated successfully!' : 'Policy created successfully!');
+      
+      // Reset form
+      setEditingPolicy(null);
+      setPolicyFormTitle('');
+      setPolicyFormType('text');
+      setPolicyFormContent('');
+      setPolicyFormPdfUrl('');
+
+      // Refresh list
+      fetchPromotionsAndPolicies();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to save policy.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeletePolicy = async (id) => {
+    if (!confirm('Are you sure you want to delete this policy? Any linked promotions will lose their policy link.')) return;
+    setActionLoading(true);
+    try {
+      await requestJson(`${serviceRegistry.catalog}/vendor/policies/${id}`, {
+        method: 'DELETE'
+      });
+      showToast('Policy deleted successfully!');
+      fetchPromotionsAndPolicies();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to delete policy.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -675,6 +867,14 @@ export default function VendorPortal() {
             <span className="font-semibold text-slate-600 capitalize">{user?.role} Mode : <strong>{user?.name}</strong></span>
           </div>
 
+          <Link
+            to="/"
+            className="flex items-center gap-2 bg-slate-100 hover:bg-blue-50 text-slate-650 hover:text-blue-650 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border border-slate-200 shadow-sm"
+          >
+            <Globe className="w-3.5 h-3.5 text-slate-400" />
+            Back to Site
+          </Link>
+
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 bg-slate-100 hover:bg-red-50 text-slate-650 hover:text-red-650 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border border-slate-200 shadow-sm"
@@ -699,6 +899,7 @@ export default function VendorPortal() {
                   { id: 'products', label: 'View Products', icon: <LayoutGrid className="w-4 h-4" /> },
                   { id: 'add', label: 'Product Adding', icon: <Plus className="w-4 h-4" /> },
                   { id: 'maker', label: 'Product Making', icon: <Hammer className="w-4 h-4" /> },
+                  { id: 'promotions', label: 'Promotion Making', icon: <Tag className="w-4 h-4" /> },
                   { id: 'orders', label: 'Order Dispatch', icon: <PackageCheck className="w-4 h-4" /> },
                   { id: 'customize', label: 'Customize Shop', icon: <Settings className="w-4 h-4" /> }
                 ].map((tab) => (
@@ -778,6 +979,7 @@ export default function VendorPortal() {
                 <option value="products">View Products</option>
                 <option value="add">Product Adding</option>
                 <option value="maker">Product Making (Visual config)</option>
+                <option value="promotions">Promotion Making</option>
                 <option value="orders">Order Dispatch</option>
                 <option value="customize">Customize Shop</option>
               </select>
@@ -1077,7 +1279,7 @@ export default function VendorPortal() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1">
                               <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Price (LKR)</label>
                               <div className="el-input">
@@ -1087,6 +1289,18 @@ export default function VendorPortal() {
                                   value={editPrice}
                                   onChange={(e) => setEditPrice(e.target.value)}
                                   className="el-input__inner font-medium"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest block">Original Price (LKR)</label>
+                              <div className="el-input">
+                                <input
+                                  type="number"
+                                  value={editOldPrice}
+                                  onChange={(e) => setEditOldPrice(e.target.value)}
+                                  className="el-input__inner font-medium"
+                                  placeholder="Optional"
                                 />
                               </div>
                             </div>
@@ -1360,7 +1574,7 @@ export default function VendorPortal() {
                           </div>
 
                           {/* Price + Stock */}
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                               <label className="text-[10px] font-bold text-slate-600 tracking-wide block">
                                 Price (LKR) <span className="text-rose-500">*</span>
@@ -1375,6 +1589,23 @@ export default function VendorPortal() {
                                   placeholder="14500"
                                   value={addPrice}
                                   onChange={(e) => setAddPrice(e.target.value)}
+                                  className="el-input__inner font-medium pl-10"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-600 tracking-wide block">
+                                Original Price (LKR) <span className="text-slate-400 font-semibold">(Optional)</span>
+                              </label>
+                              <div className="el-input relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">Rs.</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  placeholder="e.g. 18500"
+                                  value={addOldPrice}
+                                  onChange={(e) => setAddOldPrice(e.target.value)}
                                   className="el-input__inner font-medium pl-10"
                                 />
                               </div>
@@ -1897,9 +2128,460 @@ export default function VendorPortal() {
                 </div>
               )}
 
+              {/* TAB: PROMOTION MAKING */}
+              {activeTab === 'promotions' && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Promotion & Policy Making</h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">Design attractive shop banners for the homepage and link them to custom policy guidelines.</p>
+                  </div>
+
+                  {/* Sub-tabs menu */}
+                  <div className="flex border-b border-slate-200/80 bg-white rounded-t-xl px-4 pt-2 gap-2 shadow-sm">
+                    {[
+                      { id: 'promotions', label: 'Manage Promotions', icon: <Tag className="w-4 h-4" /> },
+                      { id: 'policies', label: 'Manage Promotional Policies', icon: <FileText className="w-4 h-4" /> }
+                    ].map((subTab) => (
+                      <button
+                        key={subTab.id}
+                        type="button"
+                        onClick={() => setActivePromoSubTab(subTab.id)}
+                        className={`flex items-center gap-2 px-4 py-3 text-xs font-bold transition-all border-b-2 -mb-px ${
+                          activePromoSubTab === subTab.id
+                            ? 'border-[#409eff] text-[#409eff] font-black'
+                            : 'border-transparent text-slate-650 hover:text-slate-900 hover:border-slate-200'
+                        }`}
+                      >
+                        {subTab.icon}
+                        {subTab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="bg-white border border-slate-200 border-t-0 rounded-b-xl p-6 sm:p-8 shadow-sm">
+                    {/* SUBTAB: PROMOTIONS */}
+                    {activePromoSubTab === 'promotions' && (
+                      <div className="space-y-8">
+                        {/* Promotion Creation / Edit Form */}
+                        <form onSubmit={handleSavePromotion} className="space-y-5 p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            {editingPromo ? 'Edit Promotion Banner' : 'Create New Promotion Banner'}
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Promotion Title</label>
+                              <input
+                                type="text"
+                                value={promoTitle}
+                                onChange={(e) => setPromoTitle(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                                placeholder="e.g. Payday Sale"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Subtitle / Deal Details</label>
+                              <input
+                                type="text"
+                                value={promoSubtitle}
+                                onChange={(e) => setPromoSubtitle(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                                placeholder="e.g. Save up to 35% on workspace bestsellers"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Banner Gradient Style</label>
+                              <select
+                                value={promoGradient}
+                                onChange={(e) => setPromoGradient(e.target.value)}
+                                className="el-input__inner font-semibold text-slate-700 text-xs"
+                              >
+                                <option value="from-blue-500/20 via-indigo-500/10 to-cyan-400/20">Blue Glow (Default)</option>
+                                <option value="from-amber-400/25 via-orange-400/15 to-yellow-300/25">Amber Glow (Warm)</option>
+                                <option value="from-rose-500/20 via-pink-500/10 to-red-500/20">Rose Glow (Hot Deal)</option>
+                                <option value="from-emerald-500/20 via-teal-500/10 to-green-500/20">Forest Glow (Organic)</option>
+                                <option value="from-purple-500/20 via-fuchsia-500/10 to-violet-500/20">Purple Glow (Neon)</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Redirection Path (Link)</label>
+                              <input
+                                type="text"
+                                value={promoTo}
+                                onChange={(e) => setPromoTo(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                                placeholder="e.g. /category/All"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Link to Custom Policy</label>
+                              <select
+                                value={promoPolicyId}
+                                onChange={(e) => setPromoPolicyId(e.target.value)}
+                                className="el-input__inner font-semibold text-slate-700 text-xs"
+                              >
+                                <option value="">No Associated Policy</option>
+                                {policiesList.map(p => (
+                                  <option key={p.id} value={p.id}>{p.title} ({p.type.toUpperCase()})</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Promo Banner Image</label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="text"
+                                  value={promoImageUrl}
+                                  onChange={(e) => setPromoImageUrl(e.target.value)}
+                                  className="el-input__inner font-medium text-xs flex-1"
+                                  placeholder="Image URL or upload a file"
+                                />
+                                <label className="cursor-pointer shrink-0 el-button el-button--primary is-plain el-button--small shadow-sm">
+                                  <Upload className="w-3.5 h-3.5 mr-1 inline" />
+                                  Upload Banner
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="sr-only"
+                                    onChange={(e) => {
+                                      if (e.target.files[0]) handleFileUpload(e.target.files[0], 'promo_image');
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 pt-4">
+                              <input
+                                type="checkbox"
+                                id="promoIsActive"
+                                checked={promoIsActive}
+                                onChange={(e) => setPromoIsActive(e.target.checked)}
+                                className="text-[#409eff] focus:ring-[#409eff] rounded"
+                              />
+                              <label htmlFor="promoIsActive" className="text-xs font-bold text-slate-700 cursor-pointer">
+                                Active (Banner will display in homepage carousel)
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3 pt-2">
+                            <button
+                              type="submit"
+                              disabled={actionLoading}
+                              className="el-button el-button--primary el-button--small shadow-sm"
+                            >
+                              {editingPromo ? 'Update Promotion' : 'Create Promotion'}
+                            </button>
+                            {editingPromo && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingPromo(null);
+                                  setPromoTitle('');
+                                  setPromoSubtitle('');
+                                  setPromoImageUrl('');
+                                  setPromoGradient('from-blue-500/20 via-indigo-500/10 to-cyan-400/20');
+                                  setPromoTo('/');
+                                  setPromoIsActive(true);
+                                  setPromoPolicyId('');
+                                }}
+                                className="el-button is-plain el-button--small"
+                              >
+                                Cancel Edit
+                              </button>
+                            )}
+                          </div>
+                        </form>
+
+                        {/* Promotions List */}
+                        <div className="space-y-4">
+                          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Store Promotions ({promotionsList.length})</h3>
+                          {promotionsList.length > 0 ? (
+                            <div className="el-table el-table--border el-table--striped">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr>
+                                    <th className="py-2.5 px-4">Promotion Banner Details</th>
+                                    <th className="py-2.5 px-4">Link (To)</th>
+                                    <th className="py-2.5 px-4">Linked Policy</th>
+                                    <th className="py-2.5 px-4">Status</th>
+                                    <th className="py-2.5 px-4 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {promotionsList.map((promo, idx) => (
+                                    <tr key={promo.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-16 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 shrink-0 shadow-sm">
+                                            <img
+                                              src={promo.image_url || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=120&auto=format&fit=crop'}
+                                              alt={promo.title}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                          <div>
+                                            <p className="font-bold text-slate-800">{promo.title}</p>
+                                            <p className="text-[10px] text-slate-400 font-medium">{promo.subtitle || 'No subtitle'}</p>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 font-semibold text-slate-650">{promo.to}</td>
+                                      <td className="py-3 px-4 text-slate-500 font-semibold">
+                                        {promo.policy ? (
+                                          <span className="inline-flex items-center gap-1 bg-blue-50 text-[#409eff] border border-blue-100 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                            <FileText className="w-3 h-3" />
+                                            {promo.policy.title}
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-400">None</span>
+                                        )}
+                                      </td>
+                                      <td className="py-3 px-4">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase border ${
+                                          promo.is_active 
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
+                                            : 'bg-slate-100 border-slate-200 text-slate-500'
+                                        }`}>
+                                          {promo.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 px-4 text-right">
+                                        <div className="flex gap-2 justify-end">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingPromo(promo);
+                                              setPromoTitle(promo.title);
+                                              setPromoSubtitle(promo.subtitle || '');
+                                              setPromoImageUrl(promo.image_url || '');
+                                              setPromoGradient(promo.gradient || 'from-blue-500/20 via-indigo-500/10 to-cyan-400/20');
+                                              setPromoTo(promo.to || '/');
+                                              setPromoIsActive(promo.is_active);
+                                              setPromoPolicyId(promo.policy_id || '');
+                                            }}
+                                            className="text-xs font-semibold text-[#409eff] hover:underline"
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeletePromotion(promo.id)}
+                                            className="text-xs font-semibold text-red-550 hover:underline"
+                                          >
+                                            Delete
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-semibold text-slate-450 italic">No promotions created yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SUBTAB: POLICIES */}
+                    {activePromoSubTab === 'policies' && (
+                      <div className="space-y-8">
+                        {/* Policy Creation / Edit Form */}
+                        <form onSubmit={handleSavePolicy} className="space-y-5 p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            {editingPolicy ? 'Edit Policy' : 'Create New Promotional Policy'}
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy Title</label>
+                              <input
+                                type="text"
+                                value={policyFormTitle}
+                                onChange={(e) => setPolicyFormTitle(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                                placeholder="e.g. Return & Refund Policy"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy Type</label>
+                              <div className="flex gap-4 pt-1">
+                                <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs text-slate-700">
+                                  <input
+                                    type="radio"
+                                    name="policyFormType"
+                                    value="text"
+                                    checked={policyFormType === 'text'}
+                                    onChange={() => setPolicyFormType('text')}
+                                    className="text-[#409eff] focus:ring-[#409eff]"
+                                  />
+                                  <span>Text-Based Content</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs text-slate-700">
+                                  <input
+                                    type="radio"
+                                    name="policyFormType"
+                                    value="pdf"
+                                    checked={policyFormType === 'pdf'}
+                                    onChange={() => setPolicyFormType('pdf')}
+                                    className="text-[#409eff] focus:ring-[#409eff]"
+                                  />
+                                  <span>PDF Upload</span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+
+                          {policyFormType === 'text' ? (
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy Content (Text)</label>
+                              <textarea
+                                rows="6"
+                                value={policyFormContent}
+                                onChange={(e) => setPolicyFormContent(e.target.value)}
+                                className="el-input__inner h-auto py-3 font-medium text-xs font-mono"
+                                placeholder="Write the policy terms, rules, and conditions..."
+                              />
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Upload PDF Document</label>
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="text"
+                                  value={policyFormPdfUrl}
+                                  onChange={(e) => setPolicyFormPdfUrl(e.target.value)}
+                                  className="el-input__inner font-medium text-xs flex-1"
+                                  placeholder="PDF URL or upload a file"
+                                />
+                                <label className="cursor-pointer shrink-0 el-button el-button--primary is-plain el-button--small shadow-sm">
+                                  <Upload className="w-3.5 h-3.5 mr-1 inline" />
+                                  Upload PDF
+                                  <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="sr-only"
+                                    onChange={(e) => {
+                                      if (e.target.files[0]) handleFileUpload(e.target.files[0], 'custom_policy_pdf');
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex gap-3">
+                            <button
+                              type="submit"
+                              disabled={actionLoading}
+                              className="el-button el-button--primary el-button--small shadow-sm"
+                            >
+                              {editingPolicy ? 'Update Policy' : 'Create Policy'}
+                            </button>
+                            {editingPolicy && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingPolicy(null);
+                                  setPolicyFormTitle('');
+                                  setPolicyFormType('text');
+                                  setPolicyFormContent('');
+                                  setPolicyFormPdfUrl('');
+                                }}
+                                className="el-button is-plain el-button--small"
+                              >
+                                Cancel Edit
+                              </button>
+                            )}
+                          </div>
+                        </form>
+
+                        {/* Policies List */}
+                        <div className="space-y-4">
+                          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Store Policies ({policiesList.length})</h3>
+                          {policiesList.length > 0 ? (
+                            <div className="el-table el-table--border el-table--striped">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr>
+                                    <th className="py-2.5 px-4">Policy Title</th>
+                                    <th className="py-2.5 px-4">Type</th>
+                                    <th className="py-2.5 px-4">Preview Details</th>
+                                    <th className="py-2.5 px-4 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {policiesList.map((policy, idx) => (
+                                    <tr key={policy.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                      <td className="py-3 px-4 font-bold text-slate-800">{policy.title}</td>
+                                      <td className="py-3 px-4 font-semibold text-slate-650 uppercase">{policy.type}</td>
+                                      <td className="py-3 px-4 text-slate-500 font-medium">
+                                        {policy.type === 'pdf' ? (
+                                          <a
+                                            href={policy.pdf_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-[#409eff] hover:underline flex items-center gap-1"
+                                          >
+                                            <FileText className="w-3.5 h-3.5" />
+                                            Open PDF
+                                          </a>
+                                        ) : (
+                                          <span className="truncate max-w-[200px] block font-mono text-[10px]">
+                                            {policy.content}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="py-3 px-4 text-right">
+                                        <div className="flex gap-2 justify-end">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingPolicy(policy);
+                                              setPolicyFormTitle(policy.title);
+                                              setPolicyFormType(policy.type);
+                                              setPolicyFormContent(policy.content || '');
+                                              setPolicyFormPdfUrl(policy.pdf_url || '');
+                                            }}
+                                            className="text-xs font-semibold text-[#409eff] hover:underline"
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeletePolicy(policy.id)}
+                                            className="text-xs font-semibold text-red-550 hover:underline"
+                                          >
+                                            Delete
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-semibold text-slate-450 italic">No policies created yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* 6. TAB: CUSTOMIZE SHOP */}
               {activeTab === 'customize' && (
-                <div className="max-w-4xl mx-auto space-y-6">
+                <div className="space-y-6">
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 tracking-tight">Shop Configurations</h2>
                     <p className="text-xs font-semibold text-slate-500 mt-1">Customize public profile settings, aesthetic branding, upload policies, and view followers.</p>
@@ -2166,61 +2848,79 @@ export default function VendorPortal() {
                           <div className="space-y-4 animate-in fade-in duration-150">
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy Document (PDF)</label>
                             
-                            {policyPdfUrl ? (
-                              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-500 shrink-0">
-                                    <FileText className="w-5 h-5" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-xs font-bold text-slate-800 truncate">Store_Policy_Terms.pdf</p>
-                                    <a
-                                      href={policyPdfUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-[10px] font-bold text-[#409eff] hover:underline"
+                            <div className={policyPdfUrl ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-4"}>
+                              <div className="space-y-4">
+                                {policyPdfUrl ? (
+                                  <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-500 shrink-0">
+                                        <FileText className="w-5 h-5" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-bold text-slate-800 truncate">Store_Policy_Terms.pdf</p>
+                                        <a
+                                          href={policyPdfUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-[10px] font-bold text-[#409eff] hover:underline"
+                                        >
+                                          Open in New Tab
+                                        </a>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPolicyPdfUrl('')}
+                                      className="text-xs font-semibold text-red-500 hover:text-red-700 hover:underline"
                                     >
-                                      View Uploaded PDF
-                                    </a>
+                                      Remove File
+                                    </button>
                                   </div>
+                                ) : (
+                                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 hover:bg-slate-100/50 transition-colors">
+                                    <Upload className="w-8 h-8 text-slate-355 mx-auto mb-2 animate-bounce duration-1000" />
+                                    <p className="text-xs font-semibold text-slate-500">Upload Terms & Conditions PDF</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Maximum size 10MB</p>
+                                  </div>
+                                )}
+
+                                {uploadingField === 'policy' && (
+                                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-550 py-2">
+                                    <Loader2 className="w-4 h-4 animate-spin text-[#409eff]" />
+                                    Uploading PDF file...
+                                  </div>
+                                )}
+
+                                {!policyPdfUrl && (
+                                  <label className="flex items-center justify-center gap-1.5 w-full cursor-pointer el-button el-button--primary is-plain el-button--small shadow-sm">
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>Choose PDF File</span>
+                                    <input
+                                      type="file"
+                                      accept="application/pdf"
+                                      className="sr-only"
+                                      onChange={(e) => {
+                                        if (e.target.files[0]) handleFileUpload(e.target.files[0], 'policy');
+                                      }}
+                                    />
+                                  </label>
+                                )}
+                              </div>
+
+                              {policyPdfUrl && (
+                                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 h-[600px] flex flex-col shadow-sm">
+                                  <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between text-[10px] font-bold text-slate-450 uppercase tracking-wider">
+                                    <span>Document Preview</span>
+                                    <span className="text-[9px] text-[#67c23a] bg-[#67c23a]/10 border border-[#67c23a]/20 px-2 py-0.5 rounded-full">Live</span>
+                                  </div>
+                                  <iframe
+                                    src={policyPdfUrl}
+                                    title="Policy PDF Preview"
+                                    className="w-full flex-1 border-none"
+                                  />
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setPolicyPdfUrl('')}
-                                  className="text-xs font-semibold text-red-500 hover:text-red-700 hover:underline"
-                                >
-                                  Remove File
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50 hover:bg-slate-100/50 transition-colors">
-                                <Upload className="w-8 h-8 text-slate-355 mx-auto mb-2 animate-bounce duration-1000" />
-                                <p className="text-xs font-semibold text-slate-500">Upload Terms & Conditions PDF</p>
-                                <p className="text-[10px] text-slate-400 mt-0.5">Maximum size 10MB</p>
-                              </div>
-                            )}
-
-                            {uploadingField === 'policy' && (
-                              <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-550 py-2">
-                                <Loader2 className="w-4 h-4 animate-spin text-[#409eff]" />
-                                Uploading PDF file...
-                              </div>
-                            )}
-
-                            {!policyPdfUrl && (
-                              <label className="flex items-center justify-center gap-1.5 w-full cursor-pointer el-button el-button--primary is-plain el-button--small shadow-sm">
-                                <Upload className="w-3.5 h-3.5" />
-                                <span>Choose PDF File</span>
-                                <input
-                                  type="file"
-                                  accept="application/pdf"
-                                  className="sr-only"
-                                  onChange={(e) => {
-                                    if (e.target.files[0]) handleFileUpload(e.target.files[0], 'policy');
-                                  }}
-                                />
-                              </label>
-                            )}
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>

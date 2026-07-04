@@ -751,14 +751,18 @@ export default function Product() {
       id: baseProd.id,
       title: baseProd.title,
       price: typeof baseProd.price === 'string' ? parseFloat(baseProd.price.replace(/[^\d.]/g, '')) : Number(baseProd.price),
-      oldPrice: typeof baseProd.price === 'string' ? parseFloat(baseProd.price.replace(/[^\d.]/g, '')) * 1.25 : Number(baseProd.price) * 1.25,
+      oldPrice: baseProd.old_price 
+        ? Number(baseProd.old_price) 
+        : (typeof baseProd.price === 'string' ? parseFloat(baseProd.price.replace(/[^\d.]/g, '')) * 1.25 : Number(baseProd.price) * 1.25),
       rating: baseProd.rating || 4.8,
       reviewsCount: baseProd.reviewsCount || 12,
       category: baseProd.category?.name || baseProd.category || "Workspace Accessories",
       subcategory: baseProd.subcategory || "Desk Accessory",
       brand: baseProd.brand || "Premium Brand",
       vibe: baseProd.vibe || "minimalist",
-      discount: baseProd.discount || "-15%",
+      discount: baseProd.old_price 
+        ? `-${Math.round((1 - (typeof baseProd.price === 'string' ? parseFloat(baseProd.price.replace(/[^\d.]/g, '')) : Number(baseProd.price)) / Number(baseProd.old_price)) * 100)}%`
+        : (baseProd.discount || "-15%"),
       live: baseProd.live || "8 viewing now",
       description: `${baseProd.title} brings top-tier productivity, premium aesthetics, and tactile pleasure to your home office setup. Crafted using durable materials and designed with high ergonomics in mind.`,
       specs: {

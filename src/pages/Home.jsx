@@ -5,14 +5,14 @@ import {
   Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown, ChevronLeft, ChevronRight,
   Mic, Menu, X, CheckCircle2, User, Play,
   ShoppingBag, ShieldCheck, ArrowRight, Flame, Terminal,
-  Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink, LogOut, Store
+  Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink, LogOut, Store, Tag
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
-import { Carousel, CarouselContent, CarouselItem } from '../components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { CircularTestimonials } from '../components/ui/circular-testimonials';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -768,6 +768,10 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState(null);
   const toastTimerRef = useRef(null);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
+  const [activePromotions, setActivePromotions] = useState([]);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+  const [activePromoTab, setActivePromoTab] = useState('promotions');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -850,10 +854,11 @@ export default function Home() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Fetch products and categories in parallel for faster page load
-      const [prodResult, catResult] = await Promise.allSettled([
+      // Fetch products, categories, and promotions in parallel for faster load
+      const [prodResult, catResult, promoResult] = await Promise.allSettled([
         requestJson(`${serviceRegistry.catalog}/products`),
         requestJson(`${serviceRegistry.catalog}/categories`),
+        requestJson(`${serviceRegistry.catalog}/promotions`),
       ]);
 
       if (prodResult.status === 'fulfilled' && prodResult.value) {
@@ -866,6 +871,12 @@ export default function Home() {
         setDbCategories(catResult.value);
       } else if (catResult.status === 'rejected' && !isRequestAbortError(catResult.reason)) {
         console.error('Failed to load categories from database', catResult.reason);
+      }
+
+      if (promoResult.status === 'fulfilled' && promoResult.value) {
+        setActivePromotions(promoResult.value.data || promoResult.value);
+      } else if (promoResult.status === 'rejected' && !isRequestAbortError(promoResult.reason)) {
+        console.error('Failed to load promotions from database', promoResult.reason);
       }
     };
     loadData();
@@ -1313,32 +1324,139 @@ export default function Home() {
         <div className="absolute bottom-0 right-[10%] w-[400px] h-[300px] bg-indigo-500/[0.04] rounded-full blur-[80px] pointer-events-none" />
         <div className="relative max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 2xl:px-12">
 
-          {/* ── Offer Banners ─────────────────────────────────── */}
-          <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-            {homeOfferBanners.map((offer) => (
-              <Link
-                key={offer.id}
-                to={offer.to}
-                className={`group relative overflow-hidden rounded-2xl border ${isLight ? 'border-slate-200 bg-white' : 'border-white/[0.08] bg-[#0d1527]/80'} shadow-lg`}
-              >
-                <div className={`absolute inset-0 bg-gradient-to-r ${offer.gradient} pointer-events-none`} />
-                <div className="relative z-10 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className={`text-[10px] uppercase tracking-[0.16em] font-black ${isLight ? 'text-blue-600' : 'text-blue-400'}`}>Limited Time</p>
-                    <h4 className={`text-lg sm:text-xl font-extrabold leading-tight mt-0.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>{offer.title}</h4>
-                    <p className={`text-xs sm:text-sm mt-1 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{offer.subtitle}</p>
-                    <span className="inline-flex items-center gap-1.5 mt-3 text-xs sm:text-sm font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
-                      {offer.cta}
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
+          {/* ── Active Promotions Banners ─────────────────────── */}
+          {activePromotions.length > 0 && (
+            <div className="mb-8">
+              {activePromotions.length > 2 ? (
+                /* Slideshow Mode (More than 2 banners) */
+                <Carousel className="w-full relative group" opts={{ loop: true }}>
+                  <CarouselContent className="-ml-4 flex">
+                    {activePromotions.map((promo) => (
+                      <CarouselItem key={promo.id} className="pl-4 basis-full md:basis-1/2 shrink-0">
+                        <div
+                          className={`group relative overflow-hidden rounded-2xl border ${isLight ? 'border-slate-200 bg-white' : 'border-white/[0.08] bg-[#0d1527]/80'} shadow-lg h-full flex flex-col justify-between`}
+                        >
+                          <div className={`absolute inset-0 bg-gradient-to-r ${promo.gradient || 'from-blue-500/20 via-indigo-500/10 to-cyan-400/20'} pointer-events-none`} />
+                          
+                          <div className="relative z-10 px-6 py-6 flex items-center justify-between gap-6 h-full w-full">
+                            <div className="min-w-0 flex flex-col justify-between h-full flex-1">
+                              <div>
+                                <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-[0.16em] font-black bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 mb-3">
+                                  {promo.user?.store_name || 'Partner Store'} Deal
+                                </span>
+                                <h4 className={`text-lg sm:text-xl font-extrabold leading-tight mt-0.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>{promo.title}</h4>
+                                <p className={`text-xs sm:text-sm mt-1.5 line-clamp-2 ${isLight ? 'text-slate-650' : 'text-slate-350'}`}>{promo.subtitle}</p>
+                              </div>
+                              
+                              <div className="flex items-center gap-4 mt-6">
+                                <Link
+                                  to={promo.to || '/'}
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
+                                >
+                                  Claim Deal
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </Link>
+
+                                {promo.policy && (
+                                  <button
+                                    onClick={() => {
+                                      if (promo.policy.type === 'pdf') {
+                                        window.open(promo.policy.pdf_url, '_blank');
+                                      } else {
+                                        setSelectedPolicy(promo.policy);
+                                        setIsPolicyModalOpen(true);
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-350 transition-colors"
+                                  >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    View Policy
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className={`w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border shrink-0 shadow-inner ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/[0.12] bg-white/[0.04]'}`}>
+                              <img
+                                src={promo.image_url || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=120&auto=format&fit=crop'}
+                                alt={promo.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  
+                  {/* Slideshow arrows */}
+                  <div className="flex gap-2 justify-end mt-4">
+                    <CarouselPrevious className="relative translate-y-0 left-0 hover:bg-blue-600 hover:text-white border-white/[0.08] bg-white/[0.04]" />
+                    <CarouselNext className="relative translate-y-0 right-0 hover:bg-blue-600 hover:text-white border-white/[0.08] bg-white/[0.04]" />
                   </div>
-                  <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border shrink-0 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/[0.12] bg-white/[0.04]'}`}>
-                    <img src={offer.image} alt={offer.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  </div>
+                </Carousel>
+              ) : (
+                /* Grid Mode (1 or 2 banners) */
+                <div className={`grid gap-4 ${activePromotions.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+                  {activePromotions.map((promo) => (
+                    <div
+                      key={promo.id}
+                      className={`group relative overflow-hidden rounded-2xl border ${isLight ? 'border-slate-200 bg-white' : 'border-white/[0.08] bg-[#0d1527]/80'} shadow-lg flex flex-col justify-between`}
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-r ${promo.gradient || 'from-blue-500/20 via-indigo-500/10 to-cyan-400/20'} pointer-events-none`} />
+                      
+                      <div className="relative z-10 px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 w-full">
+                        <div className="min-w-0 flex flex-col justify-between flex-1">
+                          <div>
+                            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-[0.16em] font-black bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 mb-3">
+                              {promo.user?.store_name || 'Partner Store'} Deal
+                            </span>
+                            <h4 className={`text-lg sm:text-xl font-extrabold leading-tight mt-0.5 ${isLight ? 'text-slate-900' : 'text-white'}`}>{promo.title}</h4>
+                            <p className={`text-xs sm:text-sm mt-1.5 line-clamp-2 ${isLight ? 'text-slate-650' : 'text-slate-350'}`}>{promo.subtitle}</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 mt-6">
+                            <Link
+                              to={promo.to || '/'}
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors"
+                            >
+                              Claim Deal
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+
+                            {promo.policy && (
+                              <button
+                                onClick={() => {
+                                  if (promo.policy.type === 'pdf') {
+                                    window.open(promo.policy.pdf_url, '_blank');
+                                  } else {
+                                    setSelectedPolicy(promo.policy);
+                                    setIsPolicyModalOpen(true);
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-350 transition-colors"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                View Policy
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className={`w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border shrink-0 shadow-inner ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/[0.12] bg-white/[0.04]'}`}>
+                          <img
+                            src={promo.image_url || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=120&auto=format&fit=crop'}
+                            alt={promo.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </Link>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* ── Section Header ───────────────────────────────── */}
           <div className="mb-6 sm:mb-8 flex items-center justify-between">
@@ -1834,6 +1952,67 @@ export default function Home() {
                     className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${isLight ? 'border-slate-200 text-slate-700 hover:bg-slate-100' : 'border-white/10 text-slate-300 hover:bg-white/10'}`}
                   >
                     Later
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Policy Details Modal */}
+      <AnimatePresence>
+        {isPolicyModalOpen && selectedPolicy && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className={`relative w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden ${
+                isLight ? 'border-slate-200 bg-white' : 'border-white/[0.1] bg-[#0d1527]'
+              }`}
+            >
+              <button
+                onClick={() => {
+                  setIsPolicyModalOpen(false);
+                  setSelectedPolicy(null);
+                }}
+                className={`absolute top-4 right-4 w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
+                  isLight ? 'border-slate-200 hover:bg-slate-100 text-slate-650' : 'border-white/10 hover:bg-white/10 text-slate-300'
+                }`}
+                aria-label="Close policy details"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="p-6 sm:p-8">
+                <span className="text-[10px] uppercase tracking-widest font-black text-blue-400">Store Promotional Policy</span>
+                <h3 className={`text-xl sm:text-2xl font-extrabold mt-1.5 leading-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  {selectedPolicy.title}
+                </h3>
+                <div className="border-t border-white/[0.08] my-4 pt-4">
+                  <div className={`text-sm leading-relaxed max-h-[350px] overflow-y-auto pr-2 font-mono whitespace-pre-wrap ${
+                    isLight ? 'text-slate-700' : 'text-slate-350'
+                  }`}>
+                    {selectedPolicy.content}
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => {
+                      setIsPolicyModalOpen(false);
+                      setSelectedPolicy(null);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all"
+                  >
+                    Dismiss Policy
                   </button>
                 </div>
               </div>

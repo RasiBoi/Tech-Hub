@@ -1127,9 +1127,11 @@ export default function Category() {
                     ? prod.price 
                     : `LKR ${Number(prod.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
-                  const oldPriceFormatted = prod.oldPrice 
-                    ? prod.oldPrice 
-                    : `LKR ${(Number(prod.price) * 1.25).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+                  const oldPriceFormatted = prod.old_price
+                    ? `LKR ${Number(prod.old_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                    : (prod.oldPrice 
+                       ? prod.oldPrice 
+                       : `LKR ${(Number(prod.price) * 1.25).toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 
                   // Resolve style vibe tag styles dynamically
                   let vibeTagStyle = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
