@@ -4,6 +4,7 @@ import {
   Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight, ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
@@ -12,6 +13,7 @@ const logoUrl = new URL('../../Media/logo (3).png', import.meta.url).href;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { itemCount } = useCart();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -292,13 +294,17 @@ export default function Navbar() {
               <span className="text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Wishlist</span>
             </div>
             
-            <div className="flex xl:flex-col items-center gap-1 cursor-pointer group relative pr-1.5 xl:pr-0">
+            <Link to="/cart" className="flex xl:flex-col items-center gap-1 cursor-pointer group relative pr-1.5 xl:pr-0">
               <div className="relative flex items-center justify-center">
                 <ShoppingCart className="w-5 h-5 text-slate-350 group-hover:text-white transition-colors" />
-                <span className="absolute -top-1.5 -right-2 bg-yellow-400 text-[#0b1021] text-[10px] font-bold px-1.5 rounded-full border border-[#0b1021]">2</span>
+                {itemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-yellow-400 text-[#0b1021] text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full border border-[#0b1021] flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
               </div>
               <span className="hidden xl:inline text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Cart</span>
-            </div>
+            </Link>
 
             <div className="hidden xl:flex flex-col items-center gap-1 cursor-pointer group relative">
               <div className="relative">
@@ -463,6 +469,10 @@ export default function Navbar() {
               </button>
               
               <Link to="/vendors" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Vendors</Link>
+              <Link to="/cart" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors flex items-center justify-between" onClick={() => setIsMobileMenuOpen(false)}>
+                <span>Cart</span>
+                {itemCount > 0 && <span className="bg-yellow-400 text-[#0b1021] text-[10px] font-bold px-1.5 rounded-full">{itemCount}</span>}
+              </Link>
               <Link to="/category/All" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Support</Link>
               <Link to="/about" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
               

@@ -1,11 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Home from './pages/Home';
 import BecomeSeller from './pages/BecomeSeller';
 import Category from './pages/Category';
 import Product from './pages/Product';
+import Cart from './pages/Cart';
 import Login from './pages/Login';
 import Vendors from './pages/Vendors';
 import VendorStore from './pages/VendorStore';
@@ -21,12 +23,14 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <ScrollToTop />
-        <Routes>
+        <CartProvider>
+          <Router>
+            <ScrollToTop />
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/become-seller" element={<BecomeSeller />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/cart" element={<Cart />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/vendors/:vendorId" element={<VendorStore />} />
           <Route path="/about" element={<About />} />
@@ -56,9 +60,10 @@ export default function App() {
               </ProtectedRoute>
             } 
           />
-        </Routes>
+          </Routes>
 
-      </Router>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   </ThemeProvider>
   );

@@ -8,6 +8,7 @@ import {
   SlidersHorizontal, ArrowUpDown, Tag, Info, Check, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
@@ -579,6 +580,7 @@ export default function Category() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { addItem } = useCart();
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
@@ -792,8 +794,9 @@ export default function Category() {
   }, [allDbProducts, activeCategoryName]);
 
   // Quick add to cart
-  const handleQuickAdd = (productTitle) => {
-    showToast(`"${productTitle}" added to cart!`);
+  const handleQuickAdd = (product) => {
+    addItem(product, 1);
+    showToast(`"${product.title}" added to cart.`);
   };
 
   return (
@@ -1127,9 +1130,11 @@ export default function Category() {
                     ? prod.price 
                     : `LKR ${Number(prod.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
-                  const oldPriceFormatted = prod.oldPrice 
-                    ? prod.oldPrice 
-                    : `LKR ${(Number(prod.price) * 1.25).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+                  const oldPriceFormatted = prod.old_price
+                    ? `LKR ${Number(prod.old_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                    : (prod.oldPrice 
+                       ? prod.oldPrice 
+                       : `LKR ${(Number(prod.price) * 1.25).toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 
                   // Resolve style vibe tag styles dynamically
                   let vibeTagStyle = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
@@ -1206,7 +1211,7 @@ export default function Category() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleQuickAdd(prod.title);
+                            handleQuickAdd(prod);
                           }}
                           className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-extrabold transition-all shadow-sm active:scale-95 ${
                             isLight
@@ -1215,7 +1220,7 @@ export default function Category() {
                           }`}
                         >
                           <ShoppingCart className="h-4 w-4" />
-                          Add to Setup
+                          Add to Cart
                         </button>
                         <button 
                           onClick={(e) => {

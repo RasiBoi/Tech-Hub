@@ -10,11 +10,13 @@ import Footer from '../components/Footer';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 
 export default function VendorStore() {
   const { vendorId } = useParams();
   const { user: currentUser } = useAuth();
+  const { addItem } = useCart();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   
@@ -337,7 +339,7 @@ export default function VendorStore() {
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
-              Store Info & Policies
+              Store Info
             </button>
           </div>
 
@@ -394,7 +396,9 @@ export default function VendorStore() {
                   <AnimatePresence mode="popLayout">
                     {filteredProducts.map((prod) => {
                       const priceFormatted = `LKR ${Number(prod.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-                      const oldPriceFormatted = `LKR ${(Number(prod.price) * 1.25).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+                      const oldPriceFormatted = prod.old_price
+                        ? `LKR ${Number(prod.old_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                        : `LKR ${(Number(prod.price) * 1.25).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 
                       let vibeBadgeStyle = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
                       if (prod.vibe === 'walnut') {
@@ -475,7 +479,8 @@ export default function VendorStore() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                showToast(`"${prod.title}" added to setup!`);
+                                addItem(prod, 1);
+                                showToast(`"${prod.title}" added to cart.`);
                               }}
                               className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-extrabold transition-all active:scale-95 ${
                                 isLight 
@@ -484,7 +489,7 @@ export default function VendorStore() {
                               }`}
                             >
                               <ShoppingCart className="h-4 w-4" />
-                              Add to Setup
+                              Add to Cart
                             </button>
                             <button 
                               onClick={(e) => {
@@ -505,61 +510,12 @@ export default function VendorStore() {
               )}
             </>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left animate-in fade-in duration-300">
-              {/* Left Column: Company Profile */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className={`p-6 sm:p-8 rounded-3xl border ${isLight ? 'bg-white border-slate-200' : 'bg-[#0d1527]/45 border-white/[0.08]'}`}>
-                  <h3 className={`text-lg font-black mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Company Profile</h3>
-                  <p className={`text-xs leading-relaxed whitespace-pre-line ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                    {vendor.company_profile || vendor.store_description || 'Premium workspace accessories & gear.'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Right Column: Policies & Terms */}
-              <div className="space-y-6">
-                <div className={`p-6 sm:p-8 rounded-3xl border ${isLight ? 'bg-white border-slate-200' : 'bg-[#0d1527]/45 border-white/[0.08]'}`}>
-                  <h3 className={`text-lg font-black mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Store Policies & Terms</h3>
-                  
-                  {vendor.policy_type === 'pdf' ? (
-                    <div className="space-y-4">
-                      {vendor.policy_pdf_url ? (
-                        <div className="space-y-4">
-                          <div className={`flex items-center gap-3.5 p-4 rounded-2xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-[#111827]/60 border-white/[0.06]'}`}>
-                            <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-450 shrink-0">
-                              <FileText className="w-5 h-5" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className={`text-xs font-bold truncate ${isLight ? 'text-slate-800' : 'text-white'}`}>Terms_&_Conditions.pdf</p>
-                              <p className="text-[10px] text-slate-450 mt-0.5">Official Store Policy Document</p>
-                            </div>
-                          </div>
-                          <a
-                            href={vendor.policy_pdf_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`w-full py-3 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-white ${themeAccent.bg} ${themeAccent.hoverBg} shadow-md shadow-blue-500/10`}
-                          >
-                            <FileText className="w-4 h-4" />
-                            View/Download Policy PDF
-                          </a>
-                        </div>
-                      ) : (
-                        <p className={`text-xs font-semibold ${isLight ? 'text-slate-550' : 'text-slate-450'}`}>No policy document has been uploaded by the vendor.</p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {vendor.policy_text ? (
-                        <div className={`p-4 rounded-2xl border max-h-[300px] overflow-y-auto font-mono text-[11px] leading-relaxed whitespace-pre-line ${isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-[#111827]/60 border-white/[0.06] text-slate-300'}`}>
-                          {vendor.policy_text}
-                        </div>
-                      ) : (
-                        <p className={`text-xs font-semibold ${isLight ? 'text-slate-550' : 'text-slate-450'}`}>No terms or conditions text has been defined by the vendor.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
+            <div className="w-full text-left animate-in fade-in duration-300">
+              <div className={`p-6 sm:p-8 rounded-3xl border ${isLight ? 'bg-white border-slate-200' : 'bg-[#0d1527]/45 border-white/[0.08]'}`}>
+                <h3 className={`text-lg font-black mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Company Profile</h3>
+                <p className={`text-xs leading-relaxed whitespace-pre-line ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                  {vendor.company_profile || vendor.store_description || 'Premium workspace accessories & gear.'}
+                </p>
               </div>
             </div>
           )}

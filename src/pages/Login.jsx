@@ -36,10 +36,16 @@ export default function Login() {
   }, [location.search, initialTab, initialRole]);
 
   // Get redirect path
-  const from = location.state?.from?.pathname || "/";
+  const from =
+    typeof location.state?.from === 'string'
+      ? location.state.from
+      : location.state?.from?.pathname || "/";
+  const redirectState = location.state?.checkoutState || null;
 
   const redirectUser = (user) => {
-    if (user.role === "admin") {
+    if (from !== "/") {
+      navigate(from, { replace: true, state: redirectState });
+    } else if (user.role === "admin") {
       navigate("/admin", { replace: true });
     } else if (user.role === "vendor") {
       navigate("/vendor", { replace: true });
