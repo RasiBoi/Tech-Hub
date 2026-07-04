@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   Home, Package, Store, Settings, Clock, Truck, CheckCircle2, 
   MapPin, Copy, ExternalLink, Trash2, ArrowLeft, Loader2, 
@@ -13,6 +13,7 @@ import Navbar from '../../components/Navbar';
 export default function CustomerPortal() {
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [activeTab, setActiveTab] = useState('overview'); // overview | orders | vendors | settings
   const [orders, setOrders] = useState([]);
@@ -76,8 +77,11 @@ export default function CustomerPortal() {
       navigate('/login');
       return;
     }
+    if (location.state?.openTab === 'orders') {
+      setActiveTab('orders');
+    }
     fetchData();
-  }, [user]);
+  }, [user, location.state?.openTab]);
 
   // Handle unfollow store directly
   const handleUnfollowStore = async (vendorId) => {

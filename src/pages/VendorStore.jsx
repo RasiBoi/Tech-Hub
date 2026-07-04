@@ -10,11 +10,13 @@ import Footer from '../components/Footer';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 
 export default function VendorStore() {
   const { vendorId } = useParams();
   const { user: currentUser } = useAuth();
+  const { addItem } = useCart();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   
@@ -477,7 +479,8 @@ export default function VendorStore() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                showToast(`"${prod.title}" added to setup!`);
+                                addItem(prod, 1);
+                                showToast(`"${prod.title}" added to cart.`);
                               }}
                               className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-extrabold transition-all active:scale-95 ${
                                 isLight 
@@ -486,7 +489,7 @@ export default function VendorStore() {
                               }`}
                             >
                               <ShoppingCart className="h-4 w-4" />
-                              Add to Setup
+                              Add to Cart
                             </button>
                             <button 
                               onClick={(e) => {

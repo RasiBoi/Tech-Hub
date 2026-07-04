@@ -8,6 +8,7 @@ import {
   SlidersHorizontal, Check, ShieldCheck, Share2, Plus, Minus, Info, Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
@@ -669,6 +670,7 @@ const STATIC_PRODUCTS_FALLBACK = [
 export default function Product() {
   const { productId } = useParams();
   const { user, logout } = useAuth();
+  const { addItem } = useCart();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const navigate = useNavigate();
@@ -898,22 +900,29 @@ export default function Product() {
     }
   }, [productInfo.vibe]);
 
+  const cartProduct = useMemo(() => ({
+    id: productInfo.id,
+    title: productInfo.title,
+    price: productInfo.price,
+    image: productImages[0],
+    stock: productInfo.stock || 0,
+    brand: productInfo.brand,
+    category: productInfo.category,
+  }), [productImages, productInfo]);
+
   const handleAddToCart = () => {
-    showToast(`Added ${quantity}x "${productInfo.title}" (${selectedColor}) to setup!`);
+    addItem(cartProduct, quantity);
+    showToast(`Added ${quantity}x "${productInfo.title}" to cart.`);
   };
 
-  if (allDbProducts.length === 0) {
-    return (
-      <div className={`min-h-screen font-sans flex flex-col ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-[#070a13] text-slate-100'}`}>
-        <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-9 h-9 text-blue-500 animate-spin" />
-          <p className="text-xs font-bold text-slate-400 tracking-wider">Syncing workspace specifications...</p>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  const handleBuyNow = () => {
+    navigate('/cart', {
+      state: {
+        mode: 'buy-now',
+        items: [{ ...cartProduct, quantity }],
+      },
+    });
+  };
 
   return (
     <div className={`min-h-screen font-sans ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-[#070a13] text-slate-100'}`}>
@@ -1129,18 +1138,18 @@ export default function Product() {
                   </button>
                 </div>
 
-                {/* Add to setup button */}
+                {/* Add to cart button */}
                 <button 
                   onClick={handleAddToCart}
                   className={`flex-1 w-full text-xs uppercase tracking-widest py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 active:scale-98 transition-all ${vibeStyle.button}`}
                 >
                   <ShoppingCart className="w-4.5 h-4.5 fill-current" />
-                  Add to Setup
+                  Add to Cart
                 </button>
 
                 {/* Buy now button */}
                 <button 
-                  onClick={() => showToast("Redirecting to checkout...")}
+                  onClick={handleBuyNow}
                   className={`w-full sm:w-auto font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-2xl active:scale-98 transition-all whitespace-nowrap ${isLight ? 'bg-slate-900 hover:bg-slate-800 text-white' : 'bg-white hover:bg-slate-200 text-[#070a13]'}`}
                 >
                   Buy Now
@@ -1407,8 +1416,10 @@ export default function Product() {
                 </div>
                 <button
                   onClick={() => {
-                    const count = Object.values(checkedBundleItems).filter(Boolean).length + 1;
-                    showToast(`Added setup bundle (${count} items) to your cart!`);
+                    addItem(cartProduct, 1);
+                    const selectedBundleItems = bundleItems.filter(item => checkedBundleItems[item.id]);
+                    selectedBundleItems.forEach(item => addItem(item, 1));
+                    showToast(`Added setup bundle (${selectedBundleItems.length + 1} items) to your cart.`);
                   }}
                   className="w-full bg-emerald-500 hover:bg-emerald-600 text-[#070a13] font-black text-xs uppercase tracking-widest py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/10 active:scale-[0.98]"
                 >
