@@ -19,9 +19,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Guard so React Strict Mode's double-mount doesn't fire two /me requests.
+  const isInitializing = React.useRef(false);
+
   // Load user from localStorage on init and fetch current profile from API
   useEffect(() => {
     const initAuth = async () => {
+      if (isInitializing.current) return;
+      isInitializing.current = true;
+
       const token = localStorage.getItem('techhub_token');
       const savedUser = localStorage.getItem('techhub_session');
 
@@ -45,12 +51,19 @@ export const AuthProvider = ({ children }) => {
         }
       }
       setIsLoading(false);
+      // Keep flag true so the effect can't re-run (the [] dep ensures it only
+      // runs once anyway, but this guards against Strict Mode's double-invoke).
     };
 
     initAuth();
   }, []);
 
+  const isLoggingIn = React.useRef(false);
+
   const login = async (email, password) => {
+    // Guard against double-submit (fast double-click / React Strict Mode)
+    if (isLoggingIn.current) return;
+    isLoggingIn.current = true;
     setIsLoading(true);
     try {
       const data = await requestJson(`${serviceRegistry.catalog}/login`, {
@@ -66,6 +79,8 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       setIsLoading(false);
       throw new Error(e.message || 'Invalid email or password.');
+    } finally {
+      isLoggingIn.current = false;
     }
   };
 
@@ -100,11 +115,18 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('techhub_session', JSON.stringify(formatted));
   };
 
+  const isLoggingOut = React.useRef(false);
+
   const logout = async () => {
+    // Guard against concurrent/double logout calls (e.g. React Strict Mode, fast double-click)
+    if (isLoggingOut.current) return;
+    isLoggingOut.current = true;
     try {
       await requestJson(`${serviceRegistry.catalog}/logout`, { method: 'POST' });
     } catch (e) {
       console.error('Logout error on server', e);
+    } finally {
+      isLoggingOut.current = false;
     }
     setUser(null);
     localStorage.removeItem('techhub_token');

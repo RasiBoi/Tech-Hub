@@ -27,18 +27,26 @@ export default defineConfig(({ mode }) => {
           target: aiServiceTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/ai/, ''),
+          // Keep connection alive so Vite doesn't timeout on slow Supabase-backed endpoints
+          headers: { Connection: 'keep-alive' },
+          timeout: 45000,
         },
         '/api/catalog': {
           target: catalogServiceTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/catalog/, ''),
+          headers: { Connection: 'keep-alive' },
+          timeout: 45000,
         },
         '/api/commerce': {
           target: commerceServiceTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/commerce/, ''),
+          headers: { Connection: 'keep-alive' },
+          timeout: 45000,
         },
       },
     },
   }
 })
+
