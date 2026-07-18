@@ -12,6 +12,8 @@ import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
+import { resolveProductGallery, resolveProductImage } from '../lib/media';
+import { enrichProductMeta, getProductBrandName, getProductCategoryName, getProductSubcategory } from '../lib/productMeta';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -693,25 +695,54 @@ export default function Product() {
 
   // Database States
   const [allDbProducts, setAllDbProducts] = useState([]);
+  const [selectedDbProduct, setSelectedDbProduct] = useState(null);
+  const [selectedProductStatus, setSelectedProductStatus] = useState('idle');
   const [dbCategories, setDbCategories] = useState([]);
+  const isDatabaseProductId = /^\d+$/.test(String(productId));
 
   useEffect(() => {
     // Reset options on product change
     setQuantity(1);
     setActiveImageIdx(0);
     setActiveTab('description');
+    setSelectedDbProduct(null);
+    setSelectedProductStatus(isDatabaseProductId ? 'loading' : 'idle');
   }, [productId]);
 
   useEffect(() => {
+    let ignoreResult = false;
+
     const loadData = async () => {
-      // Fetch products and categories in parallel for faster page load
-      const [prodResult, catResult] = await Promise.allSettled([
+      // Fetch selected product directly so a stale list never opens the wrong detail page.
+      const [selectedResult, prodResult, catResult] = await Promise.allSettled([
+        isDatabaseProductId
+          ? requestJson(`${serviceRegistry.catalog}/products/${productId}`)
+          : Promise.resolve(null),
         requestJson(`${serviceRegistry.catalog}/products`),
         requestJson(`${serviceRegistry.catalog}/categories`),
       ]);
 
+      if (ignoreResult) return;
+
+      if (selectedResult.status === 'fulfilled' && selectedResult.value) {
+        const selectedProduct = enrichProductMeta(selectedResult.value);
+        if (String(selectedProduct.id) === String(productId)) {
+          setSelectedDbProduct(selectedProduct);
+          setSelectedProductStatus('loaded');
+        } else {
+          setSelectedDbProduct(null);
+          setSelectedProductStatus('error');
+        }
+      } else {
+        setSelectedDbProduct(null);
+        setSelectedProductStatus(isDatabaseProductId ? 'error' : 'idle');
+        if (selectedResult.status === 'rejected' && !isRequestAbortError(selectedResult.reason)) {
+          console.error('Failed to load selected product from database', selectedResult.reason);
+        }
+      }
+
       if (prodResult.status === 'fulfilled' && prodResult.value?.length > 0) {
-        setAllDbProducts(prodResult.value);
+        setAllDbProducts(prodResult.value.map(enrichProductMeta));
       } else if (prodResult.status === 'rejected' && !isRequestAbortError(prodResult.reason)) {
         console.error('Failed to load products from database', prodResult.reason);
       }
@@ -730,10 +761,11 @@ export default function Product() {
     window.addEventListener('show-toast', handleGlobalToast);
 
     return () => {
+      ignoreResult = true;
       window.removeEventListener('show-toast', handleGlobalToast);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
-  }, []);
+  }, [productId]);
 
   const showToast = (msg) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -746,7 +778,15 @@ export default function Product() {
   // Compile active product details
   const productInfo = useMemo(() => {
     const rawProducts = allDbProducts.length > 0 ? allDbProducts : STATIC_PRODUCTS_FALLBACK;
-    const baseProd = rawProducts.find(p => String(p.id) === productId) || rawProducts[0];
+    const routeSelectedProduct = selectedDbProduct && String(selectedDbProduct.id) === String(productId)
+      ? selectedDbProduct
+      : null;
+    const listMatch = rawProducts.find(p => String(p.id) === productId);
+    const baseProd = routeSelectedProduct || listMatch || (!isDatabaseProductId ? rawProducts[0] : null);
+
+    if (!baseProd) {
+      return null;
+    }
     
     // Resolve full detailed specs mapping
     const detailedSpecs = STORE_PRODUCTS_DETAILS[baseProd.id] || {
@@ -758,9 +798,10 @@ export default function Product() {
         : (typeof baseProd.price === 'string' ? parseFloat(baseProd.price.replace(/[^\d.]/g, '')) * 1.25 : Number(baseProd.price) * 1.25),
       rating: baseProd.rating || 4.8,
       reviewsCount: baseProd.reviewsCount || 12,
-      category: baseProd.category?.name || baseProd.category || "Workspace Accessories",
-      subcategory: baseProd.subcategory || "Desk Accessory",
-      brand: baseProd.brand || "Premium Brand",
+      image: resolveProductImage(baseProd),
+      category: getProductCategoryName(baseProd) || "Workspace Accessories",
+      subcategory: getProductSubcategory(baseProd) || "Desk Accessory",
+      brand: getProductBrandName(baseProd),
       vibe: baseProd.vibe || "minimalist",
       discount: baseProd.old_price 
         ? `-${Math.round((1 - (typeof baseProd.price === 'string' ? parseFloat(baseProd.price.replace(/[^\d.]/g, '')) : Number(baseProd.price)) / Number(baseProd.old_price)) * 100)}%`
@@ -783,37 +824,51 @@ export default function Product() {
     };
 
     return detailedSpecs;
-  }, [productId, allDbProducts]);
+  }, [productId, allDbProducts, selectedDbProduct, isDatabaseProductId]);
 
   // Resolve active gallery images list
   const productImages = useMemo(() => {
+    if (!productInfo) {
+      return [];
+    }
+
     // If specific mapping exists, return it
     if (PRODUCT_IMAGES_MAP[productInfo.id]) {
       return PRODUCT_IMAGES_MAP[productInfo.id];
     }
-    
+     
     // Otherwise, generate a list of 4 thumbnails using the base product image
     const rawProducts = allDbProducts.length > 0 ? allDbProducts : STATIC_PRODUCTS_FALLBACK;
-    const baseProd = rawProducts.find(p => String(p.id) === productId) || rawProducts[0];
-    const baseImage = baseProd.image;
-    
-    return [baseImage, baseImage, baseImage, baseImage];
-  }, [productId, productInfo, allDbProducts]);
+    const routeSelectedProduct = selectedDbProduct && String(selectedDbProduct.id) === String(productId)
+      ? selectedDbProduct
+      : null;
+    const listMatch = rawProducts.find(p => String(p.id) === productId);
+    const baseProd = routeSelectedProduct || listMatch || (!isDatabaseProductId ? rawProducts[0] : null);
+    return resolveProductGallery(baseProd);
+  }, [productId, productInfo, allDbProducts, selectedDbProduct, isDatabaseProductId]);
 
   // Resolve related products (same category or vibe)
   const relatedProducts = useMemo(() => {
+    if (!productInfo) {
+      return [];
+    }
+
     const rawProducts = allDbProducts.length > 0 ? allDbProducts : STATIC_PRODUCTS_FALLBACK;
     return rawProducts
-      .filter(p => p.id !== productInfo.id && (p.category === productInfo.category || p.vibe === productInfo.vibe))
+      .filter(p => String(p.id) !== String(productInfo.id) && (getProductCategoryName(p) === productInfo.category || p.vibe === productInfo.vibe || getProductSubcategory(p) === productInfo.subcategory))
       .slice(0, 4);
   }, [productInfo, allDbProducts]);
 
   // Curated bundle items (must be different from the main product, match vibe or category)
   const bundleItems = useMemo(() => {
+    if (!productInfo) {
+      return [];
+    }
+
     const rawProducts = allDbProducts.length > 0 ? allDbProducts : STATIC_PRODUCTS_FALLBACK;
-    let items = rawProducts.filter(p => p.id !== productInfo.id && p.vibe === productInfo.vibe);
+    let items = rawProducts.filter(p => String(p.id) !== String(productInfo.id) && p.vibe === productInfo.vibe);
     if (items.length < 2) {
-      const categoryItems = rawProducts.filter(p => p.id !== productInfo.id && p.category === productInfo.category && !items.find(it => it.id === p.id));
+      const categoryItems = rawProducts.filter(p => String(p.id) !== String(productInfo.id) && getProductCategoryName(p) === productInfo.category && !items.find(it => it.id === p.id));
       items = [...items, ...categoryItems];
     }
     if (items.length < 2) {
@@ -836,6 +891,10 @@ export default function Product() {
 
   // Calculate bundle price and discount (10% off)
   const bundlePrices = useMemo(() => {
+    if (!productInfo) {
+      return { subtotal: 0, discount: 0, total: 0 };
+    }
+
     const basePrice = Number(productInfo.price);
     let extraPrice = 0;
     bundleItems.forEach(item => {
@@ -847,11 +906,11 @@ export default function Product() {
     const discount = subtotal * 0.10;
     const total = subtotal - discount;
     return { subtotal, discount, total };
-  }, [productInfo.price, bundleItems, checkedBundleItems]);
+  }, [productInfo, bundleItems, checkedBundleItems]);
 
   // Resolve dynamic colors and glows based on the vibe
   const vibeStyle = useMemo(() => {
-    const vibe = (productInfo.vibe || 'minimalist').toLowerCase();
+    const vibe = (productInfo?.vibe || 'minimalist').toLowerCase();
     if (vibe.includes('walnut') || vibe.includes('wood') || vibe.includes('organic')) {
       return {
         glow: 'bg-amber-500/20',
@@ -898,24 +957,26 @@ export default function Product() {
         accentGlow: 'from-blue-600/10 to-transparent'
       };
     }
-  }, [productInfo.vibe]);
+  }, [productInfo?.vibe]);
 
   const cartProduct = useMemo(() => ({
-    id: productInfo.id,
-    title: productInfo.title,
-    price: productInfo.price,
+    id: productInfo?.id,
+    title: productInfo?.title,
+    price: productInfo?.price,
     image: productImages[0],
-    stock: productInfo.stock || 0,
-    brand: productInfo.brand,
-    category: productInfo.category,
+    stock: productInfo?.stock || 0,
+    brand: productInfo?.brand,
+    category: productInfo?.category,
   }), [productImages, productInfo]);
 
   const handleAddToCart = () => {
+    if (!productInfo) return;
     addItem(cartProduct, quantity);
     showToast(`Added ${quantity}x "${productInfo.title}" to cart.`);
   };
 
   const handleBuyNow = () => {
+    if (!productInfo) return;
     navigate('/cart', {
       state: {
         mode: 'buy-now',
@@ -923,6 +984,35 @@ export default function Product() {
       },
     });
   };
+
+  if (!productInfo) {
+    return (
+      <div className={`min-h-screen font-sans ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-[#070a13] text-slate-100'}`}>
+        <Navbar />
+        <main className="min-h-[70vh] max-w-[1720px] mx-auto px-4 lg:px-8 2xl:px-12 py-16 flex items-center justify-center">
+          <div className={`w-full max-w-md rounded-2xl border p-8 text-center ${isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-[#0c1325]/70 border-white/[0.08] shadow-2xl'}`}>
+            {selectedProductStatus === 'error' ? (
+              <>
+                <Info className={`w-8 h-8 mx-auto mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
+                <h1 className={`text-lg font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>Product not found</h1>
+                <p className={`text-sm mt-2 font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>This product is no longer available in the catalog.</p>
+                <Link to="/category/All" className="mt-6 inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 text-xs font-black uppercase tracking-widest transition-colors">
+                  Browse Products
+                </Link>
+              </>
+            ) : (
+              <>
+                <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-blue-500" />
+                <h1 className={`text-lg font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>Loading product</h1>
+                <p className={`text-sm mt-2 font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Fetching the selected catalog item.</p>
+              </>
+            )}
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen font-sans ${isLight ? 'bg-slate-100 text-slate-800' : 'bg-[#070a13] text-slate-100'}`}>
@@ -983,7 +1073,7 @@ export default function Product() {
                 key={activeImageIdx}
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
-                src={productImages[activeImageIdx]} 
+                src={productImages[activeImageIdx] || productImages[0] || productInfo.image} 
                 alt={productInfo.title}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 relative z-10"
               />
@@ -1353,7 +1443,7 @@ export default function Product() {
                       </div>
                     </div>
                     <div className="h-28 w-28 flex items-center justify-center p-0 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl overflow-hidden">
-                      <img src={bundleItems[0].image} alt={bundleItems[0].title} className="w-full h-full object-cover" />
+                      <img src={resolveProductImage(bundleItems[0])} alt={bundleItems[0].title} className="w-full h-full object-cover" />
                     </div>
                     <h4 className={`text-xs font-black text-center line-clamp-1 w-full ${isLight ? 'text-slate-900' : 'text-white'}`}>{bundleItems[0].title}</h4>
                     <p className={`text-sm font-black mt-2 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>LKR {Number(bundleItems[0].price).toLocaleString('en-US')}</p>
@@ -1386,7 +1476,7 @@ export default function Product() {
                       </div>
                     </div>
                     <div className="h-28 w-28 flex items-center justify-center p-0 mb-3 bg-gradient-to-b from-white/[0.05] to-transparent rounded-xl overflow-hidden">
-                      <img src={bundleItems[1].image} alt={bundleItems[1].title} className="w-full h-full object-cover" />
+                      <img src={resolveProductImage(bundleItems[1])} alt={bundleItems[1].title} className="w-full h-full object-cover" />
                     </div>
                     <h4 className={`text-xs font-black text-center line-clamp-1 w-full ${isLight ? 'text-slate-900' : 'text-white'}`}>{bundleItems[1].title}</h4>
                     <p className={`text-sm font-black mt-2 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>LKR {Number(bundleItems[1].price).toLocaleString('en-US')}</p>
@@ -1450,7 +1540,7 @@ export default function Product() {
                 >
                   <div>
                     <div className={`h-44 rounded-xl border p-0 flex items-center justify-center overflow-hidden relative ${isLight ? 'border-slate-200 bg-slate-100' : 'border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent'}`}>
-                      <img src={prod.image} alt={prod.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 relative z-10" />
+                      <img src={resolveProductImage(prod)} alt={prod.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 relative z-10" />
                     </div>
                     <div className={`mt-3 flex items-center gap-1 text-[9px] font-black uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
                       <span>{prod.brand}</span>

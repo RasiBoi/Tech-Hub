@@ -12,6 +12,8 @@ import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
+import { resolveMediaUrl, resolveProductImage } from '../lib/media';
+import { enrichProductMeta, getProductBrandName, getProductCategoryName, getProductSubcategory } from '../lib/productMeta';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -633,7 +635,7 @@ export default function Category() {
       ]);
 
       if (prodResult.status === 'fulfilled' && prodResult.value?.length > 0) {
-        setAllDbProducts(prodResult.value);
+        setAllDbProducts(prodResult.value.map(enrichProductMeta));
       } else if (prodResult.status === 'rejected' && !isRequestAbortError(prodResult.reason)) {
         console.error('Failed to load products from database', prodResult.reason);
       }
@@ -707,7 +709,7 @@ export default function Category() {
     let filtered = rawProducts;
     if (activeCategoryName !== 'All Categories') {
       filtered = rawProducts.filter(p => {
-        const pCat = p.category?.name || p.category || '';
+        const pCat = getProductCategoryName(p);
         return pCat.toLowerCase() === activeCategoryName.toLowerCase();
       });
     }
@@ -715,7 +717,7 @@ export default function Category() {
     // Filter by selected subcategory
     if (selectedSubcategory) {
       filtered = filtered.filter(p => {
-        const pSub = p.subcategory || '';
+        const pSub = getProductSubcategory(p);
         return pSub.toLowerCase() === selectedSubcategory.toLowerCase();
       });
     }
@@ -727,15 +729,15 @@ export default function Category() {
 
     // Filter by Brand
     if (selectedBrand !== 'all') {
-      filtered = filtered.filter(p => (p.brand || '').toLowerCase().includes(selectedBrand.toLowerCase()));
+      filtered = filtered.filter(p => getProductBrandName(p).toLowerCase().includes(selectedBrand.toLowerCase()));
     }
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter((p) => {
         const title = (p.title || '').toLowerCase();
-        const brand = (p.brand || '').toLowerCase();
-        const sub = (p.subcategory || '').toLowerCase();
+        const brand = getProductBrandName(p).toLowerCase();
+        const sub = getProductSubcategory(p).toLowerCase();
         const desc = (p.description || '').toLowerCase();
         return title.includes(term) || brand.includes(term) || sub.includes(term) || desc.includes(term);
       });
@@ -787,9 +789,9 @@ export default function Category() {
     const rawProducts = allDbProducts.length > 0 ? allDbProducts : STATIC_PRODUCTS_FALLBACK;
     const catProds = activeCategoryName === 'All Categories' 
       ? rawProducts 
-      : rawProducts.filter(p => (p.category?.name || p.category || '').toLowerCase() === activeCategoryName.toLowerCase());
+      : rawProducts.filter(p => getProductCategoryName(p).toLowerCase() === activeCategoryName.toLowerCase());
     
-    const brands = catProds.map(p => p.brand || 'Premium Brand').filter((v, i, self) => self.indexOf(v) === i && v);
+    const brands = catProds.map(getProductBrandName).filter((v, i, self) => self.indexOf(v) === i && v);
     return brands.length > 0 ? brands : ['Baseus', 'Ugreen', 'Upergo', 'Divoom', 'FlexiSpot'];
   }, [allDbProducts, activeCategoryName]);
 
@@ -909,7 +911,7 @@ export default function Category() {
                   {/* Centered Preview Image */}
                   <div className={`absolute inset-0 flex items-center justify-center p-0 pb-16 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
                     <img 
-                      src={cat.image} 
+                      src={resolveMediaUrl(cat.image)} 
                       alt={cat.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -968,7 +970,7 @@ export default function Category() {
                       {/* Centered Preview Image */}
                       <div className={`absolute inset-0 flex items-center justify-center p-0 pb-16 ${isLight ? 'bg-gradient-to-b from-slate-100 to-slate-200/70' : 'bg-gradient-to-b from-[#111827]/80 to-[#0d1527]/80'}`}>
                         <img 
-                          src={sub.image} 
+                          src={resolveMediaUrl(sub.image)} 
                           alt={sub.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
@@ -1169,7 +1171,7 @@ export default function Category() {
                         {/* Product Image Frame */}
                         <div className={`h-48 rounded-xl border relative overflow-hidden ${isLight ? 'border-slate-200 bg-slate-100' : 'border-white/[0.06] bg-[#111827]'}`}>
                           <img 
-                            src={prod.image} 
+                            src={resolveProductImage(prod)} 
                             alt={prod.title} 
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                           />
@@ -1177,9 +1179,9 @@ export default function Category() {
 
                         {/* Category and brand meta */}
                         <div className={`mt-3 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                          <span>{prod.brand || 'Premium Brand'}</span>
+                          <span>{getProductBrandName(prod)}</span>
                           <span className={`h-1.5 w-[1px] ${isLight ? 'bg-slate-300' : 'bg-white/[0.15]'}`}></span>
-                          <span>{prod.subcategory || activeCategoryName}</span>
+                          <span>{getProductSubcategory(prod) || activeCategoryName}</span>
                         </div>
 
                         <h4 className={`mt-1 text-sm font-bold leading-snug min-h-[42px] transition-colors ${isLight ? 'text-slate-900 group-hover:text-blue-600' : 'text-white group-hover:text-blue-400'}`}>

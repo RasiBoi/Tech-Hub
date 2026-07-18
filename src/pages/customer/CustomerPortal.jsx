@@ -10,6 +10,11 @@ import { requestJson } from '../../services/httpClient';
 import { serviceRegistry } from '../../config/serviceRegistry';
 import Navbar from '../../components/Navbar';
 
+const formatCurrency = (value) =>
+  `LKR ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+const getOrderReference = (order) => order?.order_number || `#${order?.id}`;
+
 export default function CustomerPortal() {
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -55,13 +60,15 @@ export default function CustomerPortal() {
       // 1. Fetch user orders
       const ordersData = await requestJson(`${serviceRegistry.commerce}/orders`);
       if (ordersData) {
-        setOrders(ordersData);
+        const normalizedOrders = Array.isArray(ordersData) ? ordersData : ordersData.data || [];
+        setOrders(normalizedOrders);
       }
       
       // 2. Fetch followed vendors from public vendors index (filter where is_followed is true)
       const vendorsData = await requestJson(`${serviceRegistry.catalog}/vendors`);
       if (vendorsData) {
-        const followed = vendorsData.filter(v => v.is_followed);
+        const normalizedVendors = Array.isArray(vendorsData) ? vendorsData : vendorsData.data || [];
+        const followed = normalizedVendors.filter(v => v.is_followed);
         setFollowedVendors(followed);
       }
     } catch (e) {
@@ -268,14 +275,14 @@ export default function CustomerPortal() {
                             <ShoppingBag className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-xs font-extrabold text-white">Order Ref: #{order.id}</p>
+                            <p className="text-xs font-extrabold text-white">Order Ref: {getOrderReference(order)}</p>
                             <p className="text-[10px] text-slate-400 mt-0.5">Placed on: {new Date(order.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                           <div className="text-left sm:text-right">
-                            <p className="text-xs font-black text-slate-200">LKR {order.total_amount.toLocaleString()}</p>
+                            <p className="text-xs font-black text-slate-200">{formatCurrency(order.total_amount)}</p>
                             <span className={`inline-block text-[9px] font-bold uppercase tracking-wider mt-1 ${
                               order.status === 'dispatched' ? 'text-emerald-400' : 'text-amber-400'
                             }`}>
@@ -334,14 +341,14 @@ export default function CustomerPortal() {
                               }`}
                             >
                               <td className="py-4 px-6">
-                                <p className="font-extrabold text-white">Ref: #{order.id}</p>
+                                <p className="font-extrabold text-white">Ref: {getOrderReference(order)}</p>
                                 <p className="text-[10px] text-slate-450 mt-0.5">{new Date(order.created_at).toLocaleString()}</p>
                               </td>
                               <td className="py-4 px-6 font-medium text-slate-300">
                                 {order.items?.map(i => i.product?.title || 'Tech item').join(', ') || 'Setup Accessory'}
                               </td>
                               <td className="py-4 px-6 font-extrabold text-emerald-400">
-                                LKR {order.total_amount.toLocaleString()}
+                                {formatCurrency(order.total_amount)}
                               </td>
                               <td className="py-4 px-6">
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
@@ -387,7 +394,7 @@ export default function CustomerPortal() {
                         <ArrowLeft className="w-4 h-4" />
                         Back to history
                       </button>
-                      <span className="text-xs font-black text-slate-400">Order ID: #{selectedOrder.id}</span>
+                      <span className="text-xs font-black text-slate-400">Order ID: {getOrderReference(selectedOrder)}</span>
                     </div>
 
                     {/* Order items info card */}
@@ -412,7 +419,9 @@ export default function CustomerPortal() {
                             </div>
 
                             <div className="text-right">
-                              <p className="text-xs font-extrabold text-emerald-400">LKR {(item.price * item.quantity).toLocaleString()}</p>
+                              <p className="text-xs font-extrabold text-emerald-400">
+                                {formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}
+                              </p>
                               <span className={`inline-block text-[8px] font-black uppercase tracking-widest mt-1 px-2 py-0.5 rounded-full ${
                                 item.status === 'dispatched' 
                                   ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/20' 

@@ -12,11 +12,12 @@ export default function AdminDashboard() {
   const { user, logout } = useAuth();
   
   // Navigation State
-  const [activeTab, setActiveTab] = useState('overview'); // overview | approvals | logs
+  const [activeTab, setActiveTab] = useState('overview'); // overview | approvals | ai-policies | logs
   
   // Database States
   const [orders, setOrders] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [vendorPolicies, setVendorPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -51,9 +52,10 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       // Fetch orders and vendors in parallel
-      const [ordersData, vendorsData] = await Promise.all([
+      const [ordersData, vendorsData, vendorPoliciesData] = await Promise.all([
         requestJson(`${serviceRegistry.commerce}/orders`),
-        requestJson(`${serviceRegistry.catalog}/admin/vendors`)
+        requestJson(`${serviceRegistry.catalog}/admin/vendors`),
+        requestJson(`${serviceRegistry.catalog}/admin/vendor-policies`)
       ]);
 
       if (ordersData) {
@@ -61,6 +63,9 @@ export default function AdminDashboard() {
       }
       if (vendorsData) {
         setVendors(vendorsData);
+      }
+      if (vendorPoliciesData) {
+        setVendorPolicies(vendorPoliciesData);
       }
     } catch (e) {
       console.error('Error fetching admin telemetry:', e);
@@ -111,6 +116,34 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdatePolicyApproval = async (policyId, approved) => {
+    setActionLoading(true);
+    try {
+      const updated = await requestJson(`${serviceRegistry.catalog}/admin/vendor-policies/${policyId}/approval`, {
+        method: 'PUT',
+        body: { approved_by_admin: approved },
+      });
+
+      const normalized = updated?.data || updated;
+      setVendorPolicies((current) =>
+        current.map((policy) => (policy.id === policyId ? { ...policy, ...normalized } : policy)),
+      );
+      showToast(approved ? 'AI policy approved and queued for sync.' : 'AI policy returned to pending.');
+
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      setLogs(prev => [
+        { id: Date.now(), time: timeStr, msg: `Admin ${approved ? 'approved' : 'reopened'} AI vendor policy ${policyId}.`, type: 'info' },
+        ...prev
+      ]);
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || 'Failed to update AI policy approval.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Dynamic Telemetry metrics
   const stats = useMemo(() => {
     // Total Sales GMV
@@ -121,15 +154,17 @@ export default function AdminDashboard() {
 
     const activeVendors = vendors.filter(v => v.status === 'approved').length;
     const pendingApprovals = vendors.filter(v => v.status === 'pending').length;
+    const pendingPolicies = vendorPolicies.filter(p => !p.approved_by_admin).length;
     const totalOrdersCount = orders.length;
 
     return {
       sales,
       vendors: activeVendors,
       pending: pendingApprovals,
+      pendingPolicies,
       orders: totalOrdersCount
     };
-  }, [orders, vendors]);
+  }, [orders, vendors, vendorPolicies]);
 
   // Refresh health logs
   const triggerRefreshDiagnostics = () => {
@@ -229,6 +264,7 @@ export default function AdminDashboard() {
                 {[
                   { id: 'overview', label: 'Telemetry Overview', icon: <BarChart3 className="w-4 h-4" /> },
                   { id: 'approvals', label: 'Merchant Approvals', icon: <Users className="w-4 h-4" /> },
+                  { id: 'ai-policies', label: 'AI Policy Review', icon: <ShieldCheck className="w-4 h-4" /> },
                   { id: 'logs', label: 'Logs & Health', icon: <Terminal className="w-4 h-4" /> }
                 ].map((tab) => (
                   <button
@@ -294,6 +330,7 @@ export default function AdminDashboard() {
               >
                 <option value="overview">Telemetry Overview</option>
                 <option value="approvals">Merchant Approvals</option>
+                <option value="ai-policies">AI Policy Review</option>
                 <option value="logs">Logs & Health</option>
               </select>
             </div>
@@ -320,7 +357,7 @@ export default function AdminDashboard() {
                     {[
                       { label: 'Total Sales (GMV)', val: `LKR ${stats.sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, sub: 'Accumulated checkout volume', icon: <BarChart3 className="w-5 h-5 text-[#409eff]" />, border: 'border-l-4 border-l-[#409eff]' },
                       { label: 'Active Stores', val: `${stats.vendors}`, sub: 'Approved partner stores', icon: <Users className="w-5 h-5 text-[#67c23a]" />, border: 'border-l-4 border-l-[#67c23a]' },
-                      { label: 'Pending Reviews', val: `${stats.pending}`, sub: 'Applications awaiting review', icon: <AlertCircle className="w-5 h-5 text-[#e6a23c]" />, border: 'border-l-4 border-l-[#e6a23c]' },
+                      { label: 'Pending Reviews', val: `${stats.pending + stats.pendingPolicies}`, sub: 'Applications and AI policies', icon: <AlertCircle className="w-5 h-5 text-[#e6a23c]" />, border: 'border-l-4 border-l-[#e6a23c]' },
                       { label: 'Completed Orders', val: `${stats.orders}`, sub: 'Successful checkouts', icon: <ShoppingBag className="w-5 h-5 text-[#f56c6c]" />, border: 'border-l-4 border-l-[#f56c6c]' }
                     ].map((stat, idx) => (
                       <div key={idx} className={`bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:shadow-md hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-300 ${stat.border}`}>
@@ -584,6 +621,112 @@ export default function AdminDashboard() {
                             <tr>
                               <td colSpan="5" className="text-center py-12 text-xs font-semibold text-slate-400">
                                 No applications detected matching the filter.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'ai-policies' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">AI Policy Review</h2>
+                    <p className="text-xs font-semibold text-slate-500 mt-1">
+                      Approve structured vendor return/refund policies before the dispute AI can use them.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {[
+                      { label: 'Submitted Policies', value: vendorPolicies.length, color: 'text-[#409eff]' },
+                      { label: 'Pending Approval', value: vendorPolicies.filter(p => !p.approved_by_admin).length, color: 'text-[#e6a23c]' },
+                      { label: 'Approved for AI', value: vendorPolicies.filter(p => p.approved_by_admin).length, color: 'text-[#67c23a]' },
+                    ].map((item) => (
+                      <div key={item.label} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</p>
+                        <p className={`mt-3 text-2xl font-black ${item.color}`}>{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="el-table el-table--border el-table--striped shadow-sm">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="py-3 px-5">Vendor</th>
+                            <th className="py-3 px-5">Policy</th>
+                            <th className="py-3 px-5">Rules</th>
+                            <th className="py-3 px-5">Conditions</th>
+                            <th className="py-3 px-5">Status</th>
+                            <th className="py-3 px-5 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {vendorPolicies.map((policy, idx) => (
+                            <tr key={policy.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                              <td className="py-4 px-5">
+                                <p className="font-bold text-slate-900">{policy.vendor?.store_name || policy.vendor?.name || 'Vendor'}</p>
+                                <p className="mt-1 text-[10px] font-mono text-slate-400">{policy.vendor_id}</p>
+                              </td>
+                              <td className="py-4 px-5">
+                                <p className="font-bold text-slate-800">{policy.policy_name}</p>
+                                <p className="mt-1 text-[10px] font-bold uppercase text-slate-400">{policy.policy_type}</p>
+                              </td>
+                              <td className="py-4 px-5 font-semibold text-slate-650">
+                                {policy.max_return_days ?? '-'} days · {policy.refund_type || 'No refund type'} · {policy.restocking_fee_percent ?? 0}% fee
+                              </td>
+                              <td className="py-4 px-5">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {policy.conditions?.requires_original_packaging && (
+                                    <span className="el-tag el-tag--info el-tag--mini">Packaging</span>
+                                  )}
+                                  {policy.conditions?.requires_purchase_proof && (
+                                    <span className="el-tag el-tag--info el-tag--mini">Proof</span>
+                                  )}
+                                  {!policy.conditions?.requires_original_packaging && !policy.conditions?.requires_purchase_proof && (
+                                    <span className="text-slate-400 font-semibold">None</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-4 px-5">
+                                <span className={`el-tag uppercase ${policy.approved_by_admin ? 'el-tag--success' : 'el-tag--warning'}`}>
+                                  <span className="el-tag__dot" />
+                                  {policy.approved_by_admin ? 'Approved' : 'Pending'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-5 text-right">
+                                <div className="inline-flex gap-2 justify-end items-center">
+                                  {!policy.approved_by_admin && (
+                                    <button
+                                      disabled={actionLoading}
+                                      onClick={() => handleUpdatePolicyApproval(policy.id, true)}
+                                      className="el-button el-button--success el-button--mini shadow-sm"
+                                    >
+                                      Approve
+                                    </button>
+                                  )}
+                                  {policy.approved_by_admin && (
+                                    <button
+                                      disabled={actionLoading}
+                                      onClick={() => handleUpdatePolicyApproval(policy.id, false)}
+                                      className="el-button el-button--warning el-button--mini is-plain shadow-sm"
+                                    >
+                                      Reopen
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                          {vendorPolicies.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="text-center py-12 text-xs font-semibold text-slate-400">
+                                No AI dispute policies have been submitted by vendors.
                               </td>
                             </tr>
                           )}

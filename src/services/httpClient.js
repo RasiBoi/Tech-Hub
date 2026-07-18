@@ -63,7 +63,12 @@ const activeRequests = new Map();
 
 // Resolved requests cache (Map of URL -> { data, expiresAt })
 const responseCache = new Map();
-const CACHE_TTL = 60_000; // 60 seconds — aligns with the backend products/categories server-side cache window
+const CACHE_TTL = 300_000; // 5 minutes — aligns with the backend products/categories/promotions server-side cache window
+
+export const clearHttpCache = () => {
+  activeRequests.clear();
+  responseCache.clear();
+};
 
 export const requestJson = async (
   url,
@@ -77,29 +82,30 @@ export const requestJson = async (
   } = {},
 ) => {
   const isGet = method.toUpperCase() === 'GET';
+  const token = localStorage.getItem('techhub_token');
+  const cacheKey = `${url}::${omitAuth ? 'public' : token || 'guest'}`;
 
   // 1. If not a GET request, invalidate the cache immediately since backend state is changing
   if (!isGet) {
-    responseCache.clear();
+    clearHttpCache();
   }
 
   // 2. Check if we have a valid cached response (only for GET)
   if (isGet) {
-    const cached = responseCache.get(url);
+    const cached = responseCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAt) {
       return cached.data;
     }
 
     // 3. Check if there is an active concurrent request for this URL
-    if (activeRequests.has(url)) {
-      return activeRequests.get(url);
+    if (activeRequests.has(cacheKey)) {
+      return activeRequests.get(cacheKey);
     }
   }
 
   // 4. Execute the network request
   const fetchPromise = (async () => {
     const { controller, timeoutId, cleanup } = withTimeout(timeoutMs, signal);
-    const token = localStorage.getItem('techhub_token');
     const authHeaders = !omitAuth && token ? { 'Authorization': `Bearer ${token}` } : {};
 
     try {
@@ -158,7 +164,7 @@ export const requestJson = async (
 
       // Save to cache for GET requests
       if (isGet) {
-        responseCache.set(url, {
+        responseCache.set(cacheKey, {
           data: result,
           expiresAt: Date.now() + CACHE_TTL
         });
@@ -170,13 +176,13 @@ export const requestJson = async (
       cleanup();
       // Remove from active concurrent requests
       if (isGet) {
-        activeRequests.delete(url);
+        activeRequests.delete(cacheKey);
       }
     }
   })();
 
   if (isGet) {
-    activeRequests.set(url, fetchPromise);
+    activeRequests.set(cacheKey, fetchPromise);
   }
 
   return fetchPromise;

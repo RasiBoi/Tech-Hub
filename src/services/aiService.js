@@ -23,3 +23,17 @@ export const askAiAssistant = async (message, metadata = {}) => {
     timeoutMs: serviceRuntimeConfig.requestTimeoutMs,
   });
 };
+
+export const askDisputeAssistant = async ({ userId, sessionId, message }) => {
+  const chatUrl = joinUrl(serviceRegistry.ai, '/chat');
+  return requestJson(chatUrl, {
+    method: 'POST',
+    body: {
+      user_id: userId,
+      session_id: sessionId,
+      message,
+    },
+    timeoutMs: serviceRuntimeConfig.requestTimeoutMs,
+    omitAuth: true,
+  });
+};

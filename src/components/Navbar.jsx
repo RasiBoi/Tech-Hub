@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight, ShoppingBag
+  Heart, ShoppingCart, Bell, ChevronDown, LogOut, Cpu, Store, Menu, X, Search, Sun, Moon, ChevronRight, ShoppingBag, PackageCheck, ShieldCheck, Clock3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -10,6 +10,90 @@ import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 
 const logoUrl = new URL('../../Media/logo (3).png', import.meta.url).href;
+
+const normalizeCollection = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
+const readNotificationIds = () => {
+  try {
+    return JSON.parse(localStorage.getItem('techhub_read_notifications') || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const writeNotificationIds = (ids) => {
+  localStorage.setItem('techhub_read_notifications', JSON.stringify(Array.from(new Set(ids)).slice(-120)));
+};
+
+const orderRef = (order) => order?.order_number || (order?.id ? `TH-${String(order.id).padStart(8, '0')}` : 'Order');
+
+const buildNotifications = ({ user, orders = [], vendors = [], policies = [] }) => {
+  if (!user) {
+    return [
+      {
+        id: 'guest-login',
+        title: 'Sign in for order updates',
+        message: 'Track purchases, followed stores, and partner updates from your account.',
+        time: 'Now',
+        to: '/login?tab=login',
+        icon: Bell,
+        tone: 'blue',
+      },
+    ];
+  }
+
+  if (user.role === 'admin') {
+    const pendingVendors = vendors.filter((vendor) => vendor.status === 'pending');
+    const pendingPolicies = policies.filter((policy) => !policy.approved_by_admin);
+
+    return [
+      ...pendingVendors.slice(0, 4).map((vendor) => ({
+        id: `admin-vendor-${vendor.id}-${vendor.status}`,
+        title: 'Vendor approval needed',
+        message: `${vendor.store_name || vendor.name || 'Vendor'} is waiting for review.`,
+        time: vendor.created_at ? new Date(vendor.created_at).toLocaleDateString() : 'Pending',
+        to: '/admin',
+        icon: Store,
+        tone: 'amber',
+      })),
+      ...pendingPolicies.slice(0, 4).map((policy) => ({
+        id: `admin-policy-${policy.id}-${policy.updated_at || policy.created_at || 'pending'}`,
+        title: 'AI policy review needed',
+        message: `${policy.vendor?.store_name || policy.vendor?.name || 'Vendor'} submitted a policy for approval.`,
+        time: policy.updated_at || policy.created_at ? new Date(policy.updated_at || policy.created_at).toLocaleDateString() : 'Pending',
+        to: '/admin',
+        icon: ShieldCheck,
+        tone: 'blue',
+      })),
+    ];
+  }
+
+  if (user.role === 'vendor') {
+    return orders.slice(0, 8).map((item) => ({
+      id: `vendor-item-${item.id}-${item.status}`,
+      title: item.status === 'dispatched' ? 'Item dispatched' : 'New fulfillment item',
+      message: `${item.product?.title || 'Product'} for ${orderRef(item.order)} needs vendor handling.`,
+      time: item.order?.created_at ? new Date(item.order.created_at).toLocaleDateString() : 'New',
+      to: '/vendor',
+      icon: item.status === 'dispatched' ? PackageCheck : ShoppingBag,
+      tone: item.status === 'dispatched' ? 'emerald' : 'amber',
+    }));
+  }
+
+  return orders.slice(0, 8).map((order) => ({
+    id: `customer-order-${order.id}-${order.status}`,
+    title: order.status === 'dispatched' ? 'Order dispatched' : 'Order update',
+    message: `${orderRef(order)} is ${order.status || 'processing'}.`,
+    time: order.created_at || order.purchase_date ? new Date(order.created_at || order.purchase_date).toLocaleDateString() : 'Recent',
+    to: '/portal',
+    icon: order.status === 'dispatched' ? PackageCheck : Clock3,
+    tone: order.status === 'dispatched' ? 'emerald' : 'blue',
+  }));
+};
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -25,12 +109,17 @@ export default function Navbar() {
   const [filteredSuggestions, setFilteredSuggestions] = useState([]);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [readNotifications, setReadNotifications] = useState(readNotificationIds);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(false);
   const searchBoxRef = useRef(null);
 
   // Close menus on path changes or desktop resize
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsProfileDropdownOpen(false);
+    setIsNotificationsOpen(false);
   }, [location]);
 
   useEffect(() => {
@@ -50,6 +139,10 @@ export default function Navbar() {
         setIsProfileDropdownOpen(false);
       }
 
+      if (!e.target.closest('.notifications-dropdown-container')) {
+        setIsNotificationsOpen(false);
+      }
+
       if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
         setIsSuggestionsOpen(false);
       }
@@ -59,6 +152,61 @@ export default function Navbar() {
   }, []);
 
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+
+  const unreadCount = notifications.filter((item) => !readNotifications.includes(item.id)).length;
+
+  const loadNotifications = async () => {
+    if (isNotificationsLoading) return;
+
+    setIsNotificationsLoading(true);
+    try {
+      if (!user) {
+        setNotifications(buildNotifications({ user }));
+        return;
+      }
+
+      if (user.role === 'admin') {
+        const [vendorsResult, policiesResult] = await Promise.allSettled([
+          requestJson(`${serviceRegistry.catalog}/admin/vendors`, { timeoutMs: 15000 }),
+          requestJson(`${serviceRegistry.catalog}/admin/vendor-policies`, { timeoutMs: 15000 }),
+        ]);
+
+        setNotifications(buildNotifications({
+          user,
+          vendors: vendorsResult.status === 'fulfilled' ? normalizeCollection(vendorsResult.value) : [],
+          policies: policiesResult.status === 'fulfilled' ? normalizeCollection(policiesResult.value) : [],
+        }));
+        return;
+      }
+
+      const orders = await requestJson(`${serviceRegistry.catalog}/orders`, { timeoutMs: 15000 });
+      setNotifications(buildNotifications({ user, orders: normalizeCollection(orders) }));
+    } catch (error) {
+      if (!isRequestAbortError(error)) {
+        console.error('Failed to load notifications:', error);
+      }
+    } finally {
+      setIsNotificationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isNotificationsOpen) {
+      loadNotifications();
+    }
+  }, [isNotificationsOpen, user?.id, user?.role]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!isNotificationsOpen || notifications.length === 0) return;
+
+    const nextRead = Array.from(new Set([...readNotifications, ...notifications.map((item) => item.id)]));
+    setReadNotifications(nextRead);
+    writeNotificationIds(nextRead);
+  }, [isNotificationsOpen, notifications]);
 
   const loadSuggestions = async () => {
     if (suggestionPool.length > 0 || isSuggestionsLoading) return;
@@ -306,12 +454,86 @@ export default function Navbar() {
               <span className="hidden xl:inline text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Cart</span>
             </Link>
 
-            <div className="hidden xl:flex flex-col items-center gap-1 cursor-pointer group relative">
-              <div className="relative">
-                <Bell className="w-5 h-5 text-slate-350 group-hover:text-white transition-colors" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-[#0b1021]"></span>
-              </div>
-              <span className="text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Notifications</span>
+            <div className="hidden xl:flex flex-col items-center gap-1 cursor-pointer group relative notifications-dropdown-container">
+              <button
+                type="button"
+                onClick={() => setIsNotificationsOpen((open) => !open)}
+                className="flex flex-col items-center gap-1 cursor-pointer group focus:outline-none"
+                aria-label="Open notifications"
+              >
+                <div className="relative">
+                  <Bell className="w-5 h-5 text-slate-350 group-hover:text-white transition-colors" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black min-w-[17px] h-[17px] px-1 flex items-center justify-center rounded-full border border-[#0b1021]">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-400 group-hover:text-white font-medium transition-colors">Notifications</span>
+              </button>
+
+              {isNotificationsOpen && (
+                <div className="absolute right-0 top-full mt-4 w-[360px] rounded-2xl border border-white/[0.08] bg-[#0b1021]/98 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-black text-white">Notifications</p>
+                      <p className="text-[10px] font-semibold text-slate-500">{unreadCount > 0 ? `${unreadCount} new update${unreadCount === 1 ? '' : 's'}` : 'All caught up'}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={loadNotifications}
+                      className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+
+                  <div className="max-h-[360px] overflow-y-auto">
+                    {isNotificationsLoading && notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <div className="w-8 h-8 mx-auto rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+                        <p className="mt-3 text-xs font-bold text-slate-400">Loading updates...</p>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <Bell className="w-8 h-8 mx-auto text-slate-600" />
+                        <p className="mt-3 text-xs font-bold text-slate-400">No notifications right now.</p>
+                      </div>
+                    ) : (
+                      notifications.map((item) => {
+                        const Icon = item.icon || Bell;
+                        const toneClass = item.tone === 'amber'
+                          ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                          : item.tone === 'emerald'
+                            ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                            : 'bg-blue-500/10 text-blue-300 border-blue-500/20';
+
+                        return (
+                          <Link
+                            key={item.id}
+                            to={item.to || '/portal'}
+                            className="flex gap-3 px-4 py-3 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.04] transition-colors"
+                          >
+                            <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${toneClass}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-xs font-black text-white truncate">{item.title}</p>
+                                {!readNotifications.includes(item.id) && (
+                                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[11px] font-medium text-slate-400 leading-snug mt-0.5">{item.message}</p>
+                              <p className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mt-1.5">{item.time}</p>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Theme Switcher Toggle */}
@@ -395,20 +617,24 @@ export default function Navbar() {
                             Vendor Portal
                           </Link>
                         )}
-                        <Link 
-                          to="/portal" 
-                          className="text-xs text-slate-300 hover:text-white font-bold py-2 flex items-center gap-2 transition-colors border-t border-slate-800/50 mt-1 pt-1.5"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                        >
-                          <ShoppingBag className="w-3.5 h-3.5 text-emerald-500" />
-                          Customer Dashboard
-                        </Link>
+                        {user.role !== 'vendor' && user.role !== 'admin' && (
+                          <Link 
+                            to="/portal" 
+                            className="text-xs text-slate-300 hover:text-white font-bold py-2 flex items-center gap-2 transition-colors border-t border-slate-800/50 mt-1 pt-1.5"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                          >
+                            <ShoppingBag className="w-3.5 h-3.5 text-emerald-500" />
+                            Customer Dashboard
+                          </Link>
+                        )}
                         <button
                           onClick={() => {
                             logout();
                             setIsProfileDropdownOpen(false);
                           }}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-bold py-2 flex items-center gap-2 text-left w-full transition-colors"
+                          className={`text-xs text-rose-400 hover:text-rose-300 font-bold py-2 flex items-center gap-2 text-left w-full transition-colors ${
+                            (user.role === 'vendor' || user.role === 'admin') ? 'border-t border-slate-800/50 mt-1 pt-1.5' : ''
+                          }`}
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           Log Out

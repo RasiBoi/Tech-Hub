@@ -13,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { isRequestAbortError, requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
+import { resolveMediaUrl, resolveProductImage } from '../lib/media';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { CircularTestimonials } from '../components/ui/circular-testimonials';
 import Navbar from '../components/Navbar';
@@ -503,7 +504,7 @@ const compileVibeData = (vibeName, productsList) => {
     id: String(p.id),
     title: p.title,
     price: Number(p.price),
-    image: p.image
+    image: resolveProductImage(p)
   }));
 
   const trendingProduct = vibeProducts.find(p => p.category?.name === 'Standing Desks' || p.category?.name === 'Ergonomic Chairs') || vibeProducts[3] || vibeProducts[0];
@@ -515,21 +516,21 @@ const compileVibeData = (vibeName, productsList) => {
     description: fallback.description,
     recentlyViewed: {
       title: recentlyViewedProduct.title,
-      image: recentlyViewedProduct.image,
+      image: resolveProductImage(recentlyViewedProduct),
       price: `LKR ${Number(recentlyViewedProduct.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       category: recentlyViewedProduct.category?.name || 'Monitor Raiser',
       timeText: 'Viewed recently'
     },
     handpicked: {
       title: handpickedProduct.title,
-      image: handpickedProduct.image,
+      image: resolveProductImage(handpickedProduct),
       price: `LKR ${Number(handpickedProduct.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       tip: fallback.handpicked.tip
     },
     bundle: bundle,
     trending: {
       title: trendingProduct.title,
-      image: trendingProduct.image,
+      image: resolveProductImage(trendingProduct),
       price: `LKR ${Number(trendingProduct.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       socialText: fallback.trending.socialText
     }
@@ -544,7 +545,7 @@ const compileDeals = (productsList) => {
     return {
       id: String(p.id),
       title: p.title,
-      image: p.image,
+      image: resolveProductImage(p),
       discount: discounts[idx % 4],
       price: `LKR ${Number(p.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
       oldPrice: `LKR ${oldPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
@@ -554,41 +555,39 @@ const compileDeals = (productsList) => {
   });
 };
 
-const compileVendorsData = (staticVendors, dbProducts) => {
-  if (!dbProducts || dbProducts.length === 0) return staticVendors;
-  
-  return staticVendors.map(vendor => {
-    // Find products in dbProducts belonging to this vendor
-    const vendorProds = dbProducts.filter(p => {
-      if (!p) return false;
-      let pVendor = '';
-      if (p.vendor) {
-        if (typeof p.vendor === 'object') {
-          pVendor = p.vendor.name || p.vendor.id || '';
-        } else {
-          pVendor = String(p.vendor);
-        }
-      }
-      return pVendor.toLowerCase().includes(vendor.name.toLowerCase().split(' ')[0]);
-    });
-    
-    if (vendorProds.length === 0) return vendor;
-    
-    return {
-      ...vendor,
-      products: vendorProds.slice(0, 3).map(p => {
-        const parsedPrice = typeof p.price === 'string'
-          ? parseFloat(p.price.replace(/[^\d.]/g, ''))
-          : Number(p.price || 0);
-        return {
-          title: p.title || 'Premium Accessory',
-          price: `LKR ${parsedPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-          spec: p.spec || 'Premium Accessory',
-          image: p.image
-        };
-      })
-    };
-  });
+const normalizeCollection = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
+const vendorInitials = (vendor) =>
+  (vendor.store_name || vendor.name || 'TH')
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+const compileDbVendorsData = (dbVendors, staticVendors) => {
+  if (!dbVendors || dbVendors.length === 0) return staticVendors;
+
+  return dbVendors.map((vendor) => ({
+    id: String(vendor.id),
+    name: vendor.store_name || vendor.name || 'Partner Store',
+    tagline: vendor.store_description || vendor.company_profile || 'Verified workspace accessories partner.',
+    rating: Number(vendor.rating || 5).toFixed(1),
+    reviews: vendor.reviews_count || vendor.products_count || 0,
+    productsCount: vendor.products_count || 0,
+    baseFollowers: vendor.followers_count || 0,
+    src: resolveMediaUrl(vendor.cover_image_url || vendor.banner_url, 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop'),
+    isFollowed: !!vendor.is_followed,
+    logoSvg: vendor.logo_url ? (
+      <img src={resolveMediaUrl(vendor.logo_url)} alt={vendor.store_name || vendor.name} className="w-full h-full object-cover rounded-xl" />
+    ) : (
+      <span className="text-sm font-black text-slate-900">{vendorInitials(vendor)}</span>
+    ),
+  }));
 };
 
 const HERO_SLIDES = [
@@ -801,12 +800,38 @@ export default function Home() {
     }, 3000);
   };
 
-  const handleToggleFollowVendor = (vendorId, vendorName) => {
+  const handleToggleFollowVendor = async (vendorId, vendorName) => {
+    if (!user) {
+      showToast('Please login to follow partner stores.');
+      navigate('/login?tab=login');
+      return;
+    }
+
+    const previous = followedVendors;
     setFollowedVendors(prev => {
       const updated = { ...prev, [vendorId]: !prev[vendorId] };
-      showToast(updated[vendorId] ? `You are now following ${vendorName}` : `Unfollowed ${vendorName}`);
       return updated;
     });
+
+    try {
+      const result = await requestJson(`${serviceRegistry.catalog}/vendors/${vendorId}/follow`, {
+        method: 'POST',
+      });
+      const isFollowed = !!result?.is_followed;
+      setFollowedVendors(prev => ({ ...prev, [vendorId]: isFollowed }));
+      setDbVendors(prev => prev.map(vendor => String(vendor.id) === String(vendorId) ? {
+        ...vendor,
+        is_followed: isFollowed,
+        followers_count: Math.max(0, Number(vendor.followers_count || 0) + (isFollowed ? 1 : -1)),
+      } : vendor));
+      showToast(isFollowed ? `You are now following ${vendorName}` : `Unfollowed ${vendorName}`);
+    } catch (error) {
+      setFollowedVendors(previous);
+      if (!isRequestAbortError(error)) {
+        console.error('Failed to update followed vendor:', error);
+        showToast(error.message || 'Could not update followed store.');
+      }
+    }
   };
 
   useEffect(() => {
@@ -853,13 +878,15 @@ export default function Home() {
   // Database States
   const [allDbProducts, setAllDbProducts] = useState([]);
   const [dbCategories, setDbCategories] = useState([]);
+  const [dbVendors, setDbVendors] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
-      // Fetch products, categories, and promotions in parallel for faster load
-      const [prodResult, catResult, promoResult] = await Promise.allSettled([
+      // Fetch products, categories, vendors, and promotions in parallel for faster load
+      const [prodResult, catResult, vendorResult, promoResult] = await Promise.allSettled([
         requestJson(`${serviceRegistry.catalog}/products`),
         requestJson(`${serviceRegistry.catalog}/categories`),
+        requestJson(`${serviceRegistry.catalog}/vendors`),
         requestJson(`${serviceRegistry.catalog}/promotions`),
       ]);
 
@@ -875,8 +902,20 @@ export default function Home() {
         console.error('Failed to load categories from database', catResult.reason);
       }
 
+      if (vendorResult.status === 'fulfilled' && vendorResult.value) {
+        const vendors = normalizeCollection(vendorResult.value);
+        setDbVendors(vendors);
+        setFollowedVendors(vendors.reduce((acc, vendor) => ({
+          ...acc,
+          [vendor.id]: !!vendor.is_followed,
+        }), {}));
+      } else if (vendorResult.status === 'rejected' && !isRequestAbortError(vendorResult.reason)) {
+        console.error('Failed to load vendors from database', vendorResult.reason);
+      }
+
       if (promoResult.status === 'fulfilled' && promoResult.value) {
-        setActivePromotions(promoResult.value.data || promoResult.value);
+        const promos = Array.isArray(promoResult.value) ? promoResult.value : Array.isArray(promoResult.value?.data) ? promoResult.value.data : [];
+        setActivePromotions(promos);
       } else if (promoResult.status === 'rejected' && !isRequestAbortError(promoResult.reason)) {
         console.error('Failed to load promotions from database', promoResult.reason);
       }
@@ -1063,21 +1102,12 @@ export default function Home() {
     },
   ];
 
-  const featuredPartnerTestimonials = compileVendorsData(VENDORS_DATA, allDbProducts).map(vendor => {
-    const vendorImages = {
-      apple: 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
-      samsung: 'https://images.unsplash.com/photo-1628749528992-f5702133b686?q=80&w=1368&auto=format&fit=crop',
-      dell: 'https://images.unsplash.com/photo-1524267213992-b76e8577d046?q=80&w=1368&auto=format&fit=crop',
-      sony: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?q=80&w=1368&auto=format&fit=crop',
-      xiaomi: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1368&auto=format&fit=crop',
-      beats: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1368&auto=format&fit=crop'
-    };
-
+  const featuredPartnerTestimonials = compileDbVendorsData(dbVendors, VENDORS_DATA).map(vendor => {
     return {
       name: vendor.name,
       designation: 'Official Partner',
       quote: vendor.tagline,
-      src: vendorImages[vendor.id] || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
+      src: vendor.src || 'https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?q=80&w=1368&auto=format&fit=crop',
       id: vendor.id,
       rating: vendor.rating,
       reviews: vendor.reviews,
@@ -1086,7 +1116,7 @@ export default function Home() {
       logoSvg: vendor.logoSvg,
       isFollowed: !!followedVendors[vendor.id],
       onFollow: () => handleToggleFollowVendor(vendor.id, vendor.name),
-      onVisit: () => showToast(`Opening storefront for ${vendor.name}...`)
+      onVisit: () => navigate(`/vendors/${vendor.id}`)
     };
   });
 
@@ -1502,7 +1532,7 @@ export default function Home() {
                       {/* Dark tint that fades on hover to reveal bright image */}
                       <div className={`absolute inset-0 ${isLight ? 'bg-slate-100/10' : 'bg-[#0d1527]/55'} z-10 pointer-events-none group-hover:opacity-0 transition-opacity duration-350`} />
                       <img
-                        src={category.image}
+                        src={resolveMediaUrl(category.image)}
                         alt={category.name}
                         className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.12] ${isLight ? 'opacity-90 group-hover:opacity-100' : 'mix-blend-luminosity opacity-80 group-hover:mix-blend-normal group-hover:opacity-100'}`}
                       />
@@ -1821,13 +1851,13 @@ export default function Home() {
                 Explore premium products and official hardware integrations curated directly from our official brand partners.
               </p>
             </div>
-            <a
-              href="#"
+            <Link
+              to="/vendors"
               className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-[#0d1527]/70 text-slate-300 px-4 py-2 text-sm font-semibold hover:border-white/[0.2] hover:bg-[#0d1527]/90 hover:text-white transition-all shadow-sm backdrop-blur-md shrink-0 self-start sm:self-center"
             >
               View All Partners
               <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
 
           {/* Mobile Partner Cards */}
@@ -1851,7 +1881,7 @@ export default function Home() {
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-[11px] text-amber-400 font-bold">{partner.rating} ★</span>
                   <Link
-                    to="/vendors"
+                    to={`/vendors/${partner.id}`}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold px-3 py-1.5 transition-colors"
                   >
                     View

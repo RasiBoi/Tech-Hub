@@ -9,9 +9,20 @@ import {
   AlertCircle, RefreshCw, Cpu, Award, ShoppingBag, Settings, 
   Hammer, Loader2, Search, Edit3, Trash2, CheckCircle2, ChevronRight, Truck,
   Tag, Sliders, Info, ShoppingCart, HelpCircle, Sun, Moon,
-  Upload, ImageIcon, X, Users, FileText, Palette, BookOpen, Globe, ArrowLeft
+  Upload, ImageIcon, X, Users, FileText, Palette, BookOpen, Globe, ArrowLeft, ShieldCheck
 } from 'lucide-react';
 import '../../element-ui.css';
+
+const normalizeCollection = (value) => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+};
+
+const formatCurrency = (value) =>
+  `LKR ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+const getOrderReference = (item) => item?.order?.order_number || `#${item?.order_id || item?.order?.id || item?.id}`;
 
 export default function VendorPortal() {
   const { user, logout, updateUser } = useAuth();
@@ -102,6 +113,7 @@ export default function VendorPortal() {
   // Promotions and Policies states
   const [promotionsList, setPromotionsList] = useState([]);
   const [policiesList, setPoliciesList] = useState([]);
+  const [aiPoliciesList, setAiPoliciesList] = useState([]);
   const [activePromoSubTab, setActivePromoSubTab] = useState('promotions');
   
   // Promotion Form State
@@ -121,13 +133,24 @@ export default function VendorPortal() {
   const [policyFormContent, setPolicyFormContent] = useState('');
   const [policyFormPdfUrl, setPolicyFormPdfUrl] = useState('');
 
+  // AI Policy Form State
+  const [editingAiPolicy, setEditingAiPolicy] = useState(null);
+  const [aiPolicyName, setAiPolicyName] = useState('');
+  const [aiPolicyType, setAiPolicyType] = useState('return');
+  const [aiMaxReturnDays, setAiMaxReturnDays] = useState('14');
+  const [aiRefundType, setAiRefundType] = useState('store_credit');
+  const [aiRestockingFee, setAiRestockingFee] = useState('0');
+  const [aiRequiresPackaging, setAiRequiresPackaging] = useState(true);
+  const [aiRequiresProof, setAiRequiresProof] = useState(true);
+
   // Promotions and Policies fetcher
   const fetchPromotionsAndPolicies = async () => {
     if (!user || user.role !== 'vendor') return;
     try {
-      const [policiesRes, promosRes] = await Promise.allSettled([
+      const [policiesRes, promosRes, aiPoliciesRes] = await Promise.allSettled([
         requestJson(`${serviceRegistry.catalog}/vendor/policies`),
         requestJson(`${serviceRegistry.catalog}/vendor/promotions`),
+        requestJson(`${serviceRegistry.catalog}/vendor/ai-policies`),
       ]);
 
       if (policiesRes.status === 'fulfilled' && policiesRes.value) {
@@ -135,6 +158,9 @@ export default function VendorPortal() {
       }
       if (promosRes.status === 'fulfilled' && promosRes.value) {
         setPromotionsList(promosRes.value.data || promosRes.value);
+      }
+      if (aiPoliciesRes.status === 'fulfilled' && aiPoliciesRes.value) {
+        setAiPoliciesList(aiPoliciesRes.value.data || aiPoliciesRes.value);
       }
     } catch (e) {
       console.error('Error fetching promotions/policies:', e);
@@ -168,21 +194,23 @@ export default function VendorPortal() {
       await fetchPromotionsAndPolicies();
 
       if (catResult.status === 'fulfilled' && catResult.value) {
-        setCategories(catResult.value);
-        if (catResult.value.length > 0 && !addCategoryId) {
-          setAddCategoryId(catResult.value[0].id.toString());
+        const normalizedCategories = normalizeCollection(catResult.value);
+        setCategories(normalizedCategories);
+        if (normalizedCategories.length > 0 && !addCategoryId) {
+          setAddCategoryId(normalizedCategories[0].id.toString());
         }
       }
 
       if (prodResult.status === 'fulfilled' && prodResult.value && user?.id) {
-        const filteredProds = prodResult.value.filter(
+        const normalizedProducts = normalizeCollection(prodResult.value);
+        const filteredProds = normalizedProducts.filter(
           p => p.vendor_id === user.id || p.vendor?.id === user.id
         );
         setProducts(filteredProds);
       }
 
       if (ordersResult.status === 'fulfilled' && ordersResult.value) {
-        setOrderItems(ordersResult.value);
+        setOrderItems(normalizeCollection(ordersResult.value));
       }
     } catch (e) {
       console.error('Error fetching vendor data:', e);
@@ -599,6 +627,74 @@ export default function VendorPortal() {
     }
   };
 
+  const resetAiPolicyForm = () => {
+    setEditingAiPolicy(null);
+    setAiPolicyName('');
+    setAiPolicyType('return');
+    setAiMaxReturnDays('14');
+    setAiRefundType('store_credit');
+    setAiRestockingFee('0');
+    setAiRequiresPackaging(true);
+    setAiRequiresProof(true);
+  };
+
+  const handleSaveAiPolicy = async (e) => {
+    e.preventDefault();
+    if (!aiPolicyName.trim()) {
+      showToast('AI policy name is required.', 'error');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const url = editingAiPolicy
+        ? `${serviceRegistry.catalog}/vendor/ai-policies/${editingAiPolicy.id}`
+        : `${serviceRegistry.catalog}/vendor/ai-policies`;
+      const method = editingAiPolicy ? 'PUT' : 'POST';
+
+      await requestJson(url, {
+        method,
+        body: {
+          policy_name: aiPolicyName,
+          policy_type: aiPolicyType,
+          max_return_days: aiMaxReturnDays === '' ? null : Number(aiMaxReturnDays),
+          refund_type: aiRefundType || null,
+          restocking_fee_percent: aiRestockingFee === '' ? null : Number(aiRestockingFee),
+          conditions: {
+            requires_original_packaging: aiRequiresPackaging,
+            requires_purchase_proof: aiRequiresProof,
+          },
+        },
+      });
+
+      showToast(editingAiPolicy ? 'AI policy updated and sent back for approval.' : 'AI policy submitted for admin approval.');
+      resetAiPolicyForm();
+      fetchPromotionsAndPolicies();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to save AI policy.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteAiPolicy = async (id) => {
+    if (!confirm('Delete this AI dispute policy?')) return;
+    setActionLoading(true);
+    try {
+      await requestJson(`${serviceRegistry.catalog}/vendor/ai-policies/${id}`, {
+        method: 'DELETE',
+      });
+      showToast('AI policy deleted successfully.');
+      fetchPromotionsAndPolicies();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to delete AI policy.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Auto Generate Courier Tracking Number
   const triggerCourierDispatch = (item) => {
     setDispatchItem(item);
@@ -645,14 +741,9 @@ export default function VendorPortal() {
   // Dynamic Telemetry metrics
   const stats = useMemo(() => {
     let sales = 0;
-    let totalOrdersCount = 0;
     
     orderItems.forEach(item => {
-      // Find matches for this vendor
-      if (item.product?.vendor_id === user?.id || item.product?.vendor?.id === user?.id) {
-        sales += parseFloat(item.price || 0) * parseInt(item.quantity || 1);
-        totalOrdersCount += 1;
-      }
+      sales += parseFloat(item.price || 0) * parseInt(item.quantity || 1);
     });
 
     const activeListingsCount = products.length;
@@ -660,9 +751,9 @@ export default function VendorPortal() {
     return {
       sales,
       listings: activeListingsCount,
-      orders: totalOrdersCount
+      orders: orderItems.length
     };
-  }, [products, orderItems, user]);
+  }, [products, orderItems]);
 
   // Preset images matching specific categories
   const imagePresets = [
@@ -802,10 +893,8 @@ export default function VendorPortal() {
 
   // Filter orders containing this vendor's products
   const vendorOrdersList = useMemo(() => {
-    return orderItems.filter(item => {
-      return item.product?.vendor_id === user?.id || item.product?.vendor?.id === user?.id;
-    });
-  }, [orderItems, user]);
+    return orderItems;
+  }, [orderItems]);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased flex flex-col">
@@ -1005,7 +1094,7 @@ export default function VendorPortal() {
                   {/* Dynamic Metrics */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     {[
-                      { label: 'Store Sales (LKR)', val: `LKR ${stats.sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, sub: 'Calculated from dynamic orders', icon: <BarChart3 className="w-5 h-5 text-[#409eff]" />, border: 'border-l-4 border-l-[#409eff]' },
+                      { label: 'Store Sales (LKR)', val: formatCurrency(stats.sales), sub: 'Calculated from dynamic orders', icon: <BarChart3 className="w-5 h-5 text-[#409eff]" />, border: 'border-l-4 border-l-[#409eff]' },
                       { label: 'Active Listings', val: `${stats.listings} Products`, sub: 'Live in platform search', icon: <LayoutGrid className="w-5 h-5 text-[#67c23a]" />, border: 'border-l-4 border-l-[#67c23a]' },
                       { label: 'Orders Received', val: `${stats.orders} items`, sub: 'Placed by customers', icon: <PackageCheck className="w-5 h-5 text-[#e6a23c]" />, border: 'border-l-4 border-l-[#e6a23c]' }
                     ].map((stat, idx) => (
@@ -1097,7 +1186,7 @@ export default function VendorPortal() {
                                     </div>
                                   </td>
                                   <td className="py-2.5 px-4 text-right font-bold text-[#67c23a]">
-                                    LKR {(parseFloat(item.price) * item.quantity).toLocaleString()}
+                                    {formatCurrency(parseFloat(item.price || 0) * Number(item.quantity || 0))}
                                   </td>
                                 </tr>
                               ))}
@@ -2003,7 +2092,7 @@ export default function VendorPortal() {
                               <tr key={item.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
                                 <td className="py-4 px-5">
                                   <p className="font-bold text-slate-900">Order Item ID: #{item.id}</p>
-                                  <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase tracking-wider">Ref: #{item.order_id}</p>
+                                  <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase tracking-wider">Ref: {getOrderReference(item)}</p>
                                 </td>
                                 <td className="py-4 px-5">
                                   <p className="font-semibold text-slate-700">{item.order?.user?.name || 'Valued Customer'}</p>
@@ -2014,8 +2103,8 @@ export default function VendorPortal() {
                                   <p className="text-[10px] text-slate-500 mt-0.5">Quantity: {item.quantity} Unit(s)</p>
                                 </td>
                                 <td className="py-4 px-5">
-                                  <p className="font-bold text-[#67c23a]">LKR {(parseFloat(item.price) * item.quantity).toLocaleString()}</p>
-                                  <p className="text-[9px] text-slate-450 mt-0.5">LKR {parseFloat(item.price).toLocaleString()} each</p>
+                                  <p className="font-bold text-[#67c23a]">{formatCurrency(parseFloat(item.price || 0) * Number(item.quantity || 0))}</p>
+                                  <p className="text-[9px] text-slate-450 mt-0.5">{formatCurrency(item.price)} each</p>
                                 </td>
                                 <td className="py-4 px-5">
                                   {isDispatched ? (
@@ -2140,7 +2229,8 @@ export default function VendorPortal() {
                   <div className="flex border-b border-slate-200/80 bg-white rounded-t-xl px-4 pt-2 gap-2 shadow-sm">
                     {[
                       { id: 'promotions', label: 'Manage Promotions', icon: <Tag className="w-4 h-4" /> },
-                      { id: 'policies', label: 'Manage Promotional Policies', icon: <FileText className="w-4 h-4" /> }
+                      { id: 'policies', label: 'Manage Promotional Policies', icon: <FileText className="w-4 h-4" /> },
+                      { id: 'ai-policies', label: 'AI Dispute Policies', icon: <ShieldCheck className="w-4 h-4" /> }
                     ].map((subTab) => (
                       <button
                         key={subTab.id}
@@ -2571,6 +2661,184 @@ export default function VendorPortal() {
                             </div>
                           ) : (
                             <p className="text-xs font-semibold text-slate-450 italic">No policies created yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {activePromoSubTab === 'ai-policies' && (
+                      <div className="space-y-8">
+                        <form onSubmit={handleSaveAiPolicy} className="space-y-5 p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                          <div>
+                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                              {editingAiPolicy ? 'Edit AI Dispute Policy' : 'Submit AI Dispute Policy'}
+                            </h3>
+                            <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                              These structured rules are reviewed by admins before the dispute AI can use them.
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="space-y-1 md:col-span-2">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy Name</label>
+                              <input
+                                type="text"
+                                value={aiPolicyName}
+                                onChange={(e) => setAiPolicyName(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                                placeholder="e.g. Standard 14 Day Returns"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy Type</label>
+                              <select
+                                value={aiPolicyType}
+                                onChange={(e) => setAiPolicyType(e.target.value)}
+                                className="el-input__inner font-semibold text-slate-700 text-xs"
+                              >
+                                <option value="return">Return</option>
+                                <option value="refund">Refund</option>
+                                <option value="warranty">Warranty</option>
+                                <option value="shipping">Shipping</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Max Return Days</label>
+                              <input
+                                type="number"
+                                min="0"
+                                max="365"
+                                value={aiMaxReturnDays}
+                                onChange={(e) => setAiMaxReturnDays(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Refund Type</label>
+                              <select
+                                value={aiRefundType}
+                                onChange={(e) => setAiRefundType(e.target.value)}
+                                className="el-input__inner font-semibold text-slate-700 text-xs"
+                              >
+                                <option value="full_refund">Full Refund</option>
+                                <option value="partial_refund">Partial Refund</option>
+                                <option value="store_credit">Store Credit</option>
+                                <option value="replacement">Replacement</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Restocking Fee %</label>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                value={aiRestockingFee}
+                                onChange={(e) => setAiRestockingFee(e.target.value)}
+                                className="el-input__inner font-medium text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-5 rounded-xl border border-slate-200 bg-white p-4">
+                            <label className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={aiRequiresPackaging}
+                                onChange={(e) => setAiRequiresPackaging(e.target.checked)}
+                                className="text-[#409eff] focus:ring-[#409eff] rounded"
+                              />
+                              Requires original packaging
+                            </label>
+                            <label className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={aiRequiresProof}
+                                onChange={(e) => setAiRequiresProof(e.target.checked)}
+                                className="text-[#409eff] focus:ring-[#409eff] rounded"
+                              />
+                              Requires purchase proof
+                            </label>
+                          </div>
+
+                          <div className="flex gap-3">
+                            <button type="submit" disabled={actionLoading} className="el-button el-button--primary el-button--small shadow-sm">
+                              {editingAiPolicy ? 'Update AI Policy' : 'Submit for Approval'}
+                            </button>
+                            {editingAiPolicy && (
+                              <button type="button" onClick={resetAiPolicyForm} className="el-button is-plain el-button--small">
+                                Cancel Edit
+                              </button>
+                            )}
+                          </div>
+                        </form>
+
+                        <div className="space-y-4">
+                          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">AI Dispute Policies ({aiPoliciesList.length})</h3>
+                          {aiPoliciesList.length > 0 ? (
+                            <div className="el-table el-table--border el-table--striped">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr>
+                                    <th className="py-2.5 px-4">Policy</th>
+                                    <th className="py-2.5 px-4">Rules</th>
+                                    <th className="py-2.5 px-4">Approval</th>
+                                    <th className="py-2.5 px-4 text-right">Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {aiPoliciesList.map((policy, idx) => (
+                                    <tr key={policy.id} className={idx % 2 !== 0 ? 'el-table__row--striped' : ''}>
+                                      <td className="py-3 px-4">
+                                        <p className="font-bold text-slate-800">{policy.policy_name}</p>
+                                        <p className="mt-0.5 text-[10px] font-mono text-slate-400">{policy.policy_type}</p>
+                                      </td>
+                                      <td className="py-3 px-4 text-slate-600 font-semibold">
+                                        {policy.max_return_days ?? '-'} days · {policy.refund_type || 'No refund type'} · {policy.restocking_fee_percent ?? 0}% fee
+                                      </td>
+                                      <td className="py-3 px-4">
+                                        <span className={`el-tag el-tag--mini uppercase ${policy.approved_by_admin ? 'el-tag--success' : 'el-tag--warning'}`}>
+                                          {policy.approved_by_admin ? 'Approved' : 'Pending'}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 px-4 text-right">
+                                        <div className="flex gap-2 justify-end">
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingAiPolicy(policy);
+                                              setAiPolicyName(policy.policy_name || '');
+                                              setAiPolicyType(policy.policy_type || 'return');
+                                              setAiMaxReturnDays(policy.max_return_days ?? '');
+                                              setAiRefundType(policy.refund_type || 'store_credit');
+                                              setAiRestockingFee(policy.restocking_fee_percent ?? '0');
+                                              setAiRequiresPackaging(Boolean(policy.conditions?.requires_original_packaging));
+                                              setAiRequiresProof(Boolean(policy.conditions?.requires_purchase_proof));
+                                            }}
+                                            className="text-xs font-semibold text-[#409eff] hover:underline"
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteAiPolicy(policy.id)}
+                                            className="text-xs font-semibold text-red-550 hover:underline"
+                                          >
+                                            Delete
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-semibold text-slate-450 italic">No AI dispute policies submitted yet.</p>
                           )}
                         </div>
                       </div>
