@@ -5,7 +5,8 @@ import {
   Star, Cpu, RotateCcw, HeadphonesIcon, Zap, ChevronDown, ChevronLeft, ChevronRight,
   Mic, Menu, X, CheckCircle2, User, Play,
   ShoppingBag, ShieldCheck, ArrowRight, Flame, Terminal,
-  Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink, LogOut, Store, Tag
+  Check, Activity, Plus, MessageSquare, Award, FileText, ExternalLink, LogOut, Store, Tag,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -1289,7 +1290,7 @@ export default function Home() {
                 transition={{ duration: 0.45, ease: "easeInOut" }}
                 className="flex flex-col items-center xl:items-start w-full text-center xl:text-left"
               >
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[52px] 2xl:text-[56px] leading-[1.1] font-bold text-white mb-2 xl:mb-4 tracking-tight relative z-10 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[60px] xl:text-[68px] 2xl:text-[76px] leading-[1.05] font-bold text-white mb-2 xl:mb-5 tracking-tight relative z-10 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
                   {HERO_SLIDES[currentHeroSlide].title}
                 </h1>
                 
@@ -1344,6 +1345,70 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Right Column — Ms. Perera live call card (Vector / LaunchFar inspired) */}
+          <div className="hidden xl:flex justify-end items-center relative z-20">
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
+              className="w-full max-w-[380px] rounded-[28px] border border-white/[0.12] bg-slate-950/55 backdrop-blur-2xl p-6 shadow-2xl shadow-black/50"
+            >
+              {/* Ambient blue glow */}
+              <div className="absolute -inset-px rounded-[28px] bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
+
+              <div className="relative flex items-center justify-between mb-6">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-300">
+                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" /> Online now
+                </span>
+                <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-300 px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.03]">
+                  Dispute AI
+                </span>
+              </div>
+
+              <div className="relative flex flex-col items-center text-center">
+                <div className="relative">
+                  <div className="absolute -inset-3 rounded-full bg-blue-500/25 blur-2xl" />
+                  <img
+                    src="/ms-perera-avatar.png"
+                    alt="Ms. Perera"
+                    className="relative size-24 rounded-full object-cover border border-white/15 shadow-xl"
+                    style={{ objectPosition: 'center 22%' }}
+                  />
+                  <span className="absolute bottom-1 right-1 size-4 rounded-full bg-emerald-400 border-2 border-slate-950" />
+                </div>
+
+                <h3 className="mt-4 text-xl font-bold text-white tracking-tight">Ms. Perera</h3>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-300 mt-1.5">
+                  Dispute Resolution Specialist
+                </p>
+                <p className="text-[13px] text-slate-300 leading-relaxed mt-3 max-w-[290px]">
+                  Orders, returns, refunds & damaged-item claims — resolved in real time,
+                  grounded in your profile and vendor policies.
+                </p>
+
+                {/* Live audio visualizer */}
+                <div className="flex items-end justify-center gap-[3px] h-9 mt-5">
+                  {[40, 70, 55, 90, 45, 80, 60, 100, 50, 75, 42, 88, 58, 66].map((h, i) => (
+                    <VisualizerBar key={i} baseHeight={h} delay={i * 0.08} />
+                  ))}
+                </div>
+
+                <Link
+                  to="/support"
+                  className="mt-5 w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full py-3 font-semibold text-sm shadow-lg shadow-blue-600/30 transition-all active:scale-95"
+                >
+                  <Phone className="w-4 h-4" /> Talk to Ms. Perera
+                </Link>
+                <Link
+                  to="/support"
+                  className="mt-2.5 text-xs text-slate-400 hover:text-blue-300 transition-colors"
+                >
+                  or start a chat →
+                </Link>
+              </div>
+            </motion.div>
           </div>
 
         </main>

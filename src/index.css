@@ -22,9 +22,10 @@
   --accent-blue:    #3b82f6;
   --accent-yellow:  #facc15;
 
-  /* Font */
-  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont,
+  /* Font — Outfit (matches the AI-Agent UI, applied system-wide) */
+  --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont,
                'Segoe UI', 'Roboto', sans-serif;
+  --font-display: 'Outfit', 'Inter', -apple-system, sans-serif;
   --font-weight-body: 400;
   --letter-spacing-body: 0.01em;
   --line-height-body: 1.65;
@@ -78,6 +79,17 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-heading);
   line-height: 1.25;
   font-feature-settings: "kern" 1;
+}
+
+/* ─── Display headings (site-wide brand type) ────────────────── */
+/* Outfit across the whole system — clean, geometric, modern. */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+.font-display,
+.text-display {
+  font-family: var(--font-display) !important;
 }
 
 /* Prevent blinding pure-white overrides unless truly intentional */
@@ -623,3 +635,226 @@ a, button, [role="button"] {
 :root.light .always-dark .text-blue-400 {
   color: #60a5fa !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SUPPORT AI SURFACE  —  "Ms. Perera" dispute experience
+   A self-contained, editorial design system scoped to .support-shell.
+   Warm paper light theme (primary), with a graceful warm-dark variant.
+   Kept independent of the global light/dark overrides so the surface
+   always renders as one cohesive, hand-crafted composition.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Default (app in dark mode): matches the store's deep-navy brand */
+.support-shell {
+  --sup-bg:            #070a13;
+  --sup-bg-2:          #0a0f1d;
+  --sup-panel:         #0d1527;
+  --sup-panel-2:       #111a2e;
+  --sup-raised:        #131d33;
+  --sup-ink:           #e8edf7;
+  --sup-ink-soft:      #c3cde0;
+  --sup-muted:         #94a3b8;
+  --sup-faint:         #64748b;
+  --sup-line:          rgba(255, 255, 255, 0.09);
+  --sup-line-soft:     rgba(255, 255, 255, 0.05);
+  --sup-accent:        #60a5fa;
+  --sup-accent-hover:  #7cb3fb;
+  --sup-accent-ink:    #bfdbfe;
+  --sup-accent-tint:   rgba(96, 165, 250, 0.13);
+  --sup-accent-line:   rgba(96, 165, 250, 0.32);
+  --sup-on-accent:     #0a1120;
+  --sup-shadow:        0 24px 60px -32px rgba(0, 0, 0, 0.75);
+  --sup-shadow-soft:   0 12px 32px -24px rgba(0, 0, 0, 0.7);
+
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(120% 90% at 82% -8%, rgba(59, 130, 246, 0.09), transparent 60%),
+    var(--sup-bg);
+  color: var(--sup-ink);
+}
+
+/* App in light mode: matches the store's Apple-gray light theme */
+:root.light .support-shell {
+  --sup-bg:            #f5f5f7;
+  --sup-bg-2:          #eeeef1;
+  --sup-panel:         #ffffff;
+  --sup-panel-2:       #f5f6f8;
+  --sup-raised:        #ffffff;
+  --sup-ink:           #1d1d1f;
+  --sup-ink-soft:      #3f4046;
+  --sup-muted:         #6e6e73;
+  --sup-faint:         #86868b;
+  --sup-line:          rgba(0, 0, 0, 0.09);
+  --sup-line-soft:     rgba(0, 0, 0, 0.055);
+  --sup-accent:        #2563eb;
+  --sup-accent-hover:  #1d4ed8;
+  --sup-accent-ink:    #1e40af;
+  --sup-accent-tint:   #e9eefc;
+  --sup-accent-line:   rgba(37, 99, 235, 0.26);
+  --sup-on-accent:     #ffffff;
+  --sup-shadow:        0 26px 60px -34px rgba(15, 23, 42, 0.28);
+  --sup-shadow-soft:   0 14px 32px -26px rgba(15, 23, 42, 0.22);
+
+  background:
+    radial-gradient(120% 90% at 84% -6%, rgba(37, 99, 235, 0.06), transparent 58%),
+    var(--sup-bg);
+}
+
+/* Keep the support surface headings on its own ink (beat global rules) */
+.support-shell :is(h1, h2, h3, h4, h5, h6),
+:root.light .support-shell :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--sup-ink) !important;
+}
+
+@layer components {
+  .sup-serif {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+    font-weight: 600;
+  }
+  .sup-card {
+    background: var(--sup-panel);
+    border: 1px solid var(--sup-line);
+    border-radius: 22px;
+  }
+  .sup-card-raised {
+    background: var(--sup-raised);
+    border: 1px solid var(--sup-line);
+  }
+  .sup-eyebrow {
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--sup-accent);
+  }
+  .sup-label {
+    font-size: 10px;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--sup-muted);
+  }
+  .sup-ink       { color: var(--sup-ink); }
+  .sup-ink-soft  { color: var(--sup-ink-soft); }
+  .sup-muted     { color: var(--sup-muted); }
+  .sup-faint     { color: var(--sup-faint); }
+  .sup-accent    { color: var(--sup-accent); }
+
+  /* Primary teal action — the "Interview me" style pill */
+  .sup-btn {
+    background: var(--sup-accent);
+    color: var(--sup-on-accent);
+    border: 1px solid transparent;
+    transition: background-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .sup-btn:hover:not(:disabled) {
+    background: var(--sup-accent-hover);
+  }
+  .sup-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Ghost / outline action */
+  .sup-btn-ghost {
+    background: transparent;
+    color: var(--sup-ink-soft);
+    border: 1px solid var(--sup-line);
+    transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+  }
+  .sup-btn-ghost:hover {
+    border-color: var(--sup-accent-line);
+    color: var(--sup-accent);
+    background: var(--sup-accent-tint);
+  }
+
+  /* Suggestion chips / list rows */
+  .sup-chip {
+    background: var(--sup-panel);
+    border: 1px solid var(--sup-line);
+    color: var(--sup-ink-soft);
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  }
+  .sup-chip:hover {
+    border-color: var(--sup-accent-line);
+    background: var(--sup-accent-tint);
+    color: var(--sup-accent-ink);
+  }
+  .sup-row-active {
+    background: var(--sup-accent-tint) !important;
+    border-color: var(--sup-accent-line) !important;
+    color: var(--sup-accent-ink) !important;
+  }
+
+  /* Text field — override global input rules within the shell */
+  .support-shell .sup-input,
+  :root.light .support-shell .sup-input {
+    background: var(--sup-raised) !important;
+    border: 1px solid var(--sup-line) !important;
+    color: var(--sup-ink) !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .support-shell .sup-input::placeholder,
+  :root.light .support-shell .sup-input::placeholder {
+    color: var(--sup-faint) !important;
+  }
+  .support-shell .sup-input:focus,
+  :root.light .support-shell .sup-input:focus {
+    border-color: var(--sup-accent-line) !important;
+    box-shadow: 0 0 0 4px var(--sup-accent-tint) !important;
+    outline: none;
+  }
+
+  /* Bare input for the pill composer (transparent inside a card) */
+  .support-shell .sup-input-bare,
+  :root.light .support-shell .sup-input-bare {
+    background: transparent !important;
+    border: none !important;
+    color: var(--sup-ink) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  .support-shell .sup-input-bare::placeholder,
+  :root.light .support-shell .sup-input-bare::placeholder {
+    color: var(--sup-faint) !important;
+  }
+
+  /* Status pills */
+  .sup-pill {
+    border: 1px solid var(--sup-line);
+    color: var(--sup-muted);
+    background: var(--sup-panel-2);
+  }
+  .sup-pill-online {
+    border-color: var(--sup-accent-line);
+    color: var(--sup-accent);
+    background: var(--sup-accent-tint);
+  }
+}
+
+/* ── Dispute chat markdown (Ms. Perera replies) ─────────────── */
+.dispute-markdown { color: var(--sup-ink); }
+.dispute-markdown a { color: var(--sup-accent); }
+.dispute-markdown code {
+  background: var(--sup-accent-tint);
+  color: var(--sup-accent-ink);
+}
+
+.dispute-md-table-wrap {
+  border: 1px solid var(--sup-line);
+  box-shadow: var(--sup-shadow-soft);
+}
+.dispute-md-table {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+.dispute-md-table thead {
+  background: var(--sup-accent-tint);
+  color: var(--sup-accent-ink);
+}
+.dispute-md-table th,
+.dispute-md-table td {
+  border-bottom: 1px solid var(--sup-line-soft);
+}
+.dispute-md-table td { color: var(--sup-ink-soft); }
+.dispute-md-table tbody tr:last-child td { border-bottom: none; }
+.dispute-md-table tbody tr:hover { background: var(--sup-accent-tint); }

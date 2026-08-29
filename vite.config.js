@@ -10,9 +10,15 @@ const __dirname = dirname(__filename)
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
-  const aiServiceTarget = env.VITE_AI_SERVICE_URL || 'http://localhost:8000'
-  const catalogServiceTarget = env.VITE_CATALOG_SERVICE_URL || 'http://localhost:8001'
-  const commerceServiceTarget = env.VITE_COMMERCE_SERVICE_URL || 'http://localhost:8002'
+  // Dispute FastAPI host (not Laravel). Prefer dedicated proxy target so
+  // VITE_AI_SERVICE_URL can stay as same-origin `/api/ai`.
+  const aiServiceTarget =
+    env.VITE_AI_PROXY_TARGET ||
+    (env.VITE_AI_SERVICE_URL?.startsWith('http') && !env.VITE_AI_SERVICE_URL.includes('/api/ai')
+      ? env.VITE_AI_SERVICE_URL
+      : 'http://127.0.0.1:8080')
+  const catalogServiceTarget = env.VITE_CATALOG_SERVICE_URL || 'http://localhost:8000'
+  const commerceServiceTarget = env.VITE_COMMERCE_SERVICE_URL || 'http://localhost:8000'
 
   return {
     plugins: [react()],

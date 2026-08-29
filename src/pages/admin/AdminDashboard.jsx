@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { requestJson } from '../../services/httpClient';
 import { serviceRegistry } from '../../config/serviceRegistry';
 import { 
   ShieldCheck, LogOut, Users, ShoppingBag, BarChart3, 
-  AlertCircle, RefreshCw, Cpu, Loader2, Search, Activity, Terminal
+  AlertCircle, RefreshCw, Cpu, Loader2, Search, Activity, Terminal, Brain, ExternalLink
 } from 'lucide-react';
+import { langfuseLinks } from '../../config/langfuseLinks';
 import '../../element-ui.css';
 
 export default function AdminDashboard() {
@@ -18,6 +20,14 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [vendorPolicies, setVendorPolicies] = useState([]);
+  const [platformPolicies, setPlatformPolicies] = useState([]);
+  const [platformForm, setPlatformForm] = useState({
+    policy_key: '',
+    policy_name: '',
+    min_value: '',
+    max_value: '',
+    is_mandatory: true,
+  });
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -52,10 +62,11 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       // Fetch orders and vendors in parallel
-      const [ordersData, vendorsData, vendorPoliciesData] = await Promise.all([
+      const [ordersData, vendorsData, vendorPoliciesData, platformPoliciesData] = await Promise.all([
         requestJson(`${serviceRegistry.commerce}/orders`),
         requestJson(`${serviceRegistry.catalog}/admin/vendors`),
-        requestJson(`${serviceRegistry.catalog}/admin/vendor-policies`)
+        requestJson(`${serviceRegistry.catalog}/admin/vendor-policies`),
+        requestJson(`${serviceRegistry.catalog}/admin/platform-policies`),
       ]);
 
       if (ordersData) {
@@ -66,6 +77,9 @@ export default function AdminDashboard() {
       }
       if (vendorPoliciesData) {
         setVendorPolicies(vendorPoliciesData);
+      }
+      if (platformPoliciesData) {
+        setPlatformPolicies(platformPoliciesData);
       }
     } catch (e) {
       console.error('Error fetching admin telemetry:', e);
@@ -139,6 +153,41 @@ export default function AdminDashboard() {
     } catch (e) {
       console.error(e);
       showToast(e.message || 'Failed to update AI policy approval.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSavePlatformPolicy = async (e) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      const saved = await requestJson(`${serviceRegistry.catalog}/admin/platform-policies`, {
+        method: 'POST',
+        body: {
+          policy_key: platformForm.policy_key,
+          policy_name: platformForm.policy_name,
+          min_value: platformForm.min_value === '' ? null : Number(platformForm.min_value),
+          max_value: platformForm.max_value === '' ? null : Number(platformForm.max_value),
+          is_mandatory: platformForm.is_mandatory,
+        },
+      });
+      const row = saved?.data || saved;
+      setPlatformPolicies((current) => {
+        const without = current.filter((p) => p.policy_key !== row.policy_key);
+        return [...without, row].sort((a, b) => String(a.policy_key).localeCompare(String(b.policy_key)));
+      });
+      setPlatformForm({
+        policy_key: '',
+        policy_name: '',
+        min_value: '',
+        max_value: '',
+        is_mandatory: true,
+      });
+      showToast('Platform policy saved and queued for AI sync.');
+    } catch (err) {
+      console.error(err);
+      showToast(err.message || 'Failed to save platform policy.', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -283,6 +332,29 @@ export default function AdminDashboard() {
                     {tab.label}
                   </button>
                 ))}
+                <Link
+                  to="/admin/multi-agent"
+                  className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                >
+                  <Brain className="w-4 h-4" />
+                  Multi-Agent System
+                </Link>
+                <Link
+                  to="/admin/multi-agent#observability"
+                  className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                >
+                  <Activity className="w-4 h-4" />
+                  AI Observability
+                </Link>
+                <a
+                  href={langfuseLinks.home}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Langfuse
+                </a>
               </div>
             </div>
           </div>
@@ -334,6 +406,12 @@ export default function AdminDashboard() {
                 <option value="logs">Logs & Health</option>
               </select>
             </div>
+            <Link
+              to="/admin/multi-agent"
+              className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-[#409eff]"
+            >
+              <Brain className="w-3.5 h-3.5" /> Open Multi-Agent System →
+            </Link>
           </div>
 
           {loading ? (
@@ -661,6 +739,7 @@ export default function AdminDashboard() {
                             <th className="py-3 px-5">Vendor</th>
                             <th className="py-3 px-5">Policy</th>
                             <th className="py-3 px-5">Rules</th>
+                            <th className="py-3 px-5">Document</th>
                             <th className="py-3 px-5">Conditions</th>
                             <th className="py-3 px-5">Status</th>
                             <th className="py-3 px-5 text-right">Actions</th>
@@ -679,6 +758,26 @@ export default function AdminDashboard() {
                               </td>
                               <td className="py-4 px-5 font-semibold text-slate-650">
                                 {policy.max_return_days ?? '-'} days · {policy.refund_type || 'No refund type'} · {policy.restocking_fee_percent ?? 0}% fee
+                              </td>
+                              <td className="py-4 px-5">
+                                <div className="space-y-1">
+                                  <span className="el-tag el-tag--mini uppercase">
+                                    {!policy.document_format && 'Structured only'}
+                                    {policy.document_format === 'text' && 'Text doc'}
+                                    {policy.document_format === 'markdown' && 'MD doc'}
+                                    {policy.document_format === 'pdf' && 'PDF doc'}
+                                  </span>
+                                  {policy.document_format === 'pdf' && policy.document_url && (
+                                    <a
+                                      href={policy.document_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block text-[10px] font-bold text-[#409eff] hover:underline truncate max-w-[180px]"
+                                    >
+                                      Open PDF
+                                    </a>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-4 px-5">
                                 <div className="flex flex-wrap gap-1.5">
@@ -725,7 +824,7 @@ export default function AdminDashboard() {
                           ))}
                           {vendorPolicies.length === 0 && (
                             <tr>
-                              <td colSpan="6" className="text-center py-12 text-xs font-semibold text-slate-400">
+                              <td colSpan="7" className="text-center py-12 text-xs font-semibold text-slate-400">
                                 No AI dispute policies have been submitted by vendors.
                               </td>
                             </tr>
@@ -733,6 +832,71 @@ export default function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Platform policies</h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Global dispute guardrails synced to Neo4j + Qdrant on save.
+                      </p>
+                    </div>
+                    <form onSubmit={handleSavePlatformPolicy} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        required
+                        value={platformForm.policy_key}
+                        onChange={(e) => setPlatformForm((f) => ({ ...f, policy_key: e.target.value }))}
+                        placeholder="policy_key (e.g. max_auto_refund)"
+                        className="border border-slate-200 rounded-lg px-3 py-2 text-xs"
+                      />
+                      <input
+                        required
+                        value={platformForm.policy_name}
+                        onChange={(e) => setPlatformForm((f) => ({ ...f, policy_name: e.target.value }))}
+                        placeholder="Display name"
+                        className="border border-slate-200 rounded-lg px-3 py-2 text-xs"
+                      />
+                      <input
+                        type="number"
+                        value={platformForm.min_value}
+                        onChange={(e) => setPlatformForm((f) => ({ ...f, min_value: e.target.value }))}
+                        placeholder="min_value"
+                        className="border border-slate-200 rounded-lg px-3 py-2 text-xs"
+                      />
+                      <input
+                        type="number"
+                        value={platformForm.max_value}
+                        onChange={(e) => setPlatformForm((f) => ({ ...f, max_value: e.target.value }))}
+                        placeholder="max_value"
+                        className="border border-slate-200 rounded-lg px-3 py-2 text-xs"
+                      />
+                      <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                        <input
+                          type="checkbox"
+                          checked={platformForm.is_mandatory}
+                          onChange={(e) => setPlatformForm((f) => ({ ...f, is_mandatory: e.target.checked }))}
+                        />
+                        Mandatory
+                      </label>
+                      <button
+                        type="submit"
+                        disabled={actionLoading}
+                        className="el-button el-button--primary el-button--mini justify-self-start"
+                      >
+                        Save &amp; sync
+                      </button>
+                    </form>
+                    <ul className="divide-y divide-slate-100 text-xs">
+                      {platformPolicies.map((p) => (
+                        <li key={p.id || p.policy_key} className="py-2 flex justify-between gap-3">
+                          <span className="font-bold text-slate-800">{p.policy_name}</span>
+                          <span className="font-mono text-slate-400">{p.policy_key}</span>
+                        </li>
+                      ))}
+                      {!platformPolicies.length && (
+                        <li className="py-3 text-slate-400 font-semibold">No platform policies yet.</li>
+                      )}
+                    </ul>
                   </div>
                 </div>
               )}
@@ -754,6 +918,35 @@ export default function AdminDashboard() {
                       <RefreshCw className={`w-3.5 h-3.5 text-slate-450 mr-1.5 ${refreshingDiagnostics ? 'animate-spin' : ''}`} />
                       Refresh Logs
                     </button>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/50 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="size-11 rounded-xl bg-[#409eff]/10 border border-[#409eff]/20 flex items-center justify-center shrink-0">
+                      <Activity className="w-5 h-5 text-[#409eff]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900">Dispute AI observability (Langfuse)</h3>
+                      <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                        Open Langfuse for traces, latency, prompt versions, hallucination review, and accuracy scores.
+                        Step-by-step playbook lives on Multi-Agent → Observability.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 shrink-0">
+                      <Link
+                        to="/admin/multi-agent#observability"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:border-[#409eff] hover:text-[#409eff]"
+                      >
+                        Playbook
+                      </Link>
+                      <a
+                        href={langfuseLinks.home}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#409eff] text-white text-xs font-bold hover:bg-[#3a8ee6]"
+                      >
+                        Open Langfuse <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
 
                   {/* Diagnostic Logs timeline inside Element UI Table style */}

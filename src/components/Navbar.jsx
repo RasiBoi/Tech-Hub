@@ -345,7 +345,7 @@ export default function Navbar() {
               </Link>
               
               
-              <Link to="/category/All" className="hover:text-white transition-colors text-slate-400 py-1">Support</Link>
+              <Link to="/support" className="hover:text-white transition-colors text-slate-400 py-1">Support</Link>
               <Link to="/about" className="hover:text-white transition-colors text-slate-400 py-1">About</Link>
             </div>
           </div>
@@ -699,7 +699,7 @@ export default function Navbar() {
                 <span>Cart</span>
                 {itemCount > 0 && <span className="bg-yellow-400 text-[#0b1021] text-[10px] font-bold px-1.5 rounded-full">{itemCount}</span>}
               </Link>
-              <Link to="/category/All" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Support</Link>
+              <Link to="/support" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>Support</Link>
               <Link to="/about" className="px-3 py-2 rounded-md bg-white/[0.04] hover:bg-white/[0.1] transition-colors" onClick={() => setIsMobileMenuOpen(false)}>About</Link>
               
               {(!user || (user.role !== 'vendor' && user.role !== 'admin')) && (

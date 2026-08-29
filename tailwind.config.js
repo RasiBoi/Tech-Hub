@@ -25,12 +25,19 @@ export default {
       /* ── Font family ── */
       fontFamily: {
         sans: [
-          'Plus Jakarta Sans',
+          'Outfit',
           'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',
           'Roboto',
+          'sans-serif',
+        ],
+        outfit: ['Outfit', 'sans-serif'],
+        display: [
+          'Outfit',
+          'Inter',
+          '-apple-system',
           'sans-serif',
         ],
       },

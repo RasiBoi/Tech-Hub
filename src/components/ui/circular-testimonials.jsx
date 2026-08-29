@@ -161,7 +161,7 @@ export const CircularTestimonials = ({
         >
           {testimonials.map((testimonial, index) => (
             <img
-              key={testimonial.src}
+              key={testimonial.id ?? `${testimonial.name}-${index}`}
               src={testimonial.src}
               alt={testimonial.name}
               className="absolute w-[80%] h-[80%] object-cover rounded-[1.5rem] shadow-[0_15px_35px_rgba(15,23,42,0.15)] border border-slate-100"
