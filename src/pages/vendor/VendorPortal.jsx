@@ -142,6 +142,9 @@ export default function VendorPortal() {
   const [aiRestockingFee, setAiRestockingFee] = useState('0');
   const [aiRequiresPackaging, setAiRequiresPackaging] = useState(true);
   const [aiRequiresProof, setAiRequiresProof] = useState(true);
+  const [aiDocumentFormat, setAiDocumentFormat] = useState('');
+  const [aiPolicyBody, setAiPolicyBody] = useState('');
+  const [aiDocumentUrl, setAiDocumentUrl] = useState('');
 
   // Promotions and Policies fetcher
   const fetchPromotionsAndPolicies = async () => {
@@ -442,6 +445,9 @@ export default function VendorPortal() {
       } else if (field === 'custom_policy_pdf') {
         setPolicyFormPdfUrl(uploadedUrl);
         showToast('Policy PDF uploaded successfully.');
+      } else if (field === 'ai_policy_pdf') {
+        setAiDocumentUrl(uploadedUrl);
+        showToast('AI policy PDF uploaded successfully.');
       }
     } catch (e) {
       console.error(e);
@@ -636,12 +642,25 @@ export default function VendorPortal() {
     setAiRestockingFee('0');
     setAiRequiresPackaging(true);
     setAiRequiresProof(true);
+    setAiDocumentFormat('');
+    setAiPolicyBody('');
+    setAiDocumentUrl('');
   };
 
   const handleSaveAiPolicy = async (e) => {
     e.preventDefault();
     if (!aiPolicyName.trim()) {
       showToast('AI policy name is required.', 'error');
+      return;
+    }
+    if (aiDocumentFormat === 'text' || aiDocumentFormat === 'markdown') {
+      if (!aiPolicyBody.trim()) {
+        showToast('Policy document body is required for text or markdown.', 'error');
+        return;
+      }
+    }
+    if (aiDocumentFormat === 'pdf' && !aiDocumentUrl.trim()) {
+      showToast('Upload or paste a PDF URL for the policy document.', 'error');
       return;
     }
 
@@ -664,6 +683,9 @@ export default function VendorPortal() {
             requires_original_packaging: aiRequiresPackaging,
             requires_purchase_proof: aiRequiresProof,
           },
+          document_format: aiDocumentFormat || null,
+          policy_body: aiDocumentFormat === 'text' || aiDocumentFormat === 'markdown' ? aiPolicyBody : null,
+          document_url: aiDocumentFormat === 'pdf' ? aiDocumentUrl : null,
         },
       });
 
@@ -2765,6 +2787,85 @@ export default function VendorPortal() {
                             </label>
                           </div>
 
+                          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
+                            <div>
+                              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                Attach policy document (optional)
+                              </h4>
+                              <p className="mt-1 text-[11px] text-slate-500">
+                                Structured rules stay required. Add plain text, Markdown, or a PDF for richer dispute AI answers.
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                              {[
+                                { id: '', label: 'None' },
+                                { id: 'text', label: 'Plain text' },
+                                { id: 'markdown', label: 'Markdown' },
+                                { id: 'pdf', label: 'PDF' },
+                              ].map((opt) => (
+                                <label key={opt.id || 'none'} className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+                                  <input
+                                    type="radio"
+                                    name="aiDocumentFormat"
+                                    value={opt.id}
+                                    checked={aiDocumentFormat === opt.id}
+                                    onChange={() => {
+                                      setAiDocumentFormat(opt.id);
+                                      if (!opt.id) {
+                                        setAiPolicyBody('');
+                                        setAiDocumentUrl('');
+                                      }
+                                    }}
+                                    className="text-[#409eff] focus:ring-[#409eff]"
+                                  />
+                                  {opt.label}
+                                </label>
+                              ))}
+                            </div>
+                            {(aiDocumentFormat === 'text' || aiDocumentFormat === 'markdown') && (
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  {aiDocumentFormat === 'markdown' ? 'Markdown body' : 'Policy text'}
+                                </label>
+                                <textarea
+                                  rows="8"
+                                  value={aiPolicyBody}
+                                  onChange={(e) => setAiPolicyBody(e.target.value)}
+                                  className="el-input__inner h-auto py-3 font-medium text-xs font-mono"
+                                  placeholder="Additional policy terms, exceptions, and customer-facing language…"
+                                />
+                              </div>
+                            )}
+                            {aiDocumentFormat === 'pdf' && (
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  Policy PDF
+                                </label>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="text"
+                                    value={aiDocumentUrl}
+                                    onChange={(e) => setAiDocumentUrl(e.target.value)}
+                                    className="el-input__inner font-medium text-xs flex-1"
+                                    placeholder="PDF URL or upload a file"
+                                  />
+                                  <label className="cursor-pointer shrink-0 el-button el-button--primary is-plain el-button--small shadow-sm">
+                                    <Upload className="w-3.5 h-3.5 mr-1 inline" />
+                                    Upload PDF
+                                    <input
+                                      type="file"
+                                      accept="application/pdf"
+                                      className="sr-only"
+                                      onChange={(e) => {
+                                        if (e.target.files[0]) handleFileUpload(e.target.files[0], 'ai_policy_pdf');
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
                           <div className="flex gap-3">
                             <button type="submit" disabled={actionLoading} className="el-button el-button--primary el-button--small shadow-sm">
                               {editingAiPolicy ? 'Update AI Policy' : 'Submit for Approval'}
@@ -2786,6 +2887,7 @@ export default function VendorPortal() {
                                   <tr>
                                     <th className="py-2.5 px-4">Policy</th>
                                     <th className="py-2.5 px-4">Rules</th>
+                                    <th className="py-2.5 px-4">Document</th>
                                     <th className="py-2.5 px-4">Approval</th>
                                     <th className="py-2.5 px-4 text-right">Actions</th>
                                   </tr>
@@ -2799,6 +2901,14 @@ export default function VendorPortal() {
                                       </td>
                                       <td className="py-3 px-4 text-slate-600 font-semibold">
                                         {policy.max_return_days ?? '-'} days · {policy.refund_type || 'No refund type'} · {policy.restocking_fee_percent ?? 0}% fee
+                                      </td>
+                                      <td className="py-3 px-4">
+                                        <span className="el-tag el-tag--mini uppercase">
+                                          {!policy.document_format && 'Structured only'}
+                                          {policy.document_format === 'text' && 'Text doc'}
+                                          {policy.document_format === 'markdown' && 'MD doc'}
+                                          {policy.document_format === 'pdf' && 'PDF doc'}
+                                        </span>
                                       </td>
                                       <td className="py-3 px-4">
                                         <span className={`el-tag el-tag--mini uppercase ${policy.approved_by_admin ? 'el-tag--success' : 'el-tag--warning'}`}>
@@ -2818,6 +2928,9 @@ export default function VendorPortal() {
                                               setAiRestockingFee(policy.restocking_fee_percent ?? '0');
                                               setAiRequiresPackaging(Boolean(policy.conditions?.requires_original_packaging));
                                               setAiRequiresProof(Boolean(policy.conditions?.requires_purchase_proof));
+                                              setAiDocumentFormat(policy.document_format || '');
+                                              setAiPolicyBody(policy.policy_body || '');
+                                              setAiDocumentUrl(policy.document_url || '');
                                             }}
                                             className="text-xs font-semibold text-[#409eff] hover:underline"
                                           >
