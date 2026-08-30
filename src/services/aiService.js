@@ -1,5 +1,5 @@
 import { serviceRegistry, serviceRuntimeConfig } from '../config/serviceRegistry';
-import { pingEndpoint, requestJson } from './httpClient';
+import { requestJson } from './httpClient';
 
 const joinUrl = (baseUrl, path) => {
   const normalizedBase = baseUrl.replace(/\/+$/, '');
@@ -50,10 +50,79 @@ const requestAiJson = async (url, { chatToken, ...options } = {}) => {
   }
 };
 
-/** Dispute AI (FastAPI) health */
-export const checkAiServiceHealth = async () => {
+/** @typedef {'ok'|'starting'|'degraded'|'offline'|'unknown'} AiHealthStatus */
+/** @typedef {'ok'|'unavailable'|'not_configured'|null} AiNeo4jStatus */
+/** @typedef {{ online: boolean, status: AiHealthStatus, neo4j: AiNeo4jStatus }} AiHealthSnapshot */
+
+const OFFLINE_HEALTH = /** @type {AiHealthSnapshot} */ ({
+  online: false,
+  status: 'offline',
+  neo4j: null,
+});
+
+/** Dispute AI (FastAPI) /health — includes Neo4j ping when configured. */
+export const fetchAiHealth = async () => {
   const healthUrl = joinUrl(serviceRegistry.ai, '/health');
-  return pingEndpoint(healthUrl, serviceRuntimeConfig.requestTimeoutMs);
+  try {
+    const data = await requestJson(healthUrl, {
+      method: 'GET',
+      omitAuth: true,
+      timeoutMs: serviceRuntimeConfig.requestTimeoutMs,
+    });
+    const status = data?.status || 'offline';
+    const online = status === 'ok' || status === 'starting' || status === 'degraded';
+    return {
+      online,
+      status,
+      neo4j: data?.neo4j ?? null,
+    };
+  } catch {
+    return OFFLINE_HEALTH;
+  }
+};
+
+/** True when the AI-Agent process responds (ok, starting, or degraded). */
+export const isAiOnline = (health) => Boolean(health?.online);
+
+export const getAiHealthLabel = (health) => {
+  if (!isAiOnline(health)) return 'Offline';
+  if (health.status === 'degraded' || health.neo4j === 'unavailable') return 'Degraded';
+  if (health.status === 'starting') return 'Starting';
+  return 'Online';
+};
+
+/** Normalize /ready checks array from FastAPI. */
+export const normalizeReadinessChecks = (readiness) => {
+  if (!readiness) return [];
+  if (Array.isArray(readiness.checks)) {
+    return readiness.checks.map((check) => ({
+      name: check.name,
+      ok: Boolean(check.ok),
+      detail: check.detail ?? '',
+    }));
+  }
+  const probes = readiness.probes || readiness;
+  return Object.entries(probes)
+    .filter(([name]) => name !== 'ready' && name !== 'checks')
+    .map(([name, value]) => ({
+      name,
+      ok:
+        value === true ||
+        value === 'ok' ||
+        value === 'ready' ||
+        value?.status === 'ok' ||
+        value?.ok === true,
+      detail:
+        typeof value === 'object' && value !== null
+          ? JSON.stringify(value)
+          : String(value ?? ''),
+    }));
+};
+
+/** Back-compat boolean probe for legacy callers. */
+export const checkAiServiceHealth = async () => {
+  const health = await fetchAiHealth();
+  return isAiOnline(health);
 };
 
 /** Mia product recommend — Laravel AiController stub */

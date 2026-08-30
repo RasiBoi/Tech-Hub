@@ -10,11 +10,20 @@ import {
 } from 'lucide-react';
 import { MS_PERERA_AVATAR } from './VoiceBubble';
 
-export default function UserPanel({ user, recentOrders = [], aiHealthy }) {
+export default function UserPanel({ user, recentOrders = [], aiHealth }) {
   const displayName = user?.name || 'Customer';
   const email = user?.email || '—';
   const aiId = user?.ai_uuid || user?.aiUuid || '—';
   const role = user?.role || 'customer';
+  const online = aiHealth?.online;
+  const degraded =
+    online && (aiHealth?.status === 'degraded' || aiHealth?.neo4j === 'unavailable');
+  const dotColor = !online ? '#d0982f' : degraded ? '#d0982f' : 'var(--sup-accent)';
+  const statusLabel = !online
+    ? 'Dispute AI offline'
+    : degraded
+      ? 'Dispute AI degraded (Neo4j)'
+      : 'Dispute AI online';
 
   return (
     <aside className="sup-card overflow-hidden flex flex-col h-full" style={{ boxShadow: 'var(--sup-shadow-soft)' }}>
@@ -42,10 +51,10 @@ export default function UserPanel({ user, recentOrders = [], aiHealthy }) {
             <div className="flex items-center gap-1.5 mt-2.5">
               <span
                 className="size-1.5 rounded-full"
-                style={{ background: aiHealthy ? 'var(--sup-accent)' : '#d0982f' }}
+                style={{ background: dotColor }}
               />
               <span className="text-[10px] sup-muted font-medium">
-                {aiHealthy ? 'Dispute AI online' : 'Dispute AI offline'}
+                {statusLabel}
               </span>
             </div>
           </div>
