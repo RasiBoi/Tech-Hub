@@ -498,7 +498,11 @@ export default function VendorPortal() {
         setPolicyPdfUrl(updatedSettings.policy_pdf_url || '');
       }
 
-      showToast('Shop configurations and interface settings saved successfully!');
+      showToast(
+        (policyType === 'text' && policyText.trim()) || (policyType === 'pdf' && policyPdfUrl)
+          ? 'Store policy saved and sent for admin approval.'
+          : 'Shop configurations and interface settings saved successfully!'
+      );
     } catch (e) {
       console.error(e);
       showToast(e.message || 'Failed to update shop settings.', 'error');
@@ -3188,6 +3192,7 @@ export default function VendorPortal() {
                       <div className="space-y-5 animate-in fade-in duration-200">
                         <div className="space-y-2">
                           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Policy & Terms Upload Type</label>
+                          <p className="text-[11px] text-slate-500 font-medium">Saving this store policy submits it for admin review. After approval, the dispute AI can use it.</p>
                           <div className="flex gap-4">
                             <label className="flex items-center gap-2 cursor-pointer font-semibold text-xs text-slate-700">
                               <input

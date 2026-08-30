@@ -5,7 +5,7 @@ import { requestJson } from '../../services/httpClient';
 import { serviceRegistry } from '../../config/serviceRegistry';
 import { 
   ShieldCheck, LogOut, Users, ShoppingBag, BarChart3, 
-  AlertCircle, RefreshCw, Cpu, Loader2, Search, Activity, Terminal, Brain, ExternalLink
+  AlertCircle, RefreshCw, Cpu, Loader2, Search, Activity, Terminal, Brain, ExternalLink, FileText
 } from 'lucide-react';
 import { langfuseLinks } from '../../config/langfuseLinks';
 import '../../element-ui.css';
@@ -31,6 +31,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [expandedPolicyId, setExpandedPolicyId] = useState(null);
+  const [expandedVendorId, setExpandedVendorId] = useState(null);
 
   // Filter States (Merchant Approvals)
   const [vendorSearch, setVendorSearch] = useState('');
@@ -75,8 +77,10 @@ export default function AdminDashboard() {
       if (vendorsData) {
         setVendors(vendorsData);
       }
-      if (vendorPoliciesData) {
+      if (Array.isArray(vendorPoliciesData)) {
         setVendorPolicies(vendorPoliciesData);
+      } else if (Array.isArray(vendorPoliciesData?.data)) {
+        setVendorPolicies(vendorPoliciesData.data);
       }
       if (platformPoliciesData) {
         setPlatformPolicies(platformPoliciesData);
@@ -634,6 +638,7 @@ export default function AdminDashboard() {
                           <tr>
                             <th className="py-3 px-5">Store details</th>
                             <th className="py-3 px-5">Owner Profile</th>
+                            <th className="py-3 px-5">Store policy</th>
                             <th className="py-3 px-5">Contact email</th>
                             <th className="py-3 px-5">Registration status</th>
                             <th className="py-3 px-5 text-right">Actions</th>
@@ -649,6 +654,45 @@ export default function AdminDashboard() {
                                 </div>
                               </td>
                               <td className="py-4 px-5 text-slate-700 font-semibold">{row.name}</td>
+                              <td className="py-4 px-5 align-top max-w-[280px]">
+                                {row.policy_text || row.policy_pdf_url ? (
+                                  <div className="space-y-1.5">
+                                    <span className="el-tag el-tag--mini uppercase">
+                                      {row.policy_type === 'pdf' ? 'PDF' : 'Text'}
+                                    </span>
+                                    {row.policy_type === 'pdf' && row.policy_pdf_url ? (
+                                      <a
+                                        href={row.policy_pdf_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-[10px] font-bold text-[#409eff] hover:underline"
+                                      >
+                                        Open policy PDF
+                                      </a>
+                                    ) : (
+                                      <>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3 whitespace-pre-wrap">
+                                          {row.policy_text}
+                                        </p>
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpandedVendorId(expandedVendorId === row.id ? null : row.id)}
+                                          className="text-[10px] font-bold text-[#409eff] hover:underline"
+                                        >
+                                          {expandedVendorId === row.id ? 'Hide full policy' : 'View full policy'}
+                                        </button>
+                                        {expandedVendorId === row.id && (
+                                          <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-slate-50 border border-slate-200 p-3 text-[11px] font-sans text-slate-700 whitespace-pre-wrap">
+                                            {row.policy_text}
+                                          </pre>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 font-semibold">Not submitted</span>
+                                )}
+                              </td>
                               <td className="py-4 px-5 text-slate-550 font-mono">{row.email}</td>
                               <td className="py-4 px-5">
                                 <span className={`el-tag uppercase ${
@@ -697,7 +741,7 @@ export default function AdminDashboard() {
                           ))}
                           {filteredVendors.length === 0 && (
                             <tr>
-                              <td colSpan="5" className="text-center py-12 text-xs font-semibold text-slate-400">
+                              <td colSpan="6" className="text-center py-12 text-xs font-semibold text-slate-400">
                                 No applications detected matching the filter.
                               </td>
                             </tr>
@@ -776,6 +820,23 @@ export default function AdminDashboard() {
                                     >
                                       Open PDF
                                     </a>
+                                  )}
+                                  {(policy.document_format === 'text' || policy.document_format === 'markdown') && policy.policy_body && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedPolicyId(expandedPolicyId === policy.id ? null : policy.id)}
+                                        className="flex items-center gap-1 text-[10px] font-bold text-[#409eff] hover:underline"
+                                      >
+                                        <FileText className="w-3 h-3" />
+                                        {expandedPolicyId === policy.id ? 'Hide text' : 'View text'}
+                                      </button>
+                                      {expandedPolicyId === policy.id && (
+                                        <pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-slate-50 border border-slate-200 p-3 text-[11px] font-sans text-slate-700 whitespace-pre-wrap max-w-[320px]">
+                                          {policy.policy_body}
+                                        </pre>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               </td>

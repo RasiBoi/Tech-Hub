@@ -10,6 +10,46 @@ const joinUrl = (baseUrl, path) => {
 const withChatToken = (chatToken) =>
   (chatToken ? { 'X-AI-Chat-Token': chatToken } : {});
 
+const isChatTokenRejected = (error) => {
+  const status = error?.status;
+  const message = String(error?.message || '');
+  return (
+    status === 401 ||
+    /invalid chat token|unauthorized/i.test(message)
+  );
+};
+
+const shouldAttachChatToken = () =>
+  String(import.meta.env.VITE_AI_SEND_CHAT_TOKEN || '').toLowerCase() === 'true';
+
+/**
+ * FastAPI validates X-AI-Chat-Token against AI_CHAT_TOKEN_SECRET.
+ * A token minted by local Laravel with a different secret is rejected as 401,
+ * while the same route succeeds with no header. Only attach the header when
+ * VITE_AI_SEND_CHAT_TOKEN=true (secrets aligned). On 401, retry without it.
+ */
+const requestAiJson = async (url, { chatToken, ...options } = {}) => {
+  const tokenToSend = shouldAttachChatToken() ? chatToken : undefined;
+  try {
+    return await requestJson(url, {
+      ...options,
+      omitAuth: true,
+      headers: {
+        ...withChatToken(tokenToSend),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    if (tokenToSend && isChatTokenRejected(error)) {
+      return requestJson(url, {
+        ...options,
+        omitAuth: true,
+      });
+    }
+    throw error;
+  }
+};
+
 /** Dispute AI (FastAPI) health */
 export const checkAiServiceHealth = async () => {
   const healthUrl = joinUrl(serviceRegistry.ai, '/health');
@@ -37,7 +77,7 @@ export const askDisputeAssistant = async ({
   chatToken,
 }) => {
   const chatUrl = joinUrl(serviceRegistry.ai, '/chat');
-  return requestJson(chatUrl, {
+  return requestAiJson(chatUrl, {
     method: 'POST',
     body: {
       user_id: userId,
@@ -45,8 +85,7 @@ export const askDisputeAssistant = async ({
       message,
     },
     timeoutMs: Math.max(serviceRuntimeConfig.requestTimeoutMs, 60000),
-    omitAuth: true,
-    headers: withChatToken(chatToken),
+    chatToken,
   });
 };
 
@@ -63,20 +102,18 @@ export const listDisputeSessions = async ({ userId, chatToken }) => {
     serviceRegistry.ai,
     `/chat_sessions?user_id=${encodeURIComponent(userId)}`,
   );
-  return requestJson(url, {
+  return requestAiJson(url, {
     method: 'GET',
-    omitAuth: true,
-    headers: withChatToken(chatToken),
+    chatToken,
   });
 };
 
 export const createDisputeSession = async ({ userId, title, chatToken }) => {
   const url = joinUrl(serviceRegistry.ai, '/chat_sessions');
-  return requestJson(url, {
+  return requestAiJson(url, {
     method: 'POST',
     body: { user_id: userId, title },
-    omitAuth: true,
-    headers: withChatToken(chatToken),
+    chatToken,
   });
 };
 
@@ -90,10 +127,9 @@ export const fetchDisputeSessionTurns = async ({
     serviceRegistry.ai,
     `/sessions/${encodeURIComponent(sessionId)}/turns?user_id=${encodeURIComponent(userId)}&limit=${limit}`,
   );
-  return requestJson(url, {
+  return requestAiJson(url, {
     method: 'GET',
-    omitAuth: true,
-    headers: withChatToken(chatToken),
+    chatToken,
   });
 };
 

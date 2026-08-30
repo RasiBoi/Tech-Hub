@@ -137,17 +137,20 @@ export const requestJson = async (
       }
 
       if (!response.ok) {
+        let apiMessage = '';
         try {
           const errorJson = await response.json();
-          if (errorJson && errorJson.message) {
-            throw new Error(errorJson.message);
+          if (typeof errorJson?.detail === 'string') {
+            apiMessage = errorJson.detail;
+          } else if (errorJson?.message) {
+            apiMessage = errorJson.message;
           }
-        } catch (e) {
-          if (e.message && !e.message.startsWith('Request failed')) {
-            throw e;
-          }
+        } catch {
+          apiMessage = '';
         }
-        throw new Error(`Request failed: ${response.status}`);
+        const error = new Error(apiMessage || `Request failed: ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
 
       if (response.status === 204) {
