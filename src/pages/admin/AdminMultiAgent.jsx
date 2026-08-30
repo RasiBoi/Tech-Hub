@@ -26,9 +26,12 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { langfuseLinks } from '../../config/langfuseLinks';
 import {
-  checkAiServiceHealth,
   fetchAiConfig,
+  fetchAiHealth,
   fetchAiReadiness,
+  getAiHealthLabel,
+  isAiOnline,
+  normalizeReadinessChecks,
 } from '../../services/aiService';
 
 const LANGFUSE_URL = langfuseLinks.home;
@@ -156,7 +159,7 @@ function StatusPill({ ok, label }) {
 export default function AdminMultiAgent() {
   const { user, logout } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [healthy, setHealthy] = useState(false);
+  const [health, setHealth] = useState({ online: false, status: 'unknown', neo4j: null });
   const [config, setConfig] = useState(null);
   const [readiness, setReadiness] = useState(null);
   const [error, setError] = useState(null);
@@ -165,17 +168,17 @@ export default function AdminMultiAgent() {
     setLoading(true);
     setError(null);
     try {
-      const [ok, cfg, ready] = await Promise.all([
-        checkAiServiceHealth(),
+      const [snapshot, cfg, ready] = await Promise.all([
+        fetchAiHealth(),
         fetchAiConfig().catch(() => null),
         fetchAiReadiness().catch(() => null),
       ]);
-      setHealthy(ok);
+      setHealth(snapshot);
       setConfig(cfg);
       setReadiness(ready);
     } catch (e) {
       setError(e.message || 'Failed to load AI telemetry');
-      setHealthy(false);
+      setHealth({ online: false, status: 'offline', neo4j: null });
     } finally {
       setLoading(false);
     }
@@ -201,18 +204,18 @@ export default function AdminMultiAgent() {
     };
   }, []);
 
-  const probes = readiness?.probes || readiness?.checks || {};
-  const probeRows = Object.entries(probes).length
-    ? Object.entries(probes)
-    : [
-        ['api', healthy],
-        ['qdrant', readiness?.qdrant ?? null],
-        ['neo4j', readiness?.neo4j ?? null],
-        ['supabase', readiness?.supabase ?? null],
-        ['redis', readiness?.redis ?? null],
-      ].filter(([, v]) => v !== null && v !== undefined);
+  const aiOnline = isAiOnline(health);
+  const aiLabel = getAiHealthLabel(health);
+  const probeRows = normalizeReadinessChecks(readiness);
+  const fallbackRows = [
+    { name: 'api', ok: aiOnline, detail: health.status },
+    ...(health.neo4j
+      ? [{ name: 'neo4j (live)', ok: health.neo4j === 'ok', detail: health.neo4j }]
+      : []),
+  ];
+  const rows = probeRows.length ? probeRows : fallbackRows;
 
-  const tools = config?.tools || config?.enabled_tools || {};
+  const tools = config?.tools_enabled || config?.tools || {};
   const toolRows = Object.entries(tools);
 
   return (
@@ -315,7 +318,10 @@ export default function AdminMultiAgent() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <StatusPill ok={healthy} label={healthy ? 'AI healthy' : 'AI degraded'} />
+              <StatusPill
+                ok={health.status === 'ok'}
+                label={aiOnline ? aiLabel : 'AI offline'}
+              />
               <button
                 type="button"
                 onClick={load}
@@ -430,7 +436,7 @@ export default function AdminMultiAgent() {
             <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-900">Infrastructure readiness</h2>
-                <StatusPill ok={healthy} label={healthy ? 'Ready' : 'Check'} />
+                <StatusPill ok={readiness?.ready ?? aiOnline} label={aiOnline ? aiLabel : 'Check'} />
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
@@ -450,37 +456,27 @@ export default function AdminMultiAgent() {
                         </td>
                       </tr>
                     )}
-                    {!loading && probeRows.length === 0 && (
+                    {!loading && rows.length === 0 && (
                       <tr>
                         <td colSpan={3} className="px-5 py-8 text-center text-slate-400 text-xs">
-                          No readiness payload — health only: {healthy ? 'OK' : 'DOWN'}
+                          No readiness payload — health only: {aiOnline ? aiLabel : 'DOWN'}
                         </td>
                       </tr>
                     )}
                     {!loading &&
-                      probeRows.map(([name, value]) => {
-                        const ok =
-                          value === true ||
-                          value === 'ok' ||
-                          value === 'ready' ||
-                          value?.status === 'ok' ||
-                          value?.ok === true;
-                        return (
-                          <tr key={name} className="border-t border-slate-100 hover:bg-slate-50/80">
-                            <td className="px-5 py-3 font-semibold text-slate-800 capitalize">
-                              {name.replace(/_/g, ' ')}
-                            </td>
-                            <td className="px-5 py-3">
-                              <StatusPill ok={!!ok} label={ok ? 'OK' : 'Issue'} />
-                            </td>
-                            <td className="px-5 py-3 text-xs text-slate-500 font-mono max-w-[200px] truncate">
-                              {typeof value === 'object'
-                                ? JSON.stringify(value)
-                                : String(value)}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      rows.map((row) => (
+                        <tr key={row.name} className="border-t border-slate-100 hover:bg-slate-50/80">
+                          <td className="px-5 py-3 font-semibold text-slate-800 capitalize">
+                            {row.name.replace(/_/g, ' ')}
+                          </td>
+                          <td className="px-5 py-3">
+                            <StatusPill ok={row.ok} label={row.ok ? 'OK' : 'Issue'} />
+                          </td>
+                          <td className="px-5 py-3 text-xs text-slate-500 font-mono max-w-[200px] truncate">
+                            {row.detail || '—'}
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

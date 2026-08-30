@@ -20,13 +20,15 @@ import VoiceRoom from '../components/dispute/VoiceRoom';
 import UserPanel from '../components/dispute/UserPanel';
 import { MS_PERERA_AVATAR } from '../components/dispute/VoiceBubble';
 import { useAuth } from '../context/AuthContext';
+import { useAiHealth } from '../hooks/useAiHealth';
 import { requestJson } from '../services/httpClient';
 import { serviceRegistry } from '../config/serviceRegistry';
 import {
   askDisputeAssistant,
-  checkAiServiceHealth,
   createDisputeSession,
   fetchDisputeSessionTurns,
+  getAiHealthLabel,
+  isAiOnline,
   listDisputeSessions,
   mintDisputeChatToken,
 } from '../services/aiService';
@@ -58,7 +60,11 @@ export default function DisputeSupport() {
   const [loading, setLoading] = useState(false);
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState(null);
-  const [aiHealthy, setAiHealthy] = useState(false);
+  const { health: aiHealth } = useAiHealth();
+  const aiOnline = isAiOnline(aiHealth);
+  const aiLabel = getAiHealthLabel(aiHealth);
+  const aiDegraded = aiOnline && (aiHealth.status === 'degraded' || aiHealth.neo4j === 'unavailable');
+  const aiAccent = !aiOnline ? '#d0982f' : aiDegraded ? '#d0982f' : 'var(--sup-accent)';
   const [thoughts, setThoughts] = useState([]);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -94,12 +100,10 @@ export default function DisputeSupport() {
         return;
       }
       try {
-        const [healthy, ordersData] = await Promise.all([
-          checkAiServiceHealth(),
+        const [ordersData] = await Promise.all([
           requestJson(`${serviceRegistry.commerce}/orders`).catch(() => null),
         ]);
         if (!cancelled) {
-          setAiHealthy(healthy);
           const orders = Array.isArray(ordersData)
             ? ordersData
             : ordersData?.data || [];
@@ -321,7 +325,7 @@ export default function DisputeSupport() {
             <span
               className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2"
               style={{
-                background: aiHealthy ? 'var(--sup-accent)' : '#d0982f',
+                background: aiAccent,
                 borderColor: 'var(--sup-panel)',
               }}
             />
@@ -337,14 +341,19 @@ export default function DisputeSupport() {
 
           <div
             className={`hidden sm:inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full ${
-              aiHealthy ? 'sup-pill sup-pill-online' : 'sup-pill'
+              aiOnline ? 'sup-pill sup-pill-online' : 'sup-pill'
             }`}
+            title={
+              aiHealth.neo4j && aiHealth.neo4j !== 'not_configured'
+                ? `Neo4j: ${aiHealth.neo4j}`
+                : undefined
+            }
           >
             <span
               className="size-1.5 rounded-full"
-              style={{ background: aiHealthy ? 'var(--sup-accent)' : '#d0982f' }}
+              style={{ background: aiAccent }}
             />
-            {aiHealthy ? 'Online' : 'Offline'}
+            {aiLabel}
           </div>
 
           <button
@@ -566,7 +575,7 @@ export default function DisputeSupport() {
 
           {/* User panel */}
           <div className="hidden lg:block min-h-0">
-            <UserPanel user={user} recentOrders={recentOrders} aiHealthy={aiHealthy} />
+            <UserPanel user={user} recentOrders={recentOrders} aiHealth={aiHealth} />
           </div>
         </div>
       </main>
